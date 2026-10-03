@@ -1,0 +1,68 @@
+body {
+    padding: 0; margin: 0;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    overflow: hidden;
+}
+
+img {
+    image-rendering: pixelated;
+}
+
+.HeaderSection {
+    position: sticky;
+    height: fit-content;
+    width: 100vw;
+    background-color: #dddddd;
+    border-bottom: 2px solid #888888;
+    z-index: 1;
+}
+
+.ShapePlane {
+    --camera-x: 0px; --camera-y: 0px;
+    position: absolute;
+    user-select: none;
+    width: 100vw; height: 100vh;
+}
+
+.ShapePlane > * {
+    --aspect-ratio: 3;
+    --default-size: 150px;
+    --shape-x: 0px; --shape-y: 0px;
+
+    position: absolute;
+    min-width: var(--default-size);
+    width: fit-content; height: calc(var(--default-size) / var(--aspect-ratio));
+    transform: translateX(calc(var(--camera-x) + var(--shape-x))) translateY(calc(var(--camera-y) + var(--shape-y)));
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3em;
+}
+
+.ParallelogramShape {
+    --steapness: 20%;
+    background-color: #aac9e6;
+    clip-path: polygon(0% 100%, var(--steapness) 0%, 100% 0%, calc(100% - var(--steapness)) 100%);
+}
+
+.DiamondShape {
+    --aspect-ratio: 2.5;
+    background-color: #e77575;
+    clip-path: polygon(0% 50%, 50% 0%, 100% 50%, 50% 100%);
+}
+
+.HexagonShape {
+    --middle-gap: 50%;
+    background-color: #e9a166;
+    clip-path: polygon(
+        0% 50%, calc(50% - var(--middle-gap) / 2) 0%,
+        calc(50% + var(--middle-gap) / 2) 0%, 100% 50%,
+        calc(50% + var(--middle-gap) / 2) 100%, calc(50% - var(--middle-gap) / 2) 100%
+    );
+}
+
+.ElipticShape {
+    background-color: #929bec;
+    border-radius: 32px;
+}
