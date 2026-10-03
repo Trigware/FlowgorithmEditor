@@ -206,4 +206,22 @@ export function GetEnumValueFromName(enumObject, identifierName) {
         return null;
     return enumObject[identifierName];
 }
+export function RemoveTrailingSpaces(originalIdentifier) {
+    let modifiedIdentifier = originalIdentifier;
+    for (let i = 0; i < originalIdentifier.length; i++) {
+        let ch = originalIdentifier[i];
+        if (ch === ' ')
+            continue;
+        modifiedIdentifier = modifiedIdentifier.substring(i);
+        break;
+    }
+    return modifiedIdentifier;
+}
+export function IsLetter(ch) {
+    let letterRegex = /^\p{L}$/u;
+    return letterRegex.test(ch);
+}
+export function IsNumber(ch) {
+    return ch.length === 1 && ch >= '0' && ch <= '9';
+}
 OnStart();

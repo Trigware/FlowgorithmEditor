@@ -8,14 +8,15 @@ enum ProgramTag {
 }
 
 export function Setup(program: Flowgorithm.Program, scriptContents: string) {
+    program = new Flowgorithm.Program();
     currentProgram = program;
     const xmlParser: DOMParser = new DOMParser();
     const xmlDocument: XMLDocument = xmlParser.parseFromString(scriptContents, "application/xml") as XMLDocument;
-    ParseElement(xmlDocument.documentElement);
+    ParseElement(xmlDocument.documentElement, currentProgram);
     console.log(currentProgram);
 }
 
-function ParseElement(currentElement: Element) {
+function ParseElement(currentElement: Element, parentNode: Flowgorithm.ProgramNode, notNodeTagExit: boolean = false) {
     let currentTagName: string = currentElement.tagName;
     if (currentTagName.length == 0) return;
 
@@ -23,29 +24,84 @@ function ParseElement(currentElement: Element) {
     currentTagName = firstLetterUpper + currentTagName.substring(1);
     let actualTag: ProgramTag | null = Utils.GetEnumValueFromName(ProgramTag, currentTagName);
     
-    if (actualTag !== null) ParseSpecificTag(currentElement, actualTag);
-    for (let childElement of currentElement.children) ParseElement(childElement);
+    let isNodeTag: boolean = actualTag !== null;
+    if (!isNodeTag && notNodeTagExit) return;
+    if (isNodeTag) ParseSpecificTag(currentElement, actualTag!, parentNode);
+    for (let childElement of currentElement.children) ParseElement(childElement, parentNode, true);
 }
 
-function ParseSpecificTag(currentElement: Element, currentTag: ProgramTag) {
+function ParseSpecificTag(currentElement: Element, currentTag: ProgramTag, parentNode: Flowgorithm.ProgramNode) {
     let hasParsingFunction: boolean = tagParsingFunctionMap.has(currentTag);
     if (!hasParsingFunction) return;
-    let parsingFunction: (currentElement: Element) => void = tagParsingFunctionMap.get(currentTag)!;
-    parsingFunction.call(undefined, currentElement);
+
+    let parsingFunction: (currentElement: Element) => Flowgorithm.ProgramNode = tagParsingFunctionMap.get(currentTag)!;
+    let tagAsInstruction: Flowgorithm.ProgramNode = parsingFunction.call(undefined, currentElement);
+    parentNode.subNodes.push(tagAsInstruction);
 }
 
-const tagParsingFunctionMap: Map<ProgramTag, (currentElement: Element) => void> = new Map([
-    [ProgramTag.Function, ParseFunctionTag]
+const tagParsingFunctionMap: Map<ProgramTag, (currentElement: Element) => Flowgorithm.ProgramNode> = new Map([
+    [ProgramTag.Function, ParseFunctionTag],
+    [ProgramTag.Declare, ParseDeclarationTag]
 ]);
 
-function ParseFunctionTag(currentElement: Element): void {
+function ParseFunctionTag(currentElement: Element): Flowgorithm.ProgramNode {
     let functionSignature: Flowgorithm.FunctionSignature = new Flowgorithm.FunctionSignature();
 
     for (let attribute of currentElement.attributes) {
         switch (attribute.name) {
             case "name": functionSignature.name = attribute.value; break;
             case "type": functionSignature.returnType = Flowgorithm.StrToVarType(attribute.value);
+            case "variable": functionSignature.returnVariableName = attribute.value;
         }
     }
-    currentProgram.availableFunctions.push(functionSignature);
+    
+    let parametersTag: Element | null = currentElement.querySelector("parameters");
+    if (parametersTag !== null) ParseParametersTag(parametersTag, functionSignature);
+    let functionBodyTag: Element | null = currentElement.querySelector("body");
+    if (functionBodyTag !== null) ParseElement(functionBodyTag, functionSignature);
+    
+    return functionSignature;
+}
+
+function ParseParametersTag(currentElement: Element, ownerFunction: Flowgorithm.FunctionSignature) {
+    for (let parameterChild of currentElement.children) {
+        let currentParameter: Flowgorithm.VariableDeclaration = new Flowgorithm.VariableDeclaration();
+        for (let attribute of parameterChild.attributes) {
+            switch (attribute.name) {
+                case "name": currentParameter.variableName = attribute.value;
+                case "type": currentParameter.type = Flowgorithm.StrToVarType(attribute.value);
+                case "array": currentParameter.isArray = Flowgorithm.StrToBoolean(attribute.value);
+            }
+        }
+        ownerFunction.parameters.push(currentParameter);
+    }
+}
+
+function ParseDeclarationTag(currentElement: Element): Flowgorithm.ProgramNode {
+    let declarationTag: Flowgorithm.DeclarationInstruction = new Flowgorithm.DeclarationInstruction();
+    let declarationInfo: Flowgorithm.VariableDeclaration = new Flowgorithm.VariableDeclaration();
+    let variableNames: string[] = [];
+
+    for (let attribute of currentElement.attributes) {
+        switch (attribute.name) {
+            case "name":
+                let declarationListOrErr: string[] | Flowgorithm.DeclarationError = Flowgorithm.ParseDeclarationList(attribute.value);
+                if (typeof declarationListOrErr === "number") { declarationTag.error = declarationListOrErr; break; }
+                variableNames = declarationListOrErr;
+                break;
+            case "type": declarationInfo.type = Flowgorithm.StrToVarType(attribute.value); break;
+            case "array": declarationInfo.isArray = Flowgorithm.StrToBoolean(attribute.value); break;
+            case "size":
+                let resultingSize: number = Number(attribute.value);
+                if (!Number.isNaN(resultingSize)) declarationInfo.arraySize = resultingSize;
+                break;
+        }
+    }
+
+    for (let varName of variableNames) {
+        let varDeclaration: Flowgorithm.VariableDeclaration = Flowgorithm.VariableDeclaration.FromInfo(varName, declarationInfo);
+        declarationTag.declaredVariables.push(varDeclaration);
+    }
+
+    return declarationTag;
 }

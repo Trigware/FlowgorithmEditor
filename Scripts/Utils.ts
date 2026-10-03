@@ -239,4 +239,27 @@ export function GetEnumValueFromName<T extends EnumObject>(enumObject: T, identi
     return enumObject[identifierName as keyof T];
 }
 
+
+export function RemoveTrailingSpaces(originalIdentifier: string): string {
+    let modifiedIdentifier: string = originalIdentifier;
+
+    for (let i = 0; i < originalIdentifier.length; i++) {
+        let ch: string = originalIdentifier[i];
+        if (ch === ' ') continue;
+        modifiedIdentifier = modifiedIdentifier.substring(i);
+        break;
+    }
+
+    return modifiedIdentifier;
+}
+
+export function IsLetter(ch: string): boolean {
+    let letterRegex: RegExp = /^\p{L}$/u;
+    return letterRegex.test(ch);
+}
+
+export function IsNumber(ch: string): boolean {
+    return ch.length === 1 && ch >= '0' && ch <= '9';
+}
+
 OnStart();
