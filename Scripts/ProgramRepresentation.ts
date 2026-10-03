@@ -11,6 +11,7 @@ export class VariableDeclaration {
     public isArray: boolean = false;
     public arraySize: number = 0;
     public variableName: string = "";
+    public error: DeclarationError = DeclarationError.None;
 
     public static FromInfo(varName: string, declarationInfo: VariableDeclaration): VariableDeclaration {
         let createdDeclaration: VariableDeclaration = new VariableDeclaration();
@@ -38,11 +39,12 @@ export class FunctionSignature extends ProgramNode {
     public parameters: VariableDeclaration[] = [];
     public returnType: VariableType = VariableType.Void;
     public returnVariableName: string = "";
+    public nameError: DeclarationError = DeclarationError.None;
+    public returnError: DeclarationError = DeclarationError.None;
 }
 
 export class DeclarationInstruction extends ProgramNode {
     public declaredVariables: VariableDeclaration[] = [];
-    public error: DeclarationError = DeclarationError.None;
 }
 
 export class AssignmentInstruction extends ProgramNode {
@@ -132,7 +134,7 @@ const intrinsicFunctions: string[] = [
     "arccosh", "arcsinh", "arctanh", "cosh", "sinh", "tanh"
 ];
 
-function GetIdentifierValidity(identifierName: string): DeclarationError {
+export function GetIdentifierValidity(identifierName: string): DeclarationError {
     if (identifierName.length === 0) return DeclarationError.MissingIdentifier;
 
     for (let i = 0; i < identifierName.length; i++) {

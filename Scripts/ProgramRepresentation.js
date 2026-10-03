@@ -15,6 +15,7 @@ export class VariableDeclaration {
     isArray = false;
     arraySize = 0;
     variableName = "";
+    error = DeclarationError.None;
     static FromInfo(varName, declarationInfo) {
         let createdDeclaration = new VariableDeclaration();
         createdDeclaration.variableName = varName;
@@ -38,10 +39,11 @@ export class FunctionSignature extends ProgramNode {
     parameters = [];
     returnType = VariableType.Void;
     returnVariableName = "";
+    nameError = DeclarationError.None;
+    returnError = DeclarationError.None;
 }
 export class DeclarationInstruction extends ProgramNode {
     declaredVariables = [];
-    error = DeclarationError.None;
 }
 export class AssignmentInstruction extends ProgramNode {
     variableName = "";
@@ -126,7 +128,7 @@ const intrinsicFunctions = [
     "sgn", "sin", "size", "sqrt", "tan", "tochar", "tocode", "tofixed", "tointeger", "tostring", "toreal",
     "arccosh", "arcsinh", "arctanh", "cosh", "sinh", "tanh"
 ];
-function GetIdentifierValidity(identifierName) {
+export function GetIdentifierValidity(identifierName) {
     if (identifierName.length === 0)
         return DeclarationError.MissingIdentifier;
     for (let i = 0; i < identifierName.length; i++) {

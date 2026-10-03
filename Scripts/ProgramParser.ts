@@ -48,10 +48,17 @@ function ParseFunctionTag(currentElement: Element): Flowgorithm.ProgramNode {
     let functionSignature: Flowgorithm.FunctionSignature = new Flowgorithm.FunctionSignature();
 
     for (let attribute of currentElement.attributes) {
+        let identifierValidity: Flowgorithm.DeclarationError = Flowgorithm.GetIdentifierValidity(attribute.value);
         switch (attribute.name) {
-            case "name": functionSignature.name = attribute.value; break;
-            case "type": functionSignature.returnType = Flowgorithm.StrToVarType(attribute.value);
-            case "variable": functionSignature.returnVariableName = attribute.value;
+            case "name":
+                functionSignature.nameError = identifierValidity;
+                functionSignature.name = attribute.value;
+                break;
+            case "type": functionSignature.returnType = Flowgorithm.StrToVarType(attribute.value); break;
+            case "variable":
+                functionSignature.returnError = identifierValidity;
+                functionSignature.returnVariableName = attribute.value;
+                break;
         }
     }
     
@@ -68,7 +75,10 @@ function ParseParametersTag(currentElement: Element, ownerFunction: Flowgorithm.
         let currentParameter: Flowgorithm.VariableDeclaration = new Flowgorithm.VariableDeclaration();
         for (let attribute of parameterChild.attributes) {
             switch (attribute.name) {
-                case "name": currentParameter.variableName = attribute.value;
+                case "name":
+                    let parameterValidity: Flowgorithm.DeclarationError = Flowgorithm.GetIdentifierValidity(attribute.value);
+                    currentParameter.error = parameterValidity;
+                    currentParameter.variableName = attribute.value;
                 case "type": currentParameter.type = Flowgorithm.StrToVarType(attribute.value);
                 case "array": currentParameter.isArray = Flowgorithm.StrToBoolean(attribute.value);
             }
@@ -86,8 +96,10 @@ function ParseDeclarationTag(currentElement: Element): Flowgorithm.ProgramNode {
         switch (attribute.name) {
             case "name":
                 let declarationListOrErr: string[] | Flowgorithm.DeclarationError = Flowgorithm.ParseDeclarationList(attribute.value);
-                if (typeof declarationListOrErr === "number") { declarationTag.error = declarationListOrErr; break; }
-                variableNames = declarationListOrErr;
+                if (typeof declarationListOrErr !== "number") { variableNames = declarationListOrErr; break; }
+                let errorDeclaration: Flowgorithm.VariableDeclaration = new Flowgorithm.VariableDeclaration();
+                errorDeclaration.error = declarationListOrErr;
+                declarationTag.declaredVariables.push(errorDeclaration);
                 break;
             case "type": declarationInfo.type = Flowgorithm.StrToVarType(attribute.value); break;
             case "array": declarationInfo.isArray = Flowgorithm.StrToBoolean(attribute.value); break;
