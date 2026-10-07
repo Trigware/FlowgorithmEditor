@@ -55,18 +55,21 @@ export class AssignmentInstruction extends ProgramNode {
     public rvalue: Expression = new Expression();
 }
 
-export class InputInstruction extends ProgramNode {
-    public lvalue: Expression = new Expression();
-}
-
-export class OutputInstruction extends ProgramNode {
+export class IOInstruction extends ProgramNode {
     public expression: Expression = new Expression();
+    public isInput: boolean = false;
 }
 
 export class ConditionalStatement extends ProgramNode {
     public conditional: Expression = new Expression();
     public thenNode: ProgramNode = new ProgramNode();
     public elseNode: ProgramNode = new ProgramNode();
+
+    public MoveSubnodes(moveToThen: boolean) {
+        let selectedNode: ProgramNode = moveToThen ? this.thenNode : this.elseNode;
+        selectedNode.subNodes = this.subNodes.slice();
+        this.subNodes = [];
+    }
 }
 
 export class CallInstruction extends ProgramNode {

@@ -51,16 +51,19 @@ export class AssignmentInstruction extends ProgramNode {
     lvalue = new Expression();
     rvalue = new Expression();
 }
-export class InputInstruction extends ProgramNode {
-    lvalue = new Expression();
-}
-export class OutputInstruction extends ProgramNode {
+export class IOInstruction extends ProgramNode {
     expression = new Expression();
+    isInput = false;
 }
 export class ConditionalStatement extends ProgramNode {
     conditional = new Expression();
     thenNode = new ProgramNode();
     elseNode = new ProgramNode();
+    MoveSubnodes(moveToThen) {
+        let selectedNode = moveToThen ? this.thenNode : this.elseNode;
+        selectedNode.subNodes = this.subNodes.slice();
+        this.subNodes = [];
+    }
 }
 export class CallInstruction extends ProgramNode {
     functionName = "";

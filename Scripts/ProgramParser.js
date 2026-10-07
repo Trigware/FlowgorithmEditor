@@ -51,7 +51,10 @@ function ParseSpecificTag(currentElement, currentTag, parentNode) {
 const tagParsingFunctionMap = new Map([
     [ProgramTag.Function, ParseFunctionTag],
     [ProgramTag.Declare, ParseDeclarationTag],
-    [ProgramTag.Assign, ParseAssignmentTag]
+    [ProgramTag.Assign, ParseAssignmentTag],
+    [ProgramTag.Input, ParseInputTag],
+    [ProgramTag.Output, ParseOutputTag],
+    [ProgramTag.If, ParseConditionalTag]
 ]);
 function ParseFunctionTag(currentElement) {
     let functionSignature = new Flowgorithm.FunctionSignature();
@@ -143,4 +146,42 @@ function ParseAssignmentTag(currentElement) {
         }
     }
     return assignmentTag;
+}
+function ParseInputTag(currentElement) { return ParseIOTag(currentElement, true); }
+function ParseOutputTag(currentElement) { return ParseIOTag(currentElement, false); }
+function ParseIOTag(currentElement, isInput) {
+    let resultInstruction = new Flowgorithm.IOInstruction();
+    resultInstruction.isInput = isInput;
+    for (let attribute of currentElement.attributes) {
+        switch (attribute.name) {
+            case "variable":
+                if (isInput) {
+                    resultInstruction.expression = Expression.FromString(attribute.value);
+                }
+                break;
+            case "expression":
+                if (!isInput) {
+                    resultInstruction.expression = Expression.FromString(attribute.value);
+                }
+                break;
+        }
+    }
+    return resultInstruction;
+}
+function ParseConditionalTag(currentElement) {
+    let conditionalTag = new Flowgorithm.ConditionalStatement();
+    let expressionValue = currentElement.getAttribute("expression");
+    if (expressionValue !== null)
+        conditionalTag.conditional = Expression.FromString(expressionValue);
+    let conditionThenTag = currentElement.querySelector("then");
+    if (conditionThenTag !== null) {
+        ParseElement(conditionThenTag, conditionalTag);
+        conditionalTag.MoveSubnodes(true);
+    }
+    let conditionElseTag = currentElement.querySelector("else");
+    if (conditionElseTag !== null) {
+        ParseElement(conditionElseTag, conditionalTag);
+        conditionalTag.MoveSubnodes(false);
+    }
+    return conditionalTag;
 }
