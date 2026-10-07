@@ -1,4 +1,6 @@
 import * as Utils from "./Utils.js";
+import { Expression } from "./Expression.js";
+import * as Identifier from "./Identifier.js";
 export class ProgramNode {
     subNodes = [];
 }
@@ -15,7 +17,7 @@ export class VariableDeclaration {
     isArray = false;
     arraySize = 0;
     variableName = "";
-    error = DeclarationError.None;
+    error = Identifier.IdentifierError.None;
     static FromInfo(varName, declarationInfo) {
         let createdDeclaration = new VariableDeclaration();
         createdDeclaration.variableName = varName;
@@ -39,20 +41,18 @@ export class FunctionSignature extends ProgramNode {
     parameters = [];
     returnType = VariableType.Void;
     returnVariableName = "";
-    nameError = DeclarationError.None;
-    returnError = DeclarationError.None;
+    nameError = Identifier.IdentifierError.None;
+    returnError = Identifier.IdentifierError.None;
 }
 export class DeclarationInstruction extends ProgramNode {
     declaredVariables = [];
 }
 export class AssignmentInstruction extends ProgramNode {
-    variableName = "";
-    assignedExpression = new Expression();
-    arrayIndex = 0;
+    lvalue = new Expression();
+    rvalue = new Expression();
 }
 export class InputInstruction extends ProgramNode {
-    variableName = "";
-    arrayIndex = 0;
+    lvalue = new Expression();
 }
 export class OutputInstruction extends ProgramNode {
     expression = new Expression();
@@ -77,8 +77,6 @@ export class WhileLoop extends ProgramNode {
     expression = new Expression();
     isDoWhile = false;
 }
-export class Expression {
-}
 export function StrToVarType(typeAsStr) {
     let varType = Utils.GetEnumValueFromName(VariableType, typeAsStr);
     if (varType === null)
@@ -86,67 +84,3 @@ export function StrToVarType(typeAsStr) {
     return varType;
 }
 export function StrToBoolean(booleanAsStr) { return booleanAsStr === "True"; }
-export var DeclarationError;
-(function (DeclarationError) {
-    DeclarationError[DeclarationError["None"] = 0] = "None";
-    DeclarationError[DeclarationError["NonAlphanumeric"] = 1] = "NonAlphanumeric";
-    DeclarationError[DeclarationError["NumberAtStart"] = 2] = "NumberAtStart";
-    DeclarationError[DeclarationError["ReservedWord"] = 3] = "ReservedWord";
-    DeclarationError[DeclarationError["IntrinsicFunction"] = 4] = "IntrinsicFunction";
-    DeclarationError[DeclarationError["MissingIdentifier"] = 5] = "MissingIdentifier";
-})(DeclarationError || (DeclarationError = {}));
-export function ParseDeclarationList(declaredVariablesStr) {
-    let resultNames = [];
-    let accumilatedStr = "";
-    let declarationError = DeclarationError.None;
-    for (let ch of declaredVariablesStr) {
-        if (ch !== ',') {
-            accumilatedStr += ch;
-            continue;
-        }
-        declarationError = AddIdentifierToList(resultNames, accumilatedStr);
-        if (declarationError !== DeclarationError.None)
-            return declarationError;
-        accumilatedStr = "";
-    }
-    declarationError = AddIdentifierToList(resultNames, accumilatedStr);
-    if (declarationError !== DeclarationError.None)
-        return declarationError;
-    return resultNames;
-}
-function AddIdentifierToList(identifierList, identifierName) {
-    identifierName = Utils.RemoveTrailingSpaces(identifierName);
-    let identifierValidity = GetIdentifierValidity(identifierName);
-    if (identifierValidity !== DeclarationError.None)
-        return identifierValidity;
-    identifierList.push(identifierName);
-    return DeclarationError.None;
-}
-const reservedWords = ["and", "false", "mod", "not", "or", "pi", "true", "boolean", "integer", "real", "string"];
-const intrinsicFunctions = [
-    "abs", "arccos", "arcsin", "arctan", "char", "cos", "int", "len", "log", "log10", "random",
-    "sgn", "sin", "size", "sqrt", "tan", "tochar", "tocode", "tofixed", "tointeger", "tostring", "toreal",
-    "arccosh", "arcsinh", "arctanh", "cosh", "sinh", "tanh"
-];
-export function GetIdentifierValidity(identifierName) {
-    if (identifierName.length === 0)
-        return DeclarationError.MissingIdentifier;
-    for (let i = 0; i < identifierName.length; i++) {
-        let ch = identifierName[i];
-        let isLetter = Utils.IsLetter(ch);
-        let isNumber = Utils.IsNumber(ch);
-        let invalidChar = !isLetter && !isNumber;
-        if (invalidChar)
-            return DeclarationError.NonAlphanumeric;
-        let hasNumberAtStart = i === 0 && isNumber;
-        if (hasNumberAtStart)
-            return DeclarationError.NumberAtStart;
-    }
-    let isReservedWord = reservedWords.includes(identifierName);
-    if (isReservedWord)
-        return DeclarationError.ReservedWord;
-    let isIntrinsicFunction = intrinsicFunctions.includes(identifierName);
-    if (isIntrinsicFunction)
-        return DeclarationError.IntrinsicFunction;
-    return DeclarationError.None;
-}

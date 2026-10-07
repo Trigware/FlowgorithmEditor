@@ -1,4 +1,6 @@
 import * as Utils from "./Utils.js"
+import { Expression } from "./Expression.js"
+import * as Identifier from "./Identifier.js"
 
 export class ProgramNode {
     public subNodes: ProgramNode[] = [];
@@ -11,7 +13,7 @@ export class VariableDeclaration {
     public isArray: boolean = false;
     public arraySize: number = 0;
     public variableName: string = "";
-    public error: DeclarationError = DeclarationError.None;
+    public error: Identifier.IdentifierError = Identifier.IdentifierError.None;
 
     public static FromInfo(varName: string, declarationInfo: VariableDeclaration): VariableDeclaration {
         let createdDeclaration: VariableDeclaration = new VariableDeclaration();
@@ -39,8 +41,9 @@ export class FunctionSignature extends ProgramNode {
     public parameters: VariableDeclaration[] = [];
     public returnType: VariableType = VariableType.Void;
     public returnVariableName: string = "";
-    public nameError: DeclarationError = DeclarationError.None;
-    public returnError: DeclarationError = DeclarationError.None;
+
+    public nameError: Identifier.IdentifierError = Identifier.IdentifierError.None;
+    public returnError: Identifier.IdentifierError = Identifier.IdentifierError.None;
 }
 
 export class DeclarationInstruction extends ProgramNode {
@@ -48,14 +51,12 @@ export class DeclarationInstruction extends ProgramNode {
 }
 
 export class AssignmentInstruction extends ProgramNode {
-    public variableName: string = "";
-    public assignedExpression: Expression = new Expression();
-    public arrayIndex: number = 0;
+    public lvalue: Expression = new Expression();
+    public rvalue: Expression = new Expression();
 }
 
 export class InputInstruction extends ProgramNode {
-    public variableName: string = "";
-    public arrayIndex: number = 0;
+    public lvalue: Expression = new Expression();
 }
 
 export class OutputInstruction extends ProgramNode {
@@ -85,10 +86,6 @@ export class WhileLoop extends ProgramNode {
     public isDoWhile: boolean = false;
 }
 
-export class Expression {
-    // tbd
-}
-
 export function StrToVarType(typeAsStr: string): VariableType {
     let varType: VariableType | null = Utils.GetEnumValueFromName(VariableType, typeAsStr);
     if (varType === null) return VariableType.Void;
@@ -96,62 +93,3 @@ export function StrToVarType(typeAsStr: string): VariableType {
 }
 
 export function StrToBoolean(booleanAsStr: string): boolean { return booleanAsStr === "True"; }
-
-export enum DeclarationError {
-    None,
-    NonAlphanumeric, NumberAtStart, ReservedWord, IntrinsicFunction, MissingIdentifier
-}
-
-export function ParseDeclarationList(declaredVariablesStr: string): string[] | DeclarationError {
-    let resultNames: string[] = [];
-    let accumilatedStr: string = "";
-
-    let declarationError: DeclarationError = DeclarationError.None;
-    for (let ch of declaredVariablesStr) {
-        if (ch !== ',') { accumilatedStr += ch; continue; }
-        declarationError = AddIdentifierToList(resultNames, accumilatedStr);
-        if (declarationError !== DeclarationError.None) return declarationError;
-        accumilatedStr = "";
-    }
-
-    declarationError = AddIdentifierToList(resultNames, accumilatedStr);
-    if (declarationError !== DeclarationError.None) return declarationError;
-    return resultNames;
-}
-
-function AddIdentifierToList(identifierList: string[], identifierName: string): DeclarationError {
-    identifierName = Utils.RemoveTrailingSpaces(identifierName);
-    let identifierValidity: DeclarationError = GetIdentifierValidity(identifierName);
-    if (identifierValidity !== DeclarationError.None) return identifierValidity;
-    identifierList.push(identifierName);
-    return DeclarationError.None;
-}
-
-const reservedWords: string[] = ["and", "false", "mod", "not", "or", "pi", "true", "boolean", "integer", "real", "string"];
-const intrinsicFunctions: string[] = [
-    "abs", "arccos", "arcsin", "arctan", "char", "cos", "int", "len", "log", "log10", "random",
-    "sgn", "sin", "size", "sqrt", "tan", "tochar", "tocode", "tofixed", "tointeger", "tostring", "toreal",
-    "arccosh", "arcsinh", "arctanh", "cosh", "sinh", "tanh"
-];
-
-export function GetIdentifierValidity(identifierName: string): DeclarationError {
-    if (identifierName.length === 0) return DeclarationError.MissingIdentifier;
-
-    for (let i = 0; i < identifierName.length; i++) {
-        let ch: string = identifierName[i];
-        let isLetter: boolean = Utils.IsLetter(ch);
-        let isNumber: boolean = Utils.IsNumber(ch);
-        let invalidChar: boolean = !isLetter && !isNumber;
-        if (invalidChar) return DeclarationError.NonAlphanumeric;
-
-        let hasNumberAtStart: boolean = i === 0 && isNumber;
-        if (hasNumberAtStart) return DeclarationError.NumberAtStart;
-    }
-
-    let isReservedWord: boolean = reservedWords.includes(identifierName);
-    if (isReservedWord) return DeclarationError.ReservedWord;
-    let isIntrinsicFunction: boolean = intrinsicFunctions.includes(identifierName);
-    if (isIntrinsicFunction) return DeclarationError.IntrinsicFunction;
-
-    return DeclarationError.None;
-}

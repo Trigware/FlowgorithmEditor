@@ -1,5 +1,7 @@
+import { Expression } from "./Expression.js";
 import * as Flowgorithm from "./ProgramRepresentation.js";
 import * as Utils from "./Utils.js";
+import * as Identifier from "./Identifier.js";
 let currentProgram = new Flowgorithm.Program();
 var ProgramTag;
 (function (ProgramTag) {
@@ -48,12 +50,13 @@ function ParseSpecificTag(currentElement, currentTag, parentNode) {
 }
 const tagParsingFunctionMap = new Map([
     [ProgramTag.Function, ParseFunctionTag],
-    [ProgramTag.Declare, ParseDeclarationTag]
+    [ProgramTag.Declare, ParseDeclarationTag],
+    [ProgramTag.Assign, ParseAssignmentTag]
 ]);
 function ParseFunctionTag(currentElement) {
     let functionSignature = new Flowgorithm.FunctionSignature();
     for (let attribute of currentElement.attributes) {
-        let identifierValidity = Flowgorithm.GetIdentifierValidity(attribute.value);
+        let identifierValidity = Identifier.GetIdentifierValidity(attribute.value);
         switch (attribute.name) {
             case "name":
                 functionSignature.nameError = identifierValidity;
@@ -82,7 +85,7 @@ function ParseParametersTag(currentElement, ownerFunction) {
         for (let attribute of parameterChild.attributes) {
             switch (attribute.name) {
                 case "name":
-                    let parameterValidity = Flowgorithm.GetIdentifierValidity(attribute.value);
+                    let parameterValidity = Identifier.GetIdentifierValidity(attribute.value);
                     currentParameter.error = parameterValidity;
                     currentParameter.variableName = attribute.value;
                 case "type": currentParameter.type = Flowgorithm.StrToVarType(attribute.value);
@@ -99,7 +102,7 @@ function ParseDeclarationTag(currentElement) {
     for (let attribute of currentElement.attributes) {
         switch (attribute.name) {
             case "name":
-                let declarationListOrErr = Flowgorithm.ParseDeclarationList(attribute.value);
+                let declarationListOrErr = Identifier.ParseDeclarationList(attribute.value);
                 if (typeof declarationListOrErr !== "number") {
                     variableNames = declarationListOrErr;
                     break;
@@ -126,4 +129,18 @@ function ParseDeclarationTag(currentElement) {
         declarationTag.declaredVariables.push(varDeclaration);
     }
     return declarationTag;
+}
+function ParseAssignmentTag(currentElement) {
+    let assignmentTag = new Flowgorithm.AssignmentInstruction();
+    for (let attribute of currentElement.attributes) {
+        switch (attribute.name) {
+            case "variable":
+                assignmentTag.lvalue = Expression.FromString(attribute.value);
+                break;
+            case "expression":
+                assignmentTag.rvalue = Expression.FromString(attribute.value);
+                break;
+        }
+    }
+    return assignmentTag;
 }

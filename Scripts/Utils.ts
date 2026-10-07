@@ -262,4 +262,8 @@ export function IsNumber(ch: string): boolean {
     return ch.length === 1 && ch >= '0' && ch <= '9';
 }
 
+export function IsSymbol(ch: string): boolean {
+    return ch.length === 1 && !IsLetter(ch) && !IsNumber(ch);
+}
+
 OnStart();
