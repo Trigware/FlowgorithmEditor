@@ -19,7 +19,7 @@ function OnStart() {
 
 let previousTimeSinceStarted: number = 0;
 let deltaTime: number = 0;
-const shapeOffsetMultiplier: Utils.Vec2 = new Utils.Vec2(0.46, 0.075);
+const shapeOffsetMultiplier: Utils.Vec2 = new Utils.Vec2(0.5, 0.075);
 
 function OnDraw() {
     let currentTimeSinceStarted: number = Utils.GetTimeSinceStarted();
@@ -32,17 +32,11 @@ function OnDraw() {
     if (holdingMouse) MoveShapePlane(mouseDiff);
     previousTimeSinceStarted = currentTimeSinceStarted;
 
-    let zoomLevel: number = GetZoomLevel();
-    let viewportSize: Utils.Vec2 = new Utils.Vec2(shapePlane.clientWidth, shapePlane.clientHeight); 
-    let shapeOffset: Utils.Vec2 = viewportSize.Times(shapeOffsetMultiplier.x, shapeOffsetMultiplier.y).Divide(zoomLevel);
-    Utils.SetProperty(shapePlane, "--offset-x", shapeOffset.x.toString() + "px");
-    Utils.SetProperty(shapePlane, "--offset-y", shapeOffset.y.toString() + "px");
+    UpdateShapeOffset();
     requestAnimationFrame(OnDraw);
 }
 
 function MoveShapePlane(mouseDiff: Utils.Vec2) {
-    let zoomLevel: number = GetZoomLevel();
-    mouseDiff = mouseDiff.Divide(zoomLevel);
     planeCameraPos = planeCameraPos.Plus(mouseDiff.x, mouseDiff.y);
     shapePlane.style.setProperty("--camera-x", `${planeCameraPos.x.toString()}px`);
     shapePlane.style.setProperty("--camera-y", `${planeCameraPos.y.toString()}px`);
@@ -57,7 +51,7 @@ function OnFileSelected() {
     });
 }
 
-const scrollingMultiplier: number = 3;
+const scrollingMultiplier: number = 3.5;
 const maximumZoomLevel: number = 5;
 
 function GetZoomLevel(): number { return Number(Utils.GetProperty(shapePlane, "--zoom-level")); }
@@ -73,6 +67,23 @@ function OnWheelScrolled(event: WheelEvent) {
     let minimumZoomLevel: number = 1.0 / maximumZoomLevel;
     currentZoomLevel = Utils.Clamp(currentZoomLevel, minimumZoomLevel, maximumZoomLevel);
     shapePlane.style.setProperty("--zoom-level", currentZoomLevel.toString());
+}
+
+function UpdateShapeOffset() {
+    let viewportSize: Utils.Vec2 = new Utils.Vec2(shapePlane.clientWidth, shapePlane.clientHeight);
+
+    for (let i: number = 0; i < shapePlane.children.length; i++) {
+        let currentShape: HTMLDivElement = shapePlane.children[i] as HTMLDivElement;
+        let shapeWidth: number = currentShape.clientWidth;
+        let shapeOffset: Utils.Vec2 = viewportSize.Times(shapeOffsetMultiplier.x, shapeOffsetMultiplier.y)
+            .Minus(shapeWidth / 2, currentShape.clientHeight / 2);
+        
+        Utils.SetProperty(currentShape, "--offset-x", shapeOffset.x.toString() + "px");
+        Utils.SetProperty(currentShape, "--offset-y", shapeOffset.y.toString() + "px");
+        let defaultWidth: number = Utils.GetNumericPixels(Utils.GetProperty(currentShape, "--default-width"));
+        let widthSizeIncrease: number = shapeWidth / defaultWidth;
+        Utils.SetProperty(currentShape, "--width-size-increase", widthSizeIncrease.toString());
+    }
 }
 
 OnStart();
