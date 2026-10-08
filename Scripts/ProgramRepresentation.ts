@@ -53,11 +53,13 @@ export class DeclarationInstruction extends ProgramNode {
 export class AssignmentInstruction extends ProgramNode {
     public lvalue: Expression = new Expression();
     public rvalue: Expression = new Expression();
+    public isValidLValue: boolean = true;
 }
 
 export class IOInstruction extends ProgramNode {
     public expression: Expression = new Expression();
     public isInput: boolean = false;
+    public isValidLValue: boolean = true;
 }
 
 export class ConditionalStatement extends ProgramNode {
@@ -73,8 +75,8 @@ export class ConditionalStatement extends ProgramNode {
 }
 
 export class CallInstruction extends ProgramNode {
-    public functionName: string = "";
-    public arguments: Expression[] = [];
+    public callExpression: Expression = new Expression();
+    public isValidCall: boolean = false;
 }
 
 export class ForLoop extends ProgramNode {

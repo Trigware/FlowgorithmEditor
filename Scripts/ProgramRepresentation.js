@@ -50,10 +50,12 @@ export class DeclarationInstruction extends ProgramNode {
 export class AssignmentInstruction extends ProgramNode {
     lvalue = new Expression();
     rvalue = new Expression();
+    isValidLValue = true;
 }
 export class IOInstruction extends ProgramNode {
     expression = new Expression();
     isInput = false;
+    isValidLValue = true;
 }
 export class ConditionalStatement extends ProgramNode {
     conditional = new Expression();
@@ -66,8 +68,8 @@ export class ConditionalStatement extends ProgramNode {
     }
 }
 export class CallInstruction extends ProgramNode {
-    functionName = "";
-    arguments = [];
+    callExpression = new Expression();
+    isValidCall = false;
 }
 export class ForLoop extends ProgramNode {
     iteratorName = "";

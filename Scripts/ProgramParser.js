@@ -1,4 +1,4 @@
-import { Expression } from "./Expression.js";
+import { Expression, ParenthesisType } from "./Expression.js";
 import * as Flowgorithm from "./ProgramRepresentation.js";
 import * as Utils from "./Utils.js";
 import * as Identifier from "./Identifier.js";
@@ -54,7 +54,8 @@ const tagParsingFunctionMap = new Map([
     [ProgramTag.Assign, ParseAssignmentTag],
     [ProgramTag.Input, ParseInputTag],
     [ProgramTag.Output, ParseOutputTag],
-    [ProgramTag.If, ParseConditionalTag]
+    [ProgramTag.If, ParseConditionalTag],
+    [ProgramTag.Call, ParseCallTag]
 ]);
 function ParseFunctionTag(currentElement) {
     let functionSignature = new Flowgorithm.FunctionSignature();
@@ -139,6 +140,7 @@ function ParseAssignmentTag(currentElement) {
         switch (attribute.name) {
             case "variable":
                 assignmentTag.lvalue = Expression.FromString(attribute.value);
+                assignmentTag.isValidLValue = assignmentTag.lvalue.MatchesTemplate(ParenthesisType.Bracketed);
                 break;
             case "expression":
                 assignmentTag.rvalue = Expression.FromString(attribute.value);
@@ -155,14 +157,15 @@ function ParseIOTag(currentElement, isInput) {
     for (let attribute of currentElement.attributes) {
         switch (attribute.name) {
             case "variable":
-                if (isInput) {
-                    resultInstruction.expression = Expression.FromString(attribute.value);
-                }
+                if (!isInput)
+                    break;
+                resultInstruction.expression = Expression.FromString(attribute.value);
+                resultInstruction.isValidLValue = resultInstruction.expression.MatchesTemplate(ParenthesisType.Bracketed);
                 break;
             case "expression":
-                if (!isInput) {
-                    resultInstruction.expression = Expression.FromString(attribute.value);
-                }
+                if (isInput)
+                    break;
+                resultInstruction.expression = Expression.FromString(attribute.value);
                 break;
         }
     }
@@ -184,4 +187,15 @@ function ParseConditionalTag(currentElement) {
         conditionalTag.MoveSubnodes(false);
     }
     return conditionalTag;
+}
+function ParseCallTag(currentElement) {
+    let callTag = new Flowgorithm.CallInstruction();
+    let expressionValue = currentElement.getAttribute("expression");
+    if (expressionValue === null)
+        expressionValue = "";
+    let callExpression = Expression.FromString(expressionValue);
+    callTag.callExpression = callExpression;
+    let isValidCallExpression = callExpression.MatchesTemplate(ParenthesisType.Regular);
+    callTag.isValidCall = isValidCallExpression;
+    return callTag;
 }

@@ -135,6 +135,17 @@ export class Expression {
             resultingExpr.AddError(ExpressionError.UnterminatedString);
         return resultingExpr;
     }
+    MatchesTemplate(parenthesisType) {
+        const minimumParameterTokensCount = 4;
+        let openingToken = parenthesisType === ParenthesisType.Regular ? TokenType.InvocationOpen : TokenType.SubscriptOpen, closingToken = parenthesisType === ParenthesisType.Regular ? TokenType.InvocationClose : TokenType.SubscriptClose;
+        let tokenCount = this.tokens.length;
+        let areParametersRequired = parenthesisType === ParenthesisType.Bracketed;
+        let firstIsIdentifier = this.tokens[0].type === TokenType.Identifier, hasOpeningToken = this.tokens[1].type === openingToken, hasClosingToken = this.tokens[tokenCount - 1].type === closingToken, hasParameters = tokenCount >= minimumParameterTokensCount, fulfilledParameterCriteria = !areParametersRequired || hasParameters;
+        console.log(`IDEN: ${firstIsIdentifier}, OPEN: ${hasOpeningToken}, CLOSING: ${hasClosingToken}, PARAM REQ: ${areParametersRequired}, PARAM CRITERIA: ${fulfilledParameterCriteria}, PAREN TYPE: ${parenthesisType}`);
+        console.log(this.tokens);
+        let matchesTemplate = firstIsIdentifier && hasOpeningToken && hasClosingToken && fulfilledParameterCriteria;
+        return matchesTemplate;
+    }
     ParseApostrophe() {
         this.ParseSymbol();
         this.inStringLiteral = !this.inStringLiteral;
@@ -309,7 +320,7 @@ export class Expression {
         }
     }
 }
-var ParenthesisType;
+export var ParenthesisType;
 (function (ParenthesisType) {
     ParenthesisType[ParenthesisType["Unknown"] = -1] = "Unknown";
     ParenthesisType[ParenthesisType["Regular"] = 0] = "Regular";

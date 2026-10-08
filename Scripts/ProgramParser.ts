@@ -1,4 +1,4 @@
-import { Expression } from "./Expression.js";
+import { Expression, ParenthesisType } from "./Expression.js";
 import * as Flowgorithm from "./ProgramRepresentation.js"
 import * as Utils from "./Utils.js"
 import * as Identifier from "./Identifier.js"
@@ -47,7 +47,8 @@ const tagParsingFunctionMap: Map<ProgramTag, (currentElement: Element) => Flowgo
     [ProgramTag.Assign, ParseAssignmentTag],
     [ProgramTag.Input, ParseInputTag],
     [ProgramTag.Output, ParseOutputTag],
-    [ProgramTag.If, ParseConditionalTag]
+    [ProgramTag.If, ParseConditionalTag],
+    [ProgramTag.Call, ParseCallTag]
 ]);
 
 function ParseFunctionTag(currentElement: Element): Flowgorithm.ProgramNode {
@@ -128,7 +129,10 @@ function ParseAssignmentTag(currentElement: Element): Flowgorithm.ProgramNode {
     let assignmentTag: Flowgorithm.AssignmentInstruction = new Flowgorithm.AssignmentInstruction();
     for (let attribute of currentElement.attributes) {
         switch (attribute.name) {
-            case "variable": assignmentTag.lvalue = Expression.FromString(attribute.value); break;
+            case "variable":
+                assignmentTag.lvalue = Expression.FromString(attribute.value);
+                assignmentTag.isValidLValue = assignmentTag.lvalue.MatchesTemplate(ParenthesisType.Bracketed);
+                break;
             case "expression": assignmentTag.rvalue = Expression.FromString(attribute.value); break;
         }
     }
@@ -144,8 +148,15 @@ function ParseIOTag(currentElement: Element, isInput: boolean): Flowgorithm.IOIn
 
     for (let attribute of currentElement.attributes) {
         switch (attribute.name) {
-            case "variable": if (isInput) { resultInstruction.expression = Expression.FromString(attribute.value); } break;
-            case "expression": if (!isInput) { resultInstruction.expression = Expression.FromString(attribute.value); } break;
+            case "variable":
+                if (!isInput) break;
+                resultInstruction.expression = Expression.FromString(attribute.value);
+                resultInstruction.isValidLValue = resultInstruction.expression.MatchesTemplate(ParenthesisType.Bracketed);
+                break;
+            case "expression":
+                if (isInput) break;
+                resultInstruction.expression = Expression.FromString(attribute.value);
+                break;
         }
     }
 
@@ -154,7 +165,7 @@ function ParseIOTag(currentElement: Element, isInput: boolean): Flowgorithm.IOIn
 
 function ParseConditionalTag(currentElement: Element): Flowgorithm.ProgramNode {
     let conditionalTag: Flowgorithm.ConditionalStatement = new Flowgorithm.ConditionalStatement();
-    let expressionValue: string | null = currentElement.getAttribute("expression")!;
+    let expressionValue: string | null = currentElement.getAttribute("expression");
     if (expressionValue !== null) conditionalTag.conditional = Expression.FromString(expressionValue);
 
     let conditionThenTag: Element | null = currentElement.querySelector("then");
@@ -163,4 +174,18 @@ function ParseConditionalTag(currentElement: Element): Flowgorithm.ProgramNode {
     if (conditionElseTag !== null) { ParseElement(conditionElseTag, conditionalTag); conditionalTag.MoveSubnodes(false); }
 
     return conditionalTag;
+}
+
+function ParseCallTag(currentElement: Element): Flowgorithm.ProgramNode {
+    let callTag: Flowgorithm.CallInstruction = new Flowgorithm.CallInstruction();
+    let expressionValue: string | null = currentElement.getAttribute("expression");
+    if (expressionValue === null) expressionValue = "";
+    
+    let callExpression: Expression = Expression.FromString(expressionValue);
+    callTag.callExpression = callExpression;
+
+    let isValidCallExpression: boolean = callExpression.MatchesTemplate(ParenthesisType.Regular);
+    callTag.isValidCall = isValidCallExpression;
+
+    return callTag;
 }
