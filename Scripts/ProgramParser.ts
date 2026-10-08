@@ -3,7 +3,6 @@ import * as Flowgorithm from "./ProgramRepresentation.js"
 import * as Utils from "./Utils.js"
 import * as Identifier from "./Identifier.js"
 
-let currentProgram: Flowgorithm.Program = new Flowgorithm.Program();
 let previouslyParsedElements: Element[] = [];
 
 enum ProgramTag {
@@ -11,13 +10,11 @@ enum ProgramTag {
 }
 
 export function Setup(program: Flowgorithm.Program, scriptContents: string) {
-    program = new Flowgorithm.Program();
-    currentProgram = program;
+    program.Clear();
     const xmlParser: DOMParser = new DOMParser();
     const xmlDocument: XMLDocument = xmlParser.parseFromString(scriptContents, "application/xml") as XMLDocument;
     previouslyParsedElements = [];
-    ParseElement(xmlDocument.documentElement, currentProgram);
-    console.log(currentProgram);
+    ParseElement(xmlDocument.documentElement, program);
 }
 
 function ParseElement(currentElement: Element, parentNode: Flowgorithm.ProgramNode) {

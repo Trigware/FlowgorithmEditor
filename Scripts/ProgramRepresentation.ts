@@ -4,6 +4,9 @@ import * as Identifier from "./Identifier.js"
 
 export class ProgramNode {
     public subNodes: ProgramNode[] = [];
+    public Clear() {
+        this.subNodes = [];
+    }
 }
 
 enum VariableType { Void, Integer, Real, String, Boolean }

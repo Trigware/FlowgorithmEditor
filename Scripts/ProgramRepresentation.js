@@ -3,6 +3,9 @@ import { Expression } from "./Expression.js";
 import * as Identifier from "./Identifier.js";
 export class ProgramNode {
     subNodes = [];
+    Clear() {
+        this.subNodes = [];
+    }
 }
 var VariableType;
 (function (VariableType) {

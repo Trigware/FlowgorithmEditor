@@ -2,28 +2,17 @@ const startPerformance = performance.now();
 export class Vec2 {
     x = 0;
     y = 0;
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-    }
-    static Zero() {
-        return new Vec2(0, 0);
-    }
-    Plus(x, y) {
-        return new Vec2(this.x + x, this.y + y);
-    }
-    Minus(x, y) {
-        return new Vec2(this.x - x, this.y - y);
-    }
+    constructor(x, y) { this.x = x; this.y = y; }
+    static Zero() { return new Vec2(0, 0); }
+    Plus(x, y) { return new Vec2(this.x + x, this.y + y); }
+    Minus(x, y) { return new Vec2(this.x - x, this.y - y); }
+    Times(x, y = x) { return new Vec2(this.x * x, this.y * y); }
+    Divide(x, y = x) { return new Vec2(this.x / x, this.y / y); }
     IsInsideOf(x, y, w, h) {
         return this.x >= x && this.y >= y && this.x <= w && this.y <= h;
     }
-    Equals(other) {
-        return this.x === other.x && this.y === other.y;
-    }
-    ToString() {
-        return `(x: ${this.x}, y: ${this.y})`;
-    }
+    Equals(other) { return this.x === other.x && this.y === other.y; }
+    ToString() { return `(x: ${this.x}, y: ${this.y})`; }
     Copy() {
         let copiedVector = Vec2.Zero();
         copiedVector.x = this.x;
@@ -226,5 +215,14 @@ export function IsNumber(ch) {
 }
 export function IsSymbol(ch) {
     return ch.length === 1 && !IsLetter(ch) && !IsNumber(ch);
+}
+export function Log(base, result) { return Math.log(result) / Math.log(base); }
+export function GetProperty(element, propertyStr) {
+    let computedPlaneStyle = getComputedStyle(element);
+    let propertyValue = computedPlaneStyle.getPropertyValue(propertyStr);
+    return propertyValue;
+}
+export function SetProperty(element, propertyStr, propertyValue) {
+    element.style.setProperty(propertyStr, propertyValue);
 }
 OnStart();

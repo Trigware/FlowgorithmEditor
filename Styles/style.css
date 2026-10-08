@@ -19,6 +19,9 @@ img {
 
 .ShapePlane {
     --camera-x: 0px; --camera-y: 0px;
+    --offset-x: 0px; --offset-y: 0px;
+    --zoom-level: 1;
+    
     position: absolute;
     user-select: none;
     width: 100vw; height: 100vh;
@@ -32,7 +35,10 @@ img {
     position: absolute;
     min-width: var(--default-size);
     width: fit-content; height: calc(var(--default-size) / var(--aspect-ratio));
-    transform: translateX(calc(var(--camera-x) + var(--shape-x))) translateY(calc(var(--camera-y) + var(--shape-y)));
+    transform:
+        translateX(calc(var(--camera-x) + var(--shape-x) + var(--offset-x)))
+        translateY(calc(var(--camera-y) + var(--shape-y) + var(--offset-y)));
+    scale: var(--zoom-level);
     
     display: flex;
     align-items: center;

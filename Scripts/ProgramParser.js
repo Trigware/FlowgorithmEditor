@@ -2,7 +2,6 @@ import { Expression, ParenthesisType } from "./Expression.js";
 import * as Flowgorithm from "./ProgramRepresentation.js";
 import * as Utils from "./Utils.js";
 import * as Identifier from "./Identifier.js";
-let currentProgram = new Flowgorithm.Program();
 let previouslyParsedElements = [];
 var ProgramTag;
 (function (ProgramTag) {
@@ -19,13 +18,11 @@ var ProgramTag;
     ProgramTag[ProgramTag["Do"] = 10] = "Do";
 })(ProgramTag || (ProgramTag = {}));
 export function Setup(program, scriptContents) {
-    program = new Flowgorithm.Program();
-    currentProgram = program;
+    program.Clear();
     const xmlParser = new DOMParser();
     const xmlDocument = xmlParser.parseFromString(scriptContents, "application/xml");
     previouslyParsedElements = [];
-    ParseElement(xmlDocument.documentElement, currentProgram);
-    console.log(currentProgram);
+    ParseElement(xmlDocument.documentElement, program);
 }
 function ParseElement(currentElement, parentNode) {
     let currentTagName = currentElement.tagName;

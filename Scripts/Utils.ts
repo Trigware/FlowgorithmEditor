@@ -4,34 +4,20 @@ export class Vec2 {
     public x: number = 0;
     public y: number = 0;
 
-    public constructor(x: number, y: number) {
-        this.x = x; this.y = y;
-    }
+    public constructor(x: number, y: number) { this.x = x; this.y = y; }
+    public static Zero() { return new Vec2(0, 0); }
 
-    public static Zero() {
-        return new Vec2(0, 0);
-    }
-
-    public Plus(x: number, y: number): Vec2 {
-        return new Vec2(this.x + x, this.y + y);
-    }
-
-    public Minus(x: number, y: number): Vec2 {
-        return new Vec2(this.x - x, this.y - y);
-    }
+    public Plus(x: number, y: number): Vec2 { return new Vec2(this.x + x, this.y + y); }
+    public Minus(x: number, y: number): Vec2 { return new Vec2(this.x - x, this.y - y); }
+    public Times(x: number, y: number = x): Vec2 { return new Vec2(this.x * x, this.y * y); }
+    public Divide(x: number, y: number = x): Vec2 { return new Vec2(this.x / x, this.y / y); }
 
     public IsInsideOf(x: number, y: number, w: number, h: number): boolean {
         return this.x >= x && this.y >= y && this.x <= w && this.y <= h;
     }
 
-    public Equals(other: Vec2): boolean {
-        return this.x === other.x && this.y === other.y;
-    }
-
-    public ToString(): string {
-        return `(x: ${this.x}, y: ${this.y})`;
-    }
-    
+    public Equals(other: Vec2): boolean { return this.x === other.x && this.y === other.y; }
+    public ToString(): string { return `(x: ${this.x}, y: ${this.y})`; }
     public Copy(): Vec2 {
         let copiedVector: Vec2 = Vec2.Zero();
         copiedVector.x = this.x; copiedVector.y = this.y;
@@ -264,6 +250,18 @@ export function IsNumber(ch: string): boolean {
 
 export function IsSymbol(ch: string): boolean {
     return ch.length === 1 && !IsLetter(ch) && !IsNumber(ch);
+}
+
+export function Log(base: number, result: number): number { return Math.log(result) / Math.log(base); }
+
+export function GetProperty(element: HTMLElement, propertyStr: string): string {
+    let computedPlaneStyle: CSSStyleDeclaration = getComputedStyle(element);
+    let propertyValue: string = computedPlaneStyle.getPropertyValue(propertyStr);
+    return propertyValue;
+}
+
+export function SetProperty(element: HTMLElement, propertyStr: string, propertyValue: string) {
+    element.style.setProperty(propertyStr, propertyValue);
 }
 
 OnStart();
