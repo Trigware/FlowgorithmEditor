@@ -73,12 +73,12 @@ export class CallInstruction extends ProgramNode {
 }
 export class ForLoop extends ProgramNode {
     iteratorName = "";
-    loopStart = 0;
-    loopEnd = 0;
+    loopStart = new Expression();
+    loopEnd = new Expression();
+    iterationStep = new Expression();
     isIncreasing = true;
-    iterationStep = 1;
 }
-export class WhileLoop extends ProgramNode {
+export class ConditionalCycle extends ProgramNode {
     expression = new Expression();
     isDoWhile = false;
 }

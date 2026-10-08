@@ -118,17 +118,17 @@ export class Expression {
     }
 
     public MatchesTemplate(parenthesisType: ParenthesisType): boolean {
-        const minimumParameterTokensCount: number = 4
+        const minTokenCount: number = 3;
+        let tokenCount: number = this.tokens.length;
+        if (tokenCount < minTokenCount) return false;
+
         let openingToken: TokenType = parenthesisType === ParenthesisType.Regular ? TokenType.InvocationOpen : TokenType.SubscriptOpen,
             closingToken = parenthesisType === ParenthesisType.Regular ? TokenType.InvocationClose : TokenType.SubscriptClose;
-        let tokenCount: number = this.tokens.length;
         let areParametersRequired: boolean = parenthesisType === ParenthesisType.Bracketed;
 
         let firstIsIdentifier: boolean = this.tokens[0].type === TokenType.Identifier,
             hasOpeningToken = this.tokens[1].type === openingToken, hasClosingToken = this.tokens[tokenCount - 1].type === closingToken,
-            hasParameters = tokenCount >= minimumParameterTokensCount, fulfilledParameterCriteria = !areParametersRequired || hasParameters;
-        console.log(`IDEN: ${firstIsIdentifier}, OPEN: ${hasOpeningToken}, CLOSING: ${hasClosingToken}, PARAM REQ: ${areParametersRequired}, PARAM CRITERIA: ${fulfilledParameterCriteria}, PAREN TYPE: ${parenthesisType}`);
-        console.log(this.tokens);
+            hasParameters = tokenCount > minTokenCount, fulfilledParameterCriteria = !areParametersRequired || hasParameters;
         let matchesTemplate: boolean = firstIsIdentifier && hasOpeningToken && hasClosingToken && fulfilledParameterCriteria;
 
         return matchesTemplate;

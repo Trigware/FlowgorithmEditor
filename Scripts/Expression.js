@@ -136,13 +136,13 @@ export class Expression {
         return resultingExpr;
     }
     MatchesTemplate(parenthesisType) {
-        const minimumParameterTokensCount = 4;
-        let openingToken = parenthesisType === ParenthesisType.Regular ? TokenType.InvocationOpen : TokenType.SubscriptOpen, closingToken = parenthesisType === ParenthesisType.Regular ? TokenType.InvocationClose : TokenType.SubscriptClose;
+        const minTokenCount = 3;
         let tokenCount = this.tokens.length;
+        if (tokenCount < minTokenCount)
+            return false;
+        let openingToken = parenthesisType === ParenthesisType.Regular ? TokenType.InvocationOpen : TokenType.SubscriptOpen, closingToken = parenthesisType === ParenthesisType.Regular ? TokenType.InvocationClose : TokenType.SubscriptClose;
         let areParametersRequired = parenthesisType === ParenthesisType.Bracketed;
-        let firstIsIdentifier = this.tokens[0].type === TokenType.Identifier, hasOpeningToken = this.tokens[1].type === openingToken, hasClosingToken = this.tokens[tokenCount - 1].type === closingToken, hasParameters = tokenCount >= minimumParameterTokensCount, fulfilledParameterCriteria = !areParametersRequired || hasParameters;
-        console.log(`IDEN: ${firstIsIdentifier}, OPEN: ${hasOpeningToken}, CLOSING: ${hasClosingToken}, PARAM REQ: ${areParametersRequired}, PARAM CRITERIA: ${fulfilledParameterCriteria}, PAREN TYPE: ${parenthesisType}`);
-        console.log(this.tokens);
+        let firstIsIdentifier = this.tokens[0].type === TokenType.Identifier, hasOpeningToken = this.tokens[1].type === openingToken, hasClosingToken = this.tokens[tokenCount - 1].type === closingToken, hasParameters = tokenCount > minTokenCount, fulfilledParameterCriteria = !areParametersRequired || hasParameters;
         let matchesTemplate = firstIsIdentifier && hasOpeningToken && hasClosingToken && fulfilledParameterCriteria;
         return matchesTemplate;
     }

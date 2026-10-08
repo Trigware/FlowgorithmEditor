@@ -4,6 +4,7 @@ import * as Utils from "./Utils.js"
 import * as Identifier from "./Identifier.js"
 
 let currentProgram: Flowgorithm.Program = new Flowgorithm.Program();
+let previouslyParsedElements: Element[] = [];
 
 enum ProgramTag {
     Unknown, Function, Declare, Assign, Input, Output, If, Call, For, While, Do
@@ -14,22 +15,28 @@ export function Setup(program: Flowgorithm.Program, scriptContents: string) {
     currentProgram = program;
     const xmlParser: DOMParser = new DOMParser();
     const xmlDocument: XMLDocument = xmlParser.parseFromString(scriptContents, "application/xml") as XMLDocument;
+    previouslyParsedElements = [];
     ParseElement(xmlDocument.documentElement, currentProgram);
     console.log(currentProgram);
 }
 
-function ParseElement(currentElement: Element, parentNode: Flowgorithm.ProgramNode, notNodeTagExit: boolean = false) {
+function ParseElement(currentElement: Element, parentNode: Flowgorithm.ProgramNode) {
     let currentTagName: string = currentElement.tagName;
-    if (currentTagName.length == 0) return;
+    let elementAlreadyParsed: boolean = previouslyParsedElements.includes(currentElement);
+    let skipElement: boolean = currentTagName.length === 0 || elementAlreadyParsed;
+    if (skipElement) return;
 
     let firstLetterUpper: string = currentTagName[0].toUpperCase();
     currentTagName = firstLetterUpper + currentTagName.substring(1);
     let actualTag: ProgramTag | null = Utils.GetEnumValueFromName(ProgramTag, currentTagName);
     
+    previouslyParsedElements.push(currentElement);
     let isNodeTag: boolean = actualTag !== null;
-    if (!isNodeTag && notNodeTagExit) return;
     if (isNodeTag) ParseSpecificTag(currentElement, actualTag!, parentNode);
-    for (let childElement of currentElement.children) ParseElement(childElement, parentNode, true);
+
+    for (let childElement of currentElement.children) {
+       ParseElement(childElement, parentNode);
+    }
 }
 
 function ParseSpecificTag(currentElement: Element, currentTag: ProgramTag, parentNode: Flowgorithm.ProgramNode) {
@@ -48,7 +55,10 @@ const tagParsingFunctionMap: Map<ProgramTag, (currentElement: Element) => Flowgo
     [ProgramTag.Input, ParseInputTag],
     [ProgramTag.Output, ParseOutputTag],
     [ProgramTag.If, ParseConditionalTag],
-    [ProgramTag.Call, ParseCallTag]
+    [ProgramTag.Call, ParseCallTag],
+    [ProgramTag.For, ParseForTag],
+    [ProgramTag.While, ParseWhileTag],
+    [ProgramTag.Do, ParseDoWhileTag]
 ]);
 
 function ParseFunctionTag(currentElement: Element): Flowgorithm.ProgramNode {
@@ -188,4 +198,39 @@ function ParseCallTag(currentElement: Element): Flowgorithm.ProgramNode {
     callTag.isValidCall = isValidCallExpression;
 
     return callTag;
+}
+
+function ParseForTag(currentElement: Element): Flowgorithm.ProgramNode {
+    let forLoop: Flowgorithm.ForLoop = new Flowgorithm.ForLoop();
+    for (let attribute of currentElement.attributes) {
+        switch (attribute.name) {
+            case "variable": forLoop.iteratorName = attribute.value; break;
+            case "start": forLoop.loopStart = Expression.FromString(attribute.value); break;
+            case "end": forLoop.loopEnd = Expression.FromString(attribute.value); break;
+            case "direction": forLoop.isIncreasing = attribute.value !== "dec"; break;
+            case "step": forLoop.iterationStep = Expression.FromString(attribute.value); break;
+        }
+    }
+
+    for (let elementChild of currentElement.children) {
+        ParseElement(elementChild, forLoop);
+    }
+    return forLoop;
+}
+
+function ParseWhileTag(currentElement: Element): Flowgorithm.ProgramNode { return ParseConditionalCycleTag(currentElement, false); }
+function ParseDoWhileTag(currentElement: Element): Flowgorithm.ProgramNode { return ParseConditionalCycleTag(currentElement, true); }
+
+function ParseConditionalCycleTag(currentElement: Element, isDoWhile: boolean): Flowgorithm.ProgramNode {
+    let conditionalCycle: Flowgorithm.ConditionalCycle = new Flowgorithm.ConditionalCycle();
+    conditionalCycle.isDoWhile = isDoWhile;
+
+    let expressionValue: string | null = currentElement.getAttribute("expression");
+    if (expressionValue !== null) conditionalCycle.expression = Expression.FromString(expressionValue);
+
+    for (let elementChild of currentElement.children) {
+        ParseElement(elementChild, conditionalCycle);
+    }
+
+    return conditionalCycle;
 }
