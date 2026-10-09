@@ -58,13 +58,17 @@ function OnWheelScrolled(event) {
     let minimumZoomLevel = 1.0 / maximumZoomLevel;
     currentZoomLevel = Utils.Clamp(currentZoomLevel, minimumZoomLevel, maximumZoomLevel);
     shapePlane.style.setProperty("--zoom-level", currentZoomLevel.toString());
+    let planeSize = new Utils.Vec2(shapePlane.clientWidth, shapePlane.clientHeight);
+    let planeOffset = planeSize.Divide(2);
+    Utils.SetProperty(shapePlane, "--camera-offset-x", planeOffset.x.toString());
+    Utils.SetProperty(shapePlane, "--camera-offset-y", planeOffset.y.toString());
 }
 function UpdateShapeOffset() {
-    let viewportSize = new Utils.Vec2(shapePlane.clientWidth, shapePlane.clientHeight);
+    let planeSize = new Utils.Vec2(shapePlane.clientWidth, shapePlane.clientHeight);
     for (let i = 0; i < shapePlane.children.length; i++) {
         let currentShape = shapePlane.children[i];
         let shapeWidth = currentShape.clientWidth;
-        let shapeOffset = viewportSize.Times(shapeOffsetMultiplier.x, shapeOffsetMultiplier.y)
+        let shapeOffset = planeSize.Times(shapeOffsetMultiplier.x, shapeOffsetMultiplier.y)
             .Minus(shapeWidth / 2, currentShape.clientHeight / 2);
         Utils.SetProperty(currentShape, "--offset-x", shapeOffset.x.toString() + "px");
         Utils.SetProperty(currentShape, "--offset-y", shapeOffset.y.toString() + "px");

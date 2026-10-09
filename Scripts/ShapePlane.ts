@@ -70,12 +70,12 @@ function OnWheelScrolled(event: WheelEvent) {
 }
 
 function UpdateShapeOffset() {
-    let viewportSize: Utils.Vec2 = new Utils.Vec2(shapePlane.clientWidth, shapePlane.clientHeight);
+    let planeSize: Utils.Vec2 = new Utils.Vec2(shapePlane.clientWidth, shapePlane.clientHeight);
 
     for (let i: number = 0; i < shapePlane.children.length; i++) {
         let currentShape: HTMLDivElement = shapePlane.children[i] as HTMLDivElement;
         let shapeWidth: number = currentShape.clientWidth;
-        let shapeOffset: Utils.Vec2 = viewportSize.Times(shapeOffsetMultiplier.x, shapeOffsetMultiplier.y)
+        let shapeOffset: Utils.Vec2 = planeSize.Times(shapeOffsetMultiplier.x, shapeOffsetMultiplier.y)
             .Minus(shapeWidth / 2, currentShape.clientHeight / 2);
         
         Utils.SetProperty(currentShape, "--offset-x", shapeOffset.x.toString() + "px");

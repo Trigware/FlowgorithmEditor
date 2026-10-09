@@ -12,25 +12,32 @@ img {
     position: sticky;
     height: fit-content;
     width: 100vw;
-    background-color: #cccccc;
-    border-bottom: 2px solid #888888;
-    z-index: 1;
+    background-color: #505050;
+    border-bottom: 3px solid #303030;
+    z-index: 2;
 }
 
 .ShapePlane {
     --camera-x: 0px; --camera-y: 0px;
-    --zoom-level: 1;
+    --zoom-level: 1.0;
+    --tile-size: 60px;
+    --zoomed-tile-size: calc(var(--tile-size) * var(--zoom-level));
     
+    background: conic-gradient(#909090 25%, #959595 0 50%, #909090 0 75%, #959595 0);
+    background-size: var(--zoomed-tile-size) var(--zoomed-tile-size);
+    background-position: calc(var(--camera-x)) calc(var(--camera-y));
+
     position: absolute;
     user-select: none;
     width: 100vw; height: 100vh;
 }
 
-.ShapePlane > * {
+.ShapePlane > *, .ShapeShadow {
     --aspect-ratio: 2.5;
     --default-width: 120px;
     --shape-x: 0px; --shape-y: 0px;
     --offset-x: 0px; --offset-y: 0px;
+    --shadow-offset-x: 0px; --shadow-offset-y: 0px;
     --width-size-increase: 1;
 
     min-width: var(--default-width);
@@ -41,8 +48,8 @@ img {
     position: absolute;
     height: calc(var(--default-width) / var(--aspect-ratio));
     transform:
-        translateX(calc(var(--camera-x) + var(--shape-x) * var(--zoom-level) + var(--offset-x)))
-        translateY(calc(var(--camera-y) + var(--shape-y) * var(--zoom-level) + var(--offset-y)))
+        translateX(calc(var(--camera-x) + var(--shape-x) * var(--zoom-level) + var(--offset-x) + var(--shadow-offset-x) * var(--zoom-level)))
+        translateY(calc(var(--camera-y) + var(--shape-y) * var(--zoom-level) + var(--offset-y) + var(--shadow-offset-y) * var(--zoom-level)))
         scale(var(--zoom-level));
     
     display: flex;
@@ -81,3 +88,13 @@ img {
     background-color: #929bec;
     border-radius: 32px;
 }
+
+.ShapeShadow {
+    color: transparent;
+    background-color: #00000080;
+}
+
+.ShapeShadow.ElipticShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; background-color: #40435f; }
+.ShapeShadow.DiamondShape { --shadow-offset-x: 0px; --shadow-offset-y: 6px; background-color: #683838; }
+.ShapeShadow.ParallelogramShape { --shadow-offset-x: 2.5px; --shadow-offset-y: 5px; background-color: #414c57; }
+.ShapeShadow.HexagonShape { --shadow-offset-x: 5px; --shadow-offset-y: 7px; background-color: #6e4f35; }
