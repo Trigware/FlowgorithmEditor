@@ -103,6 +103,7 @@ var ExpressionError;
 export class Expression {
     tokens = [];
     expressionErrors = [];
+    expressionAsStr = "";
     accumilatedStr = "";
     previousTokenStr = "";
     currentOperatorStr = "";
@@ -111,6 +112,7 @@ export class Expression {
     opennedGroupers = [];
     static FromString(exprAsStr) {
         let resultingExpr = new Expression();
+        resultingExpr.expressionAsStr = exprAsStr;
         for (let i = 0; i < exprAsStr.length; i++) {
             let ch = exprAsStr[i];
             let isAlphanum = Utils.IsLetter(ch) || Utils.IsNumber(ch);

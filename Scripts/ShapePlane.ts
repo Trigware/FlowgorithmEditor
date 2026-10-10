@@ -1,7 +1,7 @@
 import * as Utils from "./Utils.js"
 import * as Flowgorithm from "./ProgramRepresentation.js"
 import * as Parser from "./ProgramParser.js"
-import * as Renderer from "./ScriptRenderer.js"
+import * as ShapeRenderer from "./ShapeRenderer.js"
 
 let prevMousePos: Utils.Vec2 = Utils.Vec2.Zero();
 let planeCameraPos: Utils.Vec2 = Utils.Vec2.Zero();
@@ -13,7 +13,8 @@ function OnStart() {
     prevMousePos = Utils.GetMousePos();
     openFileInput.addEventListener("change", OnFileSelected);
     document.addEventListener("wheel", OnWheelScrolled);
-    Renderer.RenderScript(openedProgram, shapePlane);
+    ShapeRenderer.SetPlane(shapePlane);
+    openedProgram.Render();
     OnDraw();
 }
 
@@ -47,7 +48,7 @@ function OnFileSelected() {
     let selectedFile: File = openFileInput.files[0];
     selectedFile.text().then((fileContent: string) => {
         Parser.Setup(openedProgram, fileContent);
-        Renderer.RenderScript(openedProgram, shapePlane);
+        openedProgram.Render();
         console.log(openedProgram);
     });
 }

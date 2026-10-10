@@ -85,6 +85,7 @@ enum ExpressionError {
 export class Expression {
     public tokens: ExprToken[] = [];
     public expressionErrors: ExpressionError[] = [];
+    public expressionAsStr: string = "";
 
     private accumilatedStr: string = "";
     private previousTokenStr: string = "";
@@ -95,6 +96,7 @@ export class Expression {
 
     public static FromString(exprAsStr: string): Expression {
         let resultingExpr: Expression = new Expression();
+        resultingExpr.expressionAsStr = exprAsStr;
 
         for (let i = 0; i < exprAsStr.length; i++) {
             let ch: string = exprAsStr[i];

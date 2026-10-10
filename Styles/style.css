@@ -63,7 +63,6 @@ img {
 .ParallelogramShape {
     --base-steapness: 20%;
     --steapness: calc(var(--base-steapness) / var(--width-size-increase));
-    background-color: #aac9e6;
     clip-path: polygon(0% 100%, var(--steapness) 0%, 100% 0%, calc(100% - var(--steapness)) 100%);
 }
 
@@ -87,11 +86,11 @@ img {
 .ElipticShape { border-radius: 32px; }
 
 .ShapeShadow { color: transparent; }
-.ShapeShadow.ParallelogramShape { --shadow-offset-x: 2.5px; --shadow-offset-y: 5px; background-color: #414c57; }
-.ShapeShadow.DiamondShape { --shadow-offset-x: 0px; --shadow-offset-y: 6px; background-color: #683838; }
-.ShapeShadow.HexagonShape { --shadow-offset-x: 5px; --shadow-offset-y: 7px; background-color: #6e4f35; }
-.ShapeShadow.ElipticShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; background-color: #40435f; }
-.ShapeShadow.RectangleShape { border: 2px solid black; }
+.ShapeShadow.ParallelogramShape { --shadow-offset-x: 2.5px; --shadow-offset-y: 5px; }
+.ShapeShadow.DiamondShape { --shadow-offset-x: 0px; --shadow-offset-y: 6px; }
+.ShapeShadow.HexagonShape { --shadow-offset-x: 5px; --shadow-offset-y: 7px; }
+.ShapeShadow.ElipticShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; }
+.ShapeShadow.RectangleShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; }
 
 .ShapeArrowSegment, .ShapeArrowConnector, .ShapeArrowEnding {
     --default-width: 0px;
@@ -101,17 +100,17 @@ img {
 
 .ShapeArrowSegment {
     --arrow-length: 100px;
-
-    width: var(--arrow-length); height: 10px;
-    border-radius: 4px;
+    width: var(--arrow-length); height: 6px;
 }
 
 .ShapeArrowConnector {
-    width: 25px; height: 25px;
+    width: 15px; height: 15px;
     border-radius: 15px;
 }
 
 .ShapeArrowEnding {
-    width: 35px; height: 35px;
+    --arrow-ending-size: 20px;
+
+    width: 20px; height: 20px;
     clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
 }
