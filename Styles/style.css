@@ -12,8 +12,8 @@ img {
     position: sticky;
     height: fit-content;
     width: 100vw;
-    background-color: #505050;
-    border-bottom: 3px solid #303030;
+    background-color: #6b6b6b;
+    border-bottom: 3px solid #4b4b4b;
     z-index: 2;
 }
 
@@ -23,7 +23,7 @@ img {
     --tile-size: 60px;
     --zoomed-tile-size: calc(var(--tile-size) * var(--zoom-level));
     
-    background: conic-gradient(#909090 25%, #959595 0 50%, #909090 0 75%, #959595 0);
+    background: conic-gradient(#b0b0b0 25%, #b5b5b5 0 50%, #b0b0b0 0 75%, #b5b5b5 0);
     background-size: var(--zoomed-tile-size) var(--zoomed-tile-size);
     background-position: calc(var(--camera-x)) calc(var(--camera-y));
 
@@ -32,13 +32,14 @@ img {
     width: 100vw; height: 100vh;
 }
 
-.ShapePlane > *, .ShapeShadow {
+.ShapePlane > * {
     --aspect-ratio: 2.5;
     --default-width: 120px;
     --shape-x: 0px; --shape-y: 0px;
     --offset-x: 0px; --offset-y: 0px;
     --shadow-offset-x: 0px; --shadow-offset-y: 0px;
     --width-size-increase: 1;
+    --rotation: 0deg;
 
     min-width: var(--default-width);
     width: min-content;
@@ -50,6 +51,7 @@ img {
     transform:
         translateX(calc(var(--camera-x) + var(--shape-x) * var(--zoom-level) + var(--offset-x) + var(--shadow-offset-x) * var(--zoom-level)))
         translateY(calc(var(--camera-y) + var(--shape-y) * var(--zoom-level) + var(--offset-y) + var(--shadow-offset-y) * var(--zoom-level)))
+        rotate(var(--rotation))
         scale(var(--zoom-level));
     
     display: flex;
@@ -68,7 +70,6 @@ img {
 .DiamondShape {
     --aspect-ratio: calc(2.5 / var(--width-size-increase));
     padding: 0 30px;
-    background-color: #e77575;
     clip-path: polygon(0% 50%, 50% 0%, 100% 50%, 50% 100%);
 }
 
@@ -76,7 +77,6 @@ img {
     --base-middle-gap: 50%;
     --middle-gap: calc(100% - var(--base-middle-gap) / var(--width-size-increase));
 
-    background-color: #e9a166;
     clip-path: polygon(
         0% 50%, calc(50% - var(--middle-gap) / 2) 0%,
         calc(50% + var(--middle-gap) / 2) 0%, 100% 50%,
@@ -84,17 +84,34 @@ img {
     );
 }
 
-.ElipticShape {
-    background-color: #929bec;
-    border-radius: 32px;
-}
+.ElipticShape { border-radius: 32px; }
 
-.ShapeShadow {
-    color: transparent;
-    background-color: #00000080;
-}
-
-.ShapeShadow.ElipticShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; background-color: #40435f; }
-.ShapeShadow.DiamondShape { --shadow-offset-x: 0px; --shadow-offset-y: 6px; background-color: #683838; }
+.ShapeShadow { color: transparent; }
 .ShapeShadow.ParallelogramShape { --shadow-offset-x: 2.5px; --shadow-offset-y: 5px; background-color: #414c57; }
+.ShapeShadow.DiamondShape { --shadow-offset-x: 0px; --shadow-offset-y: 6px; background-color: #683838; }
 .ShapeShadow.HexagonShape { --shadow-offset-x: 5px; --shadow-offset-y: 7px; background-color: #6e4f35; }
+.ShapeShadow.ElipticShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; background-color: #40435f; }
+.ShapeShadow.RectangleShape { border: 2px solid black; }
+
+.ShapeArrowSegment, .ShapeArrowConnector, .ShapeArrowEnding {
+    --default-width: 0px;
+    background-color: #404040;
+    padding: 0 0;
+}
+
+.ShapeArrowSegment {
+    --arrow-length: 100px;
+
+    width: var(--arrow-length); height: 10px;
+    border-radius: 4px;
+}
+
+.ShapeArrowConnector {
+    width: 25px; height: 25px;
+    border-radius: 15px;
+}
+
+.ShapeArrowEnding {
+    width: 35px; height: 35px;
+    clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+}

@@ -15,6 +15,8 @@ export class Vec2 {
     public IsInsideOf(x: number, y: number, w: number, h: number): boolean {
         return this.x >= x && this.y >= y && this.x <= w && this.y <= h;
     }
+    public static FromAngleDeg(angleDegrees: number): Vec2 { return Vec2.FromAngleRad(DegToRad(angleDegrees)); }
+    public static FromAngleRad(angleRadians: number): Vec2 { return new Vec2(Math.cos(angleRadians), Math.sin(angleRadians)); }
 
     public Equals(other: Vec2): boolean { return this.x === other.x && this.y === other.y; }
     public ToString(): string { return `(x: ${this.x}, y: ${this.y})`; }
@@ -263,5 +265,8 @@ export function GetProperty(element: HTMLElement, propertyStr: string): string {
 export function SetProperty(element: HTMLElement, propertyStr: string, propertyValue: string) {
     element.style.setProperty(propertyStr, propertyValue);
 }
+
+const degreesInPIRad: number = 180;
+export function DegToRad(angleDegrees: number) { return angleDegrees * Math.PI / degreesInPIRad; }
 
 OnStart();

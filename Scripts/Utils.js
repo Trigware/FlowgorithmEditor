@@ -11,6 +11,8 @@ export class Vec2 {
     IsInsideOf(x, y, w, h) {
         return this.x >= x && this.y >= y && this.x <= w && this.y <= h;
     }
+    static FromAngleDeg(angleDegrees) { return Vec2.FromAngleRad(DegToRad(angleDegrees)); }
+    static FromAngleRad(angleRadians) { return new Vec2(Math.cos(angleRadians), Math.sin(angleRadians)); }
     Equals(other) { return this.x === other.x && this.y === other.y; }
     ToString() { return `(x: ${this.x}, y: ${this.y})`; }
     Copy() {
@@ -225,4 +227,6 @@ export function GetProperty(element, propertyStr) {
 export function SetProperty(element, propertyStr, propertyValue) {
     element.style.setProperty(propertyStr, propertyValue);
 }
+const degreesInPIRad = 180;
+export function DegToRad(angleDegrees) { return angleDegrees * Math.PI / degreesInPIRad; }
 OnStart();

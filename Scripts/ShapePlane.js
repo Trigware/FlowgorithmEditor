@@ -6,12 +6,12 @@ let prevMousePos = Utils.Vec2.Zero();
 let planeCameraPos = Utils.Vec2.Zero();
 let shapePlane = document.getElementById("ShapePlane");
 let openFileInput = document.getElementById("OpenFileInput");
-let openedProgram = new Flowgorithm.Program();
+let openedProgram = Flowgorithm.Program.Create();
 function OnStart() {
     prevMousePos = Utils.GetMousePos();
     openFileInput.addEventListener("change", OnFileSelected);
     document.addEventListener("wheel", OnWheelScrolled);
-    Renderer.RenderScript(openedProgram);
+    Renderer.RenderScript(openedProgram, shapePlane);
     OnDraw();
 }
 let previousTimeSinceStarted = 0;
@@ -41,7 +41,8 @@ function OnFileSelected() {
     let selectedFile = openFileInput.files[0];
     selectedFile.text().then((fileContent) => {
         Parser.Setup(openedProgram, fileContent);
-        Renderer.RenderScript(openedProgram);
+        Renderer.RenderScript(openedProgram, shapePlane);
+        console.log(openedProgram);
     });
 }
 const scrollingMultiplier = 3.5;
@@ -58,10 +59,6 @@ function OnWheelScrolled(event) {
     let minimumZoomLevel = 1.0 / maximumZoomLevel;
     currentZoomLevel = Utils.Clamp(currentZoomLevel, minimumZoomLevel, maximumZoomLevel);
     shapePlane.style.setProperty("--zoom-level", currentZoomLevel.toString());
-    let planeSize = new Utils.Vec2(shapePlane.clientWidth, shapePlane.clientHeight);
-    let planeOffset = planeSize.Divide(2);
-    Utils.SetProperty(shapePlane, "--camera-offset-x", planeOffset.x.toString());
-    Utils.SetProperty(shapePlane, "--camera-offset-y", planeOffset.y.toString());
 }
 function UpdateShapeOffset() {
     let planeSize = new Utils.Vec2(shapePlane.clientWidth, shapePlane.clientHeight);

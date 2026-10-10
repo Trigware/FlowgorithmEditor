@@ -7,13 +7,13 @@ let prevMousePos: Utils.Vec2 = Utils.Vec2.Zero();
 let planeCameraPos: Utils.Vec2 = Utils.Vec2.Zero();
 let shapePlane: HTMLDivElement = document.getElementById("ShapePlane") as HTMLDivElement;
 let openFileInput: HTMLInputElement = document.getElementById("OpenFileInput") as HTMLInputElement;
-let openedProgram: Flowgorithm.Program = new Flowgorithm.Program();
+let openedProgram: Flowgorithm.Program = Flowgorithm.Program.Create();
 
 function OnStart() {
     prevMousePos = Utils.GetMousePos();
     openFileInput.addEventListener("change", OnFileSelected);
     document.addEventListener("wheel", OnWheelScrolled);
-    Renderer.RenderScript(openedProgram);
+    Renderer.RenderScript(openedProgram, shapePlane);
     OnDraw();
 }
 
@@ -47,7 +47,8 @@ function OnFileSelected() {
     let selectedFile: File = openFileInput.files[0];
     selectedFile.text().then((fileContent: string) => {
         Parser.Setup(openedProgram, fileContent);
-        Renderer.RenderScript(openedProgram);
+        Renderer.RenderScript(openedProgram, shapePlane);
+        console.log(openedProgram);
     });
 }
 
@@ -75,6 +76,7 @@ function UpdateShapeOffset() {
     for (let i: number = 0; i < shapePlane.children.length; i++) {
         let currentShape: HTMLDivElement = shapePlane.children[i] as HTMLDivElement;
         let shapeWidth: number = currentShape.clientWidth;
+
         let shapeOffset: Utils.Vec2 = planeSize.Times(shapeOffsetMultiplier.x, shapeOffsetMultiplier.y)
             .Minus(shapeWidth / 2, currentShape.clientHeight / 2);
         
