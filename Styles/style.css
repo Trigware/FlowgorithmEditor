@@ -114,3 +114,9 @@ img {
     width: 20px; height: 20px;
     clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
 }
+
+.ContentUnderlined {
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 2px;
+}

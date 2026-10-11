@@ -137,6 +137,63 @@ function SetShapePosition(currentShape, shapePosition) {
     Utils.SetProperty(currentShape, "--shape-x", shapePosition.x.toString() + "px");
     Utils.SetProperty(currentShape, "--shape-y", shapePosition.y.toString() + "px");
 }
+const nonBreakingSpace = '\u00A0';
+export var TextType;
+(function (TextType) {
+    TextType[TextType["Bolded"] = 0] = "Bolded";
+    TextType[TextType["Italic"] = 1] = "Italic";
+    TextType[TextType["Underline"] = 2] = "Underline";
+})(TextType || (TextType = {}));
+export class TextSegment {
+    segmentContent = "";
+    appliedTypes = [];
+    constructor(content, type = []) {
+        this.segmentContent = content;
+        if (!Array.isArray(type)) {
+            this.appliedTypes = [type];
+            return;
+        }
+        this.appliedTypes = type;
+    }
+}
+class TextStylingElement {
+    textType = "span";
+    elementClass = "";
+    constructor(type = "span", cssClass = "") {
+        this.textType = type;
+        this.elementClass = cssClass;
+    }
+}
+function GetElementInfoByTextType(appliedTypes) {
+    if (appliedTypes.length === 0)
+        return [new TextStylingElement("span")];
+    let stylingElementsArr = [];
+    for (let i = 0; i < appliedTypes.length; i++) {
+        let currentTextType = appliedTypes[i];
+        let currentStylingElement = new TextStylingElement("span");
+        switch (currentTextType) {
+            case TextType.Bolded:
+                currentStylingElement = new TextStylingElement("strong");
+                break;
+            case TextType.Italic:
+                currentStylingElement = new TextStylingElement("em");
+                break;
+            case TextType.Underline:
+                currentStylingElement = new TextStylingElement("span", "ContentUnderlined");
+                break;
+        }
+        stylingElementsArr.push(currentStylingElement);
+    }
+    return stylingElementsArr;
+}
+export class ShapeContent {
+    segments = [];
+    constructor(segmentContent = "", textTypes = []) { this.Append(segmentContent, textTypes); }
+    Append(segmentContent, textTypes = []) {
+        let appendedSegment = new TextSegment(segmentContent, textTypes);
+        this.segments.push(appendedSegment);
+    }
+}
 function ConstructShape(shapeType, position, shapeContent, offsetShape, isShadow) {
     let shapeDisplayInfo = shapeDisplayArr.get(shapeType);
     let shapeColorInfo = shapeColorsArr.get(shapeDisplayInfo.colorType);
@@ -152,7 +209,27 @@ function ConstructShape(shapeType, position, shapeContent, offsetShape, isShadow
     constructedShape.style.backgroundColor = usedShapeColor;
     if (isShadow)
         constructedShape.classList.add("ShapeShadow");
-    constructedShape.textContent = shapeContent;
+    if (typeof shapeContent === "string") {
+        constructedShape.textContent = shapeContent;
+        return constructedShape;
+    }
+    for (let currentTextSegment of shapeContent.segments) {
+        let usedSegmentContent = Utils.ReplaceSurrounding(currentTextSegment.segmentContent, ' ', nonBreakingSpace);
+        let isSegmentEmpty = usedSegmentContent.length === 0;
+        if (isSegmentEmpty)
+            continue;
+        let stylingElementsArr = GetElementInfoByTextType(currentTextSegment.appliedTypes);
+        let stylingElementsCount = stylingElementsArr.length;
+        let latestStylingParent = constructedShape;
+        for (let i = 0; i < stylingElementsArr.length; i++) {
+            let currentStylingInfo = stylingElementsArr[i];
+            let isLastStylingElement = i === stylingElementsCount - 1;
+            let currentStylingElemnt = Utils.CreateElement(currentStylingInfo.textType, currentStylingInfo.elementClass, latestStylingParent);
+            if (isLastStylingElement)
+                currentStylingElemnt.textContent = usedSegmentContent;
+            latestStylingParent = currentStylingElemnt;
+        }
+    }
     return constructedShape;
 }
 export function AddShape(shapeType, position, shapeContent, offsetShape = true) {

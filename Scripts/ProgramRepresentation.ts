@@ -3,13 +3,15 @@ import { Expression } from "./Expression.js"
 import * as Identifier from "./Identifier.js"
 import * as ShapeRenderer from "./ShapeRenderer.js"
 
+function GetEmptyContent(): ShapeRenderer.ShapeContent { return new ShapeRenderer.ShapeContent(); }
+
 export class ProgramNode {
     public subNodes: ProgramNode[] = [];
     public Clear() {
         this.subNodes = [];
     }
 
-    public GetContent(): string { return ""; }
+    public GetContent(): ShapeRenderer.ShapeContent { return GetEmptyContent(); }
     public Render(position: Utils.Vec2): Utils.Vec2 { return Utils.Vec2.Zero(); }
 }
 
@@ -73,20 +75,24 @@ export class FunctionSignature extends ProgramNode {
     public nameError: Identifier.IdentifierError = Identifier.IdentifierError.None;
     public returnError: Identifier.IdentifierError = Identifier.IdentifierError.None;
 
-    public override GetContent(): string {
-        let signatureAsStr: string = this.name;
+    public override GetContent(): ShapeRenderer.ShapeContent {
+        let functionContent: ShapeRenderer.ShapeContent = GetEmptyContent();
+        functionContent.Append(this.name, ShapeRenderer.TextType.Bolded);
+        let parametersAsStr: string = "";
+
         let parameterCount: number = this.parameters.length;
-        if (parameterCount > 0) signatureAsStr += " (";
+        if (parameterCount > 0) parametersAsStr += " (";
 
         for (let i: number = 0; i < parameterCount; i++) {
             let currentParameter: VariableDeclaration = this.parameters[i];
             let isLastParameter: boolean = i === parameterCount - 1;
-            signatureAsStr += currentParameter.ToString();
-            if (!isLastParameter) signatureAsStr += ", ";
+            parametersAsStr += currentParameter.ToString();
+            if (!isLastParameter) parametersAsStr += ", ";
         }
 
-        if (parameterCount > 0) signatureAsStr += ")";
-        return signatureAsStr;
+        if (parameterCount > 0) parametersAsStr += ")";
+        functionContent.Append(parametersAsStr);
+        return functionContent;
     }
 
     public override Render(position: Utils.Vec2): Utils.Vec2 {
@@ -113,34 +119,42 @@ export class FunctionSignature extends ProgramNode {
     }
 
     private RenderEndShape(position: Utils.Vec2) {
-        let returnShapeMessage: string = "End";
+        let returnShapeContent: ShapeRenderer.ShapeContent = GetEmptyContent();
         let doesFunctionReturn: boolean = this.returnType !== VariableType.Void;
         let returnTypeAsStr: string = VariableType[this.returnType];
-        if (doesFunctionReturn) returnShapeMessage = `Return ${returnTypeAsStr} ${this.returnVariableName}`;
-        ShapeRenderer.AddShape(ShapeRenderer.ShapeType.FunctionEnd, position, returnShapeMessage);
+
+        if (doesFunctionReturn) {
+            returnShapeContent.Append("Return", ShapeRenderer.TextType.Bolded);
+            returnShapeContent.Append(` ${returnTypeAsStr} ${this.returnVariableName}`);
+        } else returnShapeContent.Append("End", ShapeRenderer.TextType.Bolded);
+
+        ShapeRenderer.AddShape(ShapeRenderer.ShapeType.FunctionEnd, position, returnShapeContent);
     }
 }
 
 export class DeclarationInstruction extends ProgramNode {
     public declaredVariables: VariableDeclaration[] = [];
 
-    public override GetContent(): string {
+    public override GetContent(): ShapeRenderer.ShapeContent {
         let isWithoutDeclarations: boolean = this.declaredVariables.length === 0;
-        if (isWithoutDeclarations) return "Declare";
+        if (isWithoutDeclarations) return new ShapeRenderer.ShapeContent("Declare");
 
         let declareTypeAsStr: string = this.declaredVariables[0].ToString(false) + " ";
-        let declareContents: string = declareTypeAsStr;
         let declarationsCount: number = this.declaredVariables.length;
+        let declarationContent: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent(declareTypeAsStr);
 
         for (let i: number = 0; i < this.declaredVariables.length; i++) {
             let variableDeclaration: VariableDeclaration = this.declaredVariables[i];
             let isLastDeclaration: boolean = i === declarationsCount - 1;
-            declareContents += variableDeclaration.variableName;
-            if (variableDeclaration.isArray) declareContents += `[${variableDeclaration.arraySize}]`;
-            if (!isLastDeclaration) declareContents += ", ";
+
+            let declarationName: string = variableDeclaration.variableName;
+            if (variableDeclaration.isArray) declarationName += `[${variableDeclaration.arraySize}]`;
+            declarationContent.Append(declarationName, ShapeRenderer.TextType.Bolded);
+
+            if (!isLastDeclaration) declarationContent.Append(", ");
         }
 
-        return declareContents;
+        return declarationContent;
     }
 
     public override Render(position: Utils.Vec2) { return ShapeRenderer.AddShape(ShapeRenderer.ShapeType.VariableDeclaration, position, this.GetContent()).GetSize(); }
@@ -151,7 +165,7 @@ export class AssignmentInstruction extends ProgramNode {
     public rvalue: Expression = new Expression();
     public isValidLValue: boolean = true;
 
-    public override GetContent(): string { return `${this.lvalue.expressionAsStr} = ${this.rvalue.expressionAsStr}`; }
+    public override GetContent(): ShapeRenderer.ShapeContent { return new ShapeRenderer.ShapeContent(`${this.lvalue.expressionAsStr} = ${this.rvalue.expressionAsStr}`); }
     public override Render(position: Utils.Vec2): Utils.Vec2 { return ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Assignment, position, this.GetContent()).GetSize(); }
 }
 
@@ -160,11 +174,14 @@ export class IOInstruction extends ProgramNode {
     public isInput: boolean = false;
     public isValidLValue: boolean = true;
 
-    public override GetContent(): string {
-        let shapeContent: string = this.isInput ? "Input" : "Output";
+    public override GetContent(): ShapeRenderer.ShapeContent {
+        let instructionContent: ShapeRenderer.ShapeContent = GetEmptyContent();
+        let shapeTypeAsStr: string = this.isInput ? "Input" : "Output";
+        instructionContent.Append(shapeTypeAsStr);
+
         let isExpressionEmpty: boolean = this.expression.expressionAsStr.length === 0;
-        if (!isExpressionEmpty) shapeContent += ` ${this.expression.expressionAsStr}`;
-        return shapeContent;
+        if (!isExpressionEmpty) instructionContent.Append(` ${this.expression.expressionAsStr}`, ShapeRenderer.TextType.Bolded);
+        return instructionContent;
     }
 
     public override Render(position: Utils.Vec2): Utils.Vec2 {
@@ -178,8 +195,11 @@ export class CallInstruction extends ProgramNode {
     public callExpression: Expression = new Expression();
     public isValidCall: boolean = false;
 
-    public override GetContent(): string { return this.callExpression.expressionAsStr; }
-    public override Render(position: Utils.Vec2) { return ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Call, position, this.callExpression.expressionAsStr).GetSize(); }
+    public override GetContent(): ShapeRenderer.ShapeContent {
+        return new ShapeRenderer.ShapeContent(this.callExpression.expressionAsStr);
+    }
+
+    public override Render(position: Utils.Vec2) { return ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Call, position, this.GetContent()).GetSize(); }
 }
 
 export class ConditionalStatement extends ProgramNode {

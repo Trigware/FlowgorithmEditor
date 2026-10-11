@@ -43,7 +43,6 @@ function OnFileSelected() {
     selectedFile.text().then((fileContent) => {
         Parser.Setup(openedProgram, fileContent);
         openedProgram.Render();
-        console.log(openedProgram);
     });
 }
 const scrollingMultiplier = 3.5;

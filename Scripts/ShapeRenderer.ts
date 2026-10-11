@@ -129,7 +129,62 @@ function SetShapePosition(currentShape: HTMLDivElement, shapePosition: Utils.Vec
     Utils.SetProperty(currentShape, "--shape-y", shapePosition.y.toString() + "px");
 }
 
-function ConstructShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent: string, offsetShape: boolean, isShadow: boolean): HTMLDivElement {
+const nonBreakingSpace: string = '\u00A0';
+
+export enum TextType { Bolded, Italic, Underline }
+
+export class TextSegment {
+    public segmentContent: string = "";
+    public appliedTypes: TextType[] = [];
+
+    public constructor(content: string, type: TextType | TextType[] = []) {
+        this.segmentContent = content;
+        if (!Array.isArray(type)) { this.appliedTypes = [type]; return; }
+        this.appliedTypes = type;
+    }
+}
+
+class TextStylingElement {
+    public textType: Utils.ElementType = "span";
+    public elementClass: string = "";
+
+    public constructor(type: Utils.ElementType = "span", cssClass: string = "") {
+        this.textType = type; this.elementClass = cssClass;
+    }
+}
+
+function GetElementInfoByTextType(appliedTypes: TextType[]): TextStylingElement[] {
+    if (appliedTypes.length === 0) return [new TextStylingElement("span")];
+    let stylingElementsArr: TextStylingElement[] = [];
+
+    for (let i: number = 0; i < appliedTypes.length; i++) {
+        let currentTextType: TextType = appliedTypes[i];
+        let currentStylingElement: TextStylingElement = new TextStylingElement("span");
+
+        switch (currentTextType) {
+            case TextType.Bolded: currentStylingElement = new TextStylingElement("strong"); break;
+            case TextType.Italic: currentStylingElement = new TextStylingElement("em"); break;
+            case TextType.Underline: currentStylingElement = new TextStylingElement("span", "ContentUnderlined"); break;
+        }
+
+        stylingElementsArr.push(currentStylingElement);
+    }
+
+    return stylingElementsArr;
+}
+
+export class ShapeContent {
+    public segments: TextSegment[] = [];
+
+    public constructor(segmentContent: string = "", textTypes: TextType | TextType[] = []) { this.Append(segmentContent, textTypes); }
+
+    public Append(segmentContent: string, textTypes: TextType | TextType[] = []) {
+        let appendedSegment: TextSegment = new TextSegment(segmentContent, textTypes);
+        this.segments.push(appendedSegment);
+    }
+}
+
+function ConstructShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent: ShapeContent, offsetShape: boolean, isShadow: boolean): HTMLDivElement {
     let shapeDisplayInfo: ShapeDisplayInfo = shapeDisplayArr.get(shapeType)!;
     let shapeColorInfo: ShapeColorInfo = shapeColorsArr.get(shapeDisplayInfo.colorType)!;
     let shapeClass: string = displayTypeToClassMap.get(shapeDisplayInfo.displayType)!;
@@ -143,13 +198,31 @@ function ConstructShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent
 
     SetShapePosition(constructedShape, position);
     constructedShape.style.backgroundColor = usedShapeColor;
-
     if (isShadow) constructedShape.classList.add("ShapeShadow");
-    constructedShape.textContent = shapeContent;
+    if (typeof shapeContent === "string") { constructedShape.textContent = shapeContent; return constructedShape; }
+
+    for (let currentTextSegment of shapeContent.segments) {
+        let usedSegmentContent: string = Utils.ReplaceSurrounding(currentTextSegment.segmentContent, ' ', nonBreakingSpace);
+        let isSegmentEmpty: boolean = usedSegmentContent.length === 0;
+        if (isSegmentEmpty) continue;
+
+        let stylingElementsArr: TextStylingElement[] = GetElementInfoByTextType(currentTextSegment.appliedTypes);
+        let stylingElementsCount: number = stylingElementsArr.length;
+        let latestStylingParent: HTMLElement = constructedShape;
+
+        for (let i: number = 0; i < stylingElementsArr.length; i++) {
+            let currentStylingInfo: TextStylingElement = stylingElementsArr[i];
+            let isLastStylingElement: boolean = i === stylingElementsCount - 1;
+            let currentStylingElemnt: HTMLElement = Utils.CreateElement(currentStylingInfo.textType, currentStylingInfo.elementClass, latestStylingParent);
+            if (isLastStylingElement) currentStylingElemnt.textContent = usedSegmentContent;
+            latestStylingParent = currentStylingElemnt;
+        }
+    }
+
     return constructedShape;
 }
 
-export function AddShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent: string, offsetShape: boolean = true): RenderedShape {
+export function AddShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent: ShapeContent, offsetShape: boolean = true): RenderedShape {
     let renderedShape: RenderedShape = new RenderedShape();
     renderedShape.mainShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
     renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, false);

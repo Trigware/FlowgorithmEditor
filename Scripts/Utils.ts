@@ -93,7 +93,9 @@ export function IsMouseInBox(box: HTMLElement, offset: Vec2 = Vec2.Zero()) {
     return isMouseInBox;
 }
 
-export function CreateElement<K extends keyof HTMLElementTagNameMap>(
+export type ElementType = keyof HTMLElementTagNameMap;
+
+export function CreateElement<K extends ElementType>(
     elementType: K, className: string, parent: HTMLElement | null = null
 ): HTMLElement {
     let createdElement: HTMLElement = document.createElement(elementType);
@@ -268,5 +270,35 @@ export function SetProperty(element: HTMLElement, propertyStr: string, propertyV
 
 const degreesInPIRad: number = 180;
 export function DegToRad(angleDegrees: number) { return angleDegrees * Math.PI / degreesInPIRad; }
+
+function ReplaceSurroundingByType(originalStr: string, replacedChar: string, newChar: string, replacingLeading: boolean) {
+    if (replacedChar.length !== 1 || newChar.length !== 1) return originalStr;
+
+    let startNumber: number = replacingLeading ? 0 : originalStr.length - 1;
+    let stepCounter: number = replacingLeading ? 1 : -1;
+    let surroundingReplacement: string = "";
+    let endingIndex: number = 0;
+
+    for (let i: number = startNumber;; i += stepCounter) {
+        let continueLooping: boolean = replacingLeading ? i < originalStr.length : i >= 0;
+        if (!continueLooping) break;
+
+        let ch: string = originalStr[i];
+        let trailingContinued: boolean = ch === replacedChar;
+        if (trailingContinued) { surroundingReplacement += newChar; continue; }
+        endingIndex = i;
+        break;
+    }
+
+    if (replacingLeading) return surroundingReplacement + originalStr.substring(endingIndex);
+    return originalStr.substring(0, endingIndex + 1) + surroundingReplacement;
+}
+
+export function ReplaceSurrounding(originalStr: string, replacedChar: string, newChar: string): string {
+    let resultStr = originalStr;
+    resultStr = ReplaceSurroundingByType(resultStr, replacedChar, newChar, true);
+    resultStr = ReplaceSurroundingByType(resultStr, replacedChar, newChar, false);
+    return resultStr;
+}
 
 OnStart();

@@ -229,4 +229,34 @@ export function SetProperty(element, propertyStr, propertyValue) {
 }
 const degreesInPIRad = 180;
 export function DegToRad(angleDegrees) { return angleDegrees * Math.PI / degreesInPIRad; }
+function ReplaceSurroundingByType(originalStr, replacedChar, newChar, replacingLeading) {
+    if (replacedChar.length !== 1 || newChar.length !== 1)
+        return originalStr;
+    let startNumber = replacingLeading ? 0 : originalStr.length - 1;
+    let stepCounter = replacingLeading ? 1 : -1;
+    let surroundingReplacement = "";
+    let endingIndex = 0;
+    for (let i = startNumber;; i += stepCounter) {
+        let continueLooping = replacingLeading ? i < originalStr.length : i >= 0;
+        if (!continueLooping)
+            break;
+        let ch = originalStr[i];
+        let trailingContinued = ch === replacedChar;
+        if (trailingContinued) {
+            surroundingReplacement += newChar;
+            continue;
+        }
+        endingIndex = i;
+        break;
+    }
+    if (replacingLeading)
+        return surroundingReplacement + originalStr.substring(endingIndex);
+    return originalStr.substring(0, endingIndex + 1) + surroundingReplacement;
+}
+export function ReplaceSurrounding(originalStr, replacedChar, newChar) {
+    let resultStr = originalStr;
+    resultStr = ReplaceSurroundingByType(resultStr, replacedChar, newChar, true);
+    resultStr = ReplaceSurroundingByType(resultStr, replacedChar, newChar, false);
+    return resultStr;
+}
 OnStart();
