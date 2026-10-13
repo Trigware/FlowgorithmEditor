@@ -5,14 +5,59 @@ import * as ShapeRenderer from "./ShapeRenderer.js"
 
 function GetEmptyContent(): ShapeRenderer.ShapeContent { return new ShapeRenderer.ShapeContent(); }
 
+type OptionalShape = ShapeRenderer.RenderedShape | null;
+
 export class ProgramNode {
     public subNodes: ProgramNode[] = [];
-    public Clear() {
-        this.subNodes = [];
+
+    public Clear() { this.subNodes = []; }
+    public GetContent(): ShapeRenderer.ShapeContent { return GetEmptyContent(); }
+    public Render(position: Utils.Vec2): OptionalShape { return null; }
+
+    public GetSize(): Utils.Vec2 {
+        let renderedShape: OptionalShape = this.Render(Utils.Vec2.Zero());
+        if (renderedShape === null) return Utils.Vec2.Zero();
+
+        let shapeSize: Utils.Vec2 = renderedShape.GetSize();
+        renderedShape.Delete();
+        return shapeSize;
     }
 
-    public GetContent(): ShapeRenderer.ShapeContent { return GetEmptyContent(); }
-    public Render(position: Utils.Vec2): Utils.Vec2 { return Utils.Vec2.Zero(); }
+    public RenderSubnodes(position: Utils.Vec2): Utils.Vec2 {
+        let updatedPosition: Utils.Vec2 = position.Copy();
+
+        for (let currentNode of this.subNodes) {
+            updatedPosition = this.RenderArrow(updatedPosition);
+            let renderedShape: OptionalShape = currentNode.Render(updatedPosition);
+
+            let currentNodeSize: Utils.Vec2 = Utils.Vec2.Zero();
+            if (renderedShape !== null) currentNodeSize = renderedShape.GetSize();
+            updatedPosition.y += currentNodeSize.y;
+        }
+
+        return updatedPosition;
+    }
+
+    public RenderArrow(position: Utils.Vec2): Utils.Vec2 {
+        let updatedPosition: Utils.Vec2 = position.Copy();
+        let connectingArrow: ShapeRenderer.ArrowPath = new ShapeRenderer.ArrowPath(position, [defaultArrowLength], [defaultArrowAngle]);
+
+        let arrowTotalSize: Utils.Vec2 = connectingArrow.GetSize();
+        updatedPosition = position.Plus(arrowTotalSize.x, arrowTotalSize.y);
+        return updatedPosition;
+    }
+
+    public GetSubnodesSize(): Utils.Vec2 {
+        let subNodesSize: Utils.Vec2 = Utils.Vec2.Zero();
+
+        for (let currentNode of this.subNodes) {
+            let currentNodeSize: Utils.Vec2 = currentNode.GetSize();
+            subNodesSize.x = Math.max(subNodesSize.x, currentNodeSize.x);
+            subNodesSize.y += defaultArrowLength;
+        }
+
+        return subNodesSize;
+    }
 }
 
 enum VariableType { Void, Integer, Real, String, Boolean }
@@ -20,12 +65,12 @@ enum VariableType { Void, Integer, Real, String, Boolean }
 export class VariableDeclaration {
     public type: VariableType = VariableType.Void;
     public isArray: boolean = false;
-    public arraySize: number = -1;
+    public arraySize: Expression = new Expression();
     public variableName: string = "";
     public error: Identifier.IdentifierError = Identifier.IdentifierError.None;
 
     public constructor(variableName: string = "", declarationType: VariableType = VariableType.Void,
-        isArray: boolean = false, arraySize: number = -1) {
+        isArray: boolean = false, arraySize: Expression = new Expression()) {
         this.variableName = variableName; this.type = declarationType; this.isArray = isArray; this.arraySize = arraySize;
     }
 
@@ -52,14 +97,16 @@ export class Program extends ProgramNode {
         return createdProgram;
     }
 
-    public override Render(position: Utils.Vec2 = Utils.Vec2.Zero()): Utils.Vec2 {
+    public override Render(position: Utils.Vec2): OptionalShape {
         ShapeRenderer.ClearPlane();
+
         for (let i = 0; i < this.subNodes.length; i++) {
             if (i > 0) break;
             let currentFunction: FunctionSignature = this.subNodes[i] as FunctionSignature;
             currentFunction.Render(position);
         }
-        return Utils.Vec2.Zero();
+
+        return null;
     }
 }
 
@@ -95,27 +142,18 @@ export class FunctionSignature extends ProgramNode {
         return functionContent;
     }
 
-    public override Render(position: Utils.Vec2): Utils.Vec2 {
-        let latestShapePosition: Utils.Vec2 = position;
+    public override Render(position: Utils.Vec2): OptionalShape {
+        let latestShapePosition: Utils.Vec2 = position.Copy();
         let functionSignatureShape: ShapeRenderer.RenderedShape = ShapeRenderer.AddShape(
-            ShapeRenderer.ShapeType.FunctionSignature, position, this.GetContent(), false
+            ShapeRenderer.ShapeType.FunctionSignature, latestShapePosition, this.GetContent(), false
         );
+
         latestShapePosition.y += functionSignatureShape.GetSize().y / 2;
+        latestShapePosition = this.RenderSubnodes(latestShapePosition);
+        latestShapePosition = this.RenderArrow(latestShapePosition);
+        this.RenderEndShape(latestShapePosition);
 
-        let ownedShapeCount: number = this.subNodes.length + 1;
-        for (let i = 0; i < ownedShapeCount; i++) {
-            let isLastShape: boolean = i === ownedShapeCount - 1;
-            let connectingArrow: ShapeRenderer.ArrowPath = new ShapeRenderer.ArrowPath(latestShapePosition, [defaultArrowLength], [defaultArrowAngle]);
-            let arrowTotalSize: Utils.Vec2 = connectingArrow.ConstructArrow();
-            latestShapePosition = latestShapePosition.Plus(arrowTotalSize.x, arrowTotalSize.y);
-            if (isLastShape) { this.RenderEndShape(latestShapePosition); break; }
-
-            let currentNode: ProgramNode = this.subNodes[i];
-            let nodeSize: Utils.Vec2 = currentNode.Render(latestShapePosition);
-            latestShapePosition.y += nodeSize.y;
-        }
-
-        return Utils.Vec2.Zero();
+        return null;
     }
 
     private RenderEndShape(position: Utils.Vec2) {
@@ -148,7 +186,7 @@ export class DeclarationInstruction extends ProgramNode {
             let isLastDeclaration: boolean = i === declarationsCount - 1;
 
             let declarationName: string = variableDeclaration.variableName;
-            if (variableDeclaration.isArray) declarationName += `[${variableDeclaration.arraySize}]`;
+            if (variableDeclaration.isArray) declarationName += `[${variableDeclaration.arraySize.expressionAsStr}]`;
             declarationContent.Append(declarationName, ShapeRenderer.TextType.Bolded);
 
             if (!isLastDeclaration) declarationContent.Append(", ");
@@ -157,7 +195,9 @@ export class DeclarationInstruction extends ProgramNode {
         return declarationContent;
     }
 
-    public override Render(position: Utils.Vec2) { return ShapeRenderer.AddShape(ShapeRenderer.ShapeType.VariableDeclaration, position, this.GetContent()).GetSize(); }
+    public override Render(position: Utils.Vec2): OptionalShape {
+        return ShapeRenderer.AddShape(ShapeRenderer.ShapeType.VariableDeclaration, position, this.GetContent());
+    }
 }
 
 export class AssignmentInstruction extends ProgramNode {
@@ -166,7 +206,10 @@ export class AssignmentInstruction extends ProgramNode {
     public isValidLValue: boolean = true;
 
     public override GetContent(): ShapeRenderer.ShapeContent { return new ShapeRenderer.ShapeContent(`${this.lvalue.expressionAsStr} = ${this.rvalue.expressionAsStr}`); }
-    public override Render(position: Utils.Vec2): Utils.Vec2 { return ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Assignment, position, this.GetContent()).GetSize(); }
+
+    public override Render(position: Utils.Vec2): OptionalShape {
+        return ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Assignment, position, this.GetContent());
+    }
 }
 
 export class IOInstruction extends ProgramNode {
@@ -184,10 +227,9 @@ export class IOInstruction extends ProgramNode {
         return instructionContent;
     }
 
-    public override Render(position: Utils.Vec2): Utils.Vec2 {
+    public override Render(position: Utils.Vec2): OptionalShape {
         let shapeType: ShapeRenderer.ShapeType = this.isInput ? ShapeRenderer.ShapeType.Input : ShapeRenderer.ShapeType.Output;
-        let renderedShape: ShapeRenderer.RenderedShape = ShapeRenderer.AddShape(shapeType, position, this.GetContent());
-        return renderedShape.GetSize();
+        return ShapeRenderer.AddShape(shapeType, position, this.GetContent());
     }
 }
 
@@ -199,8 +241,12 @@ export class CallInstruction extends ProgramNode {
         return new ShapeRenderer.ShapeContent(this.callExpression.expressionAsStr);
     }
 
-    public override Render(position: Utils.Vec2) { return ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Call, position, this.GetContent()).GetSize(); }
+    public override Render(position: Utils.Vec2): OptionalShape {
+        return ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Call, position, this.GetContent());
+    }
 }
+
+const branchingArrowOffset: number = 10;
 
 export class ConditionalStatement extends ProgramNode {
     public conditional: Expression = new Expression();
@@ -211,6 +257,40 @@ export class ConditionalStatement extends ProgramNode {
         let selectedNode: ProgramNode = moveToThen ? this.thenNode : this.elseNode;
         selectedNode.subNodes = this.subNodes.slice();
         this.subNodes = [];
+    }
+
+    public override GetContent(): ShapeRenderer.ShapeContent {
+        let shapeContent: ShapeRenderer.ShapeContent = GetEmptyContent();
+        shapeContent.Append("if ");
+        shapeContent.Append(this.conditional.expressionAsStr, ShapeRenderer.TextType.Bolded);
+        return shapeContent;
+    }
+
+    public override Render(position: Utils.Vec2): OptionalShape {
+        let conditionalShape: ShapeRenderer.RenderedShape = ShapeRenderer.AddShape(
+            ShapeRenderer.ShapeType.Conditional, position, this.GetContent()
+        );
+
+        let shapeSize: Utils.Vec2 = conditionalShape.GetSize();
+        let diamondCenter: Utils.Vec2 = position.Plus(0, shapeSize.y / 2);
+        let arrowPositionOffset: number = shapeSize.x / 2 - branchingArrowOffset;
+        let arrowOffsetY: number = 0;
+        if (conditionalShape.shadowShape !== null) {
+            arrowOffsetY = Utils.GetNumericPixels(Utils.GetProperty(conditionalShape.shadowShape, "--shadow-offset-y")) / 2;
+        }
+
+        let thenBlockSize: Utils.Vec2 = this.thenNode.GetSubnodesSize(), elseBlockSize: Utils.Vec2 = this.elseNode.GetSubnodesSize();
+        
+        new ShapeRenderer.ArrowPath(
+            diamondCenter.Plus(-arrowPositionOffset, arrowOffsetY),
+            [thenBlockSize.x / 2 + branchingArrowOffset, shapeSize.y / 2], [180, defaultArrowAngle]
+        );
+        new ShapeRenderer.ArrowPath(
+            diamondCenter.Plus(arrowPositionOffset, arrowOffsetY),
+            [thenBlockSize.x / 2 + branchingArrowOffset, shapeSize.y / 2], [360, defaultArrowAngle]
+        );
+
+        return conditionalShape;
     }
 }
 

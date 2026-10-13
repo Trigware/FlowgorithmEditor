@@ -58,7 +58,7 @@ const shapeColorsArr = new Map([
     [ShapeColorType.Blue, new ShapeColorInfo("#62a2de", "#376fa3")],
     [ShapeColorType.Green, new ShapeColorInfo("#4fc26a", "#2f8a5b")],
     [ShapeColorType.Yellow, new ShapeColorInfo("#edd040", "#a08d30")],
-    [ShapeColorType.Red, new ShapeColorInfo("#af2b2b", "#6d2626")],
+    [ShapeColorType.Red, new ShapeColorInfo("#eb5552", "#873232")],
     [ShapeColorType.Orange, new ShapeColorInfo("#c06e22", "#a56020")]
 ]);
 const shapeDisplayArr = new Map([
@@ -86,11 +86,14 @@ export class ArrowPath {
     segmentAngles = [];
     segmentElements = [];
     segmentConnections = [];
+    arrowSize = Utils.Vec2.Zero();
     constructor(pos, lengthsArr, directions) {
         this.position = pos;
         this.segmentLengths = lengthsArr;
         this.segmentAngles = directions;
+        this.arrowSize = this.ConstructArrow();
     }
+    GetSize() { return this.arrowSize; }
     ConstructArrow() {
         let segmentCount = this.segmentLengths.length;
         let invalidArrayInfo = this.segmentLengths.length != this.segmentAngles.length || segmentCount === 0;
@@ -194,24 +197,44 @@ export class ShapeContent {
         this.segments.push(appendedSegment);
     }
 }
+const shapeOffsetMultiplier = new Utils.Vec2(0.5, 0.075);
+export function UpdateShapeProperties(currentShape) {
+    let planeSize = new Utils.Vec2(currentPlane.clientWidth, currentPlane.clientHeight);
+    let shapeWidth = currentShape.clientWidth;
+    let shapeOffset = planeSize.Times(shapeOffsetMultiplier.x, shapeOffsetMultiplier.y)
+        .Minus(shapeWidth / 2, currentShape.clientHeight / 2);
+    Utils.SetProperty(currentShape, "--offset-x", shapeOffset.x.toString() + "px");
+    Utils.SetProperty(currentShape, "--offset-y", shapeOffset.y.toString() + "px");
+    let defaultWidth = Utils.GetNumericPixels(Utils.GetProperty(currentShape, "--default-width"));
+    let widthSizeIncrease = shapeWidth / defaultWidth;
+    Utils.SetProperty(currentShape, "--width-size-increase", widthSizeIncrease.toString());
+}
+const regularShapeZIndex = 2, shadowShapeZIndex = 1;
 function ConstructShape(shapeType, position, shapeContent, offsetShape, isShadow) {
     let shapeDisplayInfo = shapeDisplayArr.get(shapeType);
     let shapeColorInfo = shapeColorsArr.get(shapeDisplayInfo.colorType);
     let shapeClass = displayTypeToClassMap.get(shapeDisplayInfo.displayType);
     let constructedShape = Utils.CreateElement("div", shapeClass, currentPlane);
-    let usedShapeColor = isShadow ? shapeColorInfo.shadowColor : shapeColorInfo.shapeColor;
+    SetTextToShape(constructedShape, shapeContent);
+    UpdateShapeProperties(constructedShape);
     let offsetPosition = Utils.Vec2.Zero();
     let shapeHeight = Utils.GetNumericPixels(Utils.GetProperty(constructedShape, "height"));
     if (offsetShape)
         offsetPosition.y = shapeHeight / 2;
     position = position.Plus(offsetPosition.x, offsetPosition.y);
     SetShapePosition(constructedShape, position);
+    let usedShapeColor = isShadow ? shapeColorInfo.shadowColor : shapeColorInfo.shapeColor;
     constructedShape.style.backgroundColor = usedShapeColor;
+    let currentZIndex = isShadow ? shadowShapeZIndex : regularShapeZIndex;
+    Utils.SetProperty(constructedShape, "z-index", currentZIndex.toString());
     if (isShadow)
         constructedShape.classList.add("ShapeShadow");
+    return constructedShape;
+}
+function SetTextToShape(constructedShape, shapeContent) {
     if (typeof shapeContent === "string") {
         constructedShape.textContent = shapeContent;
-        return constructedShape;
+        return;
     }
     for (let currentTextSegment of shapeContent.segments) {
         let usedSegmentContent = Utils.ReplaceSurrounding(currentTextSegment.segmentContent, ' ', nonBreakingSpace);
@@ -230,12 +253,11 @@ function ConstructShape(shapeType, position, shapeContent, offsetShape, isShadow
             latestStylingParent = currentStylingElemnt;
         }
     }
-    return constructedShape;
 }
 export function AddShape(shapeType, position, shapeContent, offsetShape = true) {
     let renderedShape = new RenderedShape();
-    renderedShape.mainShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
-    renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, false);
+    renderedShape.mainShape = ConstructShape(shapeType, position, shapeContent, offsetShape, false);
+    renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
     return renderedShape;
 }
 export function ClearPlane() { currentPlane.replaceChildren(); }
@@ -245,8 +267,13 @@ export class RenderedShape {
     GetSize() {
         if (this.mainShape === null)
             return Utils.Vec2.Zero();
-        let widthAsStr = Utils.GetProperty(this.mainShape, "width"), heightAsStr = Utils.GetProperty(this.mainShape, "height");
-        let shapeSize = new Utils.Vec2(Utils.GetNumericPixels(widthAsStr), Utils.GetNumericPixels(heightAsStr));
+        let shapeSize = new Utils.Vec2(this.mainShape.clientWidth, this.mainShape.clientHeight);
         return shapeSize;
+    }
+    Delete() {
+        if (this.mainShape !== null)
+            this.mainShape.remove();
+        if (this.shadowShape !== null)
+            this.shadowShape.remove();
     }
 }

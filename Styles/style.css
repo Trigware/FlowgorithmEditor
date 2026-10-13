@@ -14,6 +14,7 @@ img {
     width: 100vw;
     background-color: #6b6b6b;
     border-bottom: 3px solid #4b4b4b;
+    user-select: none;
     z-index: 2;
 }
 
@@ -64,12 +65,14 @@ img {
     --base-steapness: 20%;
     --steapness: calc(var(--base-steapness) / var(--width-size-increase));
     clip-path: polygon(0% 100%, var(--steapness) 0%, 100% 0%, calc(100% - var(--steapness)) 100%);
+    background-color: #62a2de;
 }
 
 .DiamondShape {
     --aspect-ratio: calc(2.5 / var(--width-size-increase));
     padding: 0 30px;
     clip-path: polygon(0% 50%, 50% 0%, 100% 50%, 50% 100%);
+    background-color: #eb5552;
 }
 
 .HexagonShape {
@@ -81,9 +84,10 @@ img {
         calc(50% + var(--middle-gap) / 2) 0%, 100% 50%,
         calc(50% + var(--middle-gap) / 2) 100%, calc(50% - var(--middle-gap) / 2) 100%
     );
+    background-color: #c06e22;
 }
 
-.ElipticShape { border-radius: 32px; }
+.ElipticShape { border-radius: 32px; background-color: #906eb8; }
 
 .ShapeShadow { color: transparent; }
 .ShapeShadow.ParallelogramShape { --shadow-offset-x: 2.5px; --shadow-offset-y: 5px; }

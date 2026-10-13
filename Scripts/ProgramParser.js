@@ -126,9 +126,7 @@ function ParseDeclarationTag(currentElement) {
                 declarationInfo.isArray = Flowgorithm.StrToBoolean(attribute.value);
                 break;
             case "size":
-                let resultingSize = Number(attribute.value);
-                if (!Number.isNaN(resultingSize))
-                    declarationInfo.arraySize = resultingSize;
+                declarationInfo.arraySize = Expression.FromString(attribute.value);
                 break;
         }
     }
