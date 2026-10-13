@@ -85,7 +85,7 @@ export class ArrowPath {
     segmentLengths = [];
     segmentAngles = [];
     segmentElements = [];
-    segmentConnections = [];
+    connectionElements = [];
     arrowSize = Utils.Vec2.Zero();
     constructor(pos, lengthsArr, directions) {
         this.position = pos;
@@ -115,7 +115,7 @@ export class ArrowPath {
             let arrowConnector = null;
             if (!isLastSegment) {
                 arrowConnector = Utils.CreateElement("div", "ShapeArrowConnector", currentPlane);
-                this.segmentConnections.push(arrowConnector);
+                this.connectionElements.push(arrowConnector);
             }
             Utils.SetProperty(arrowSegment, "--arrow-length", segmentLength.toString() + "px");
             Utils.SetProperty(arrowSegment, "--rotation", segmentAngle.toString() + "deg");
@@ -127,7 +127,7 @@ export class ArrowPath {
             if (arrowConnector !== null)
                 SetShapePosition(arrowConnector, currentPosition);
         }
-        this.segmentConnections.push(arrowEnding);
+        this.connectionElements.push(arrowEnding);
         let latestAngleDegrees = this.segmentAngles[segmentCount - 1];
         Utils.SetProperty(arrowEnding, "--rotation", latestAngleDegrees.toString() + "deg");
         SetShapePosition(arrowEnding, currentPosition);
@@ -135,10 +135,22 @@ export class ArrowPath {
         arrowSize = arrowSize.Plus(endingOffset.x, endingOffset.y);
         return arrowSize;
     }
+    Delete() {
+        for (let segment of this.segmentElements)
+            segment.remove();
+        for (let connection of this.connectionElements)
+            connection.remove();
+    }
 }
 function SetShapePosition(currentShape, shapePosition) {
     Utils.SetProperty(currentShape, "--shape-x", shapePosition.x.toString() + "px");
     Utils.SetProperty(currentShape, "--shape-y", shapePosition.y.toString() + "px");
+}
+export function GetArrowEndSize() {
+    let arrowEnding = Utils.CreateElement("div", "ShapeArrowEnding", currentPlane);
+    let arrowEndingSize = Utils.GetNumericPixels(Utils.GetProperty(arrowEnding, "--arrow-ending-size"));
+    arrowEnding.remove();
+    return arrowEndingSize;
 }
 const nonBreakingSpace = '\u00A0';
 export var TextType;

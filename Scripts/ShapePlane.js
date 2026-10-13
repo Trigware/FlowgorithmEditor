@@ -12,7 +12,7 @@ function OnStart() {
     openFileInput.addEventListener("change", OnFileSelected);
     document.addEventListener("wheel", OnWheelScrolled);
     ShapeRenderer.SetPlane(shapePlane);
-    //openedProgram.Render(Utils.Vec2.Zero());
+    openedProgram.Render(Utils.Vec2.Zero());
     OnDraw();
 }
 let previousTimeSinceStarted = 0;

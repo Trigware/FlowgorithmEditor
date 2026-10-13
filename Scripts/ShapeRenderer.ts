@@ -68,7 +68,7 @@ export class ArrowPath {
     public segmentAngles: number[] = [];
 
     private segmentElements: HTMLDivElement[] = [];
-    private segmentConnections: HTMLDivElement[] = [];
+    private connectionElements: HTMLDivElement[] = [];
     private arrowSize: Utils.Vec2 = Utils.Vec2.Zero();
 
     public constructor(pos: Utils.Vec2, lengthsArr: number[], directions: number[]) {
@@ -104,7 +104,7 @@ export class ArrowPath {
             let arrowConnector: HTMLDivElement | null = null;
             if (!isLastSegment) {
                 arrowConnector = Utils.CreateElement("div", "ShapeArrowConnector", currentPlane) as HTMLDivElement;
-                this.segmentConnections.push(arrowConnector);
+                this.connectionElements.push(arrowConnector);
             }
             
             Utils.SetProperty(arrowSegment, "--arrow-length", segmentLength.toString() + "px");
@@ -117,7 +117,7 @@ export class ArrowPath {
             if (arrowConnector !== null) SetShapePosition(arrowConnector, currentPosition);
         }
 
-        this.segmentConnections.push(arrowEnding);
+        this.connectionElements.push(arrowEnding);
         let latestAngleDegrees = this.segmentAngles[segmentCount - 1];
         Utils.SetProperty(arrowEnding, "--rotation", latestAngleDegrees.toString() + "deg");
         SetShapePosition(arrowEnding, currentPosition);
@@ -126,11 +126,23 @@ export class ArrowPath {
         arrowSize = arrowSize.Plus(endingOffset.x, endingOffset.y);
         return arrowSize;
     }
+
+    public Delete() {
+        for (let segment of this.segmentElements) segment.remove();
+        for (let connection of this.connectionElements) connection.remove();
+    }
 }
 
 function SetShapePosition(currentShape: HTMLDivElement, shapePosition: Utils.Vec2) {
     Utils.SetProperty(currentShape, "--shape-x", shapePosition.x.toString() + "px");
     Utils.SetProperty(currentShape, "--shape-y", shapePosition.y.toString() + "px");
+}
+
+export function GetArrowEndSize(): number {
+    let arrowEnding: HTMLDivElement = Utils.CreateElement("div", "ShapeArrowEnding", currentPlane) as HTMLDivElement;
+    let arrowEndingSize: number = Utils.GetNumericPixels(Utils.GetProperty(arrowEnding, "--arrow-ending-size"));
+    arrowEnding.remove();
+    return arrowEndingSize;
 }
 
 const nonBreakingSpace: string = '\u00A0';
