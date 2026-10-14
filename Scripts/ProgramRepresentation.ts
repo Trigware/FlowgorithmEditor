@@ -2,6 +2,7 @@ import * as Utils from "./Utils.js"
 import { Expression } from "./Expression.js"
 import * as Identifier from "./Identifier.js"
 import * as ShapeRenderer from "./ShapeRenderer.js"
+import { ArrowPath } from "./ArrowRenderer.js"
 
 function GetEmptyContent(): ShapeRenderer.ShapeContent { return new ShapeRenderer.ShapeContent(); }
 
@@ -27,11 +28,15 @@ export class ProgramNode {
         return shapeSize;
     }
 
-    public RenderSubnodes(position: Utils.Vec2): Utils.Vec2 {
+    public RenderSubnodes(position: Utils.Vec2, drawFirstArrow: boolean = true): Utils.Vec2 {
         let updatedPosition: Utils.Vec2 = position.Copy();
 
-        for (let currentNode of this.subNodes) {
-            updatedPosition = this.RenderArrow(updatedPosition);
+        for (let i: number = 0; i < this.subNodes.length; i++) {
+            let currentNode: ProgramNode = this.subNodes[i];
+            let isFirstNode: boolean = i === 0;
+            let drawCurrentArrow: boolean = !isFirstNode || drawFirstArrow;
+            if (drawCurrentArrow) updatedPosition = this.RenderArrow(updatedPosition);
+
             currentNode.Render(updatedPosition);
             let currentNodeSize: Utils.Vec2 = currentNode.GetSize();
             updatedPosition.y += currentNodeSize.y;
@@ -42,7 +47,7 @@ export class ProgramNode {
 
     public RenderArrow(position: Utils.Vec2): Utils.Vec2 {
         let updatedPosition: Utils.Vec2 = position.Copy();
-        let connectingArrow: ShapeRenderer.ArrowPath = new ShapeRenderer.ArrowPath(position, [defaultArrowLength], [defaultArrowAngle]);
+        let connectingArrow: ArrowPath = new ArrowPath(position, [defaultArrowLength], [defaultArrowAngle]);
 
         let arrowTotalSize: Utils.Vec2 = connectingArrow.GetSize();
         updatedPosition = position.Plus(arrowTotalSize.x, arrowTotalSize.y);
@@ -254,8 +259,8 @@ export class ConditionalStatement extends ProgramNode {
     public thenNode: ProgramNode = new ProgramNode();
     public elseNode: ProgramNode = new ProgramNode();
 
-    private thenArrow: ShapeRenderer.ArrowPath | null = null;
-    private elseArrow: ShapeRenderer.ArrowPath | null = null;
+    private thenArrow: ArrowPath | null = null;
+    private elseArrow: ArrowPath | null = null;
     private thenBlockSize: Utils.Vec2 = Utils.Vec2.Zero();
     private elseBlockSize: Utils.Vec2 = Utils.Vec2.Zero();
     private hasBeenRendered: boolean = false;
@@ -289,15 +294,20 @@ export class ConditionalStatement extends ProgramNode {
 
         let downwardSegmentLength: number = shapeSize.y / 2 + defaultArrowLength;
         this.thenBlockSize = this.thenNode.GetSubnodesSize(); this.elseBlockSize = this.elseNode.GetSubnodesSize();
+        let thenArrowDownwardSize: number = this.thenBlockSize.x / 2 + branchingArrowOffset,
+            elseArrowDownwardSize: number = this.elseBlockSize.x / 2 + branchingArrowOffset;
         
-        this.thenArrow = new ShapeRenderer.ArrowPath(
+        this.thenArrow = new ArrowPath(
             diamondCenter.Plus(-arrowPositionOffset, arrowOffsetY),
-            [this.thenBlockSize.x / 2 + branchingArrowOffset, downwardSegmentLength], [180, defaultArrowAngle]
+            [thenArrowDownwardSize, downwardSegmentLength], [180, defaultArrowAngle]
         );
-        this.elseArrow = new ShapeRenderer.ArrowPath(
+        this.elseArrow = new ArrowPath(
             diamondCenter.Plus(arrowPositionOffset, arrowOffsetY),
-            [this.elseBlockSize.x / 2 + branchingArrowOffset, downwardSegmentLength], [360, defaultArrowAngle]
+            [elseArrowDownwardSize, downwardSegmentLength], [360, defaultArrowAngle]
         );
+
+        this.thenNode.RenderSubnodes(this.thenArrow.GetLatestSegmentPos(), false);
+        this.elseNode.RenderSubnodes(this.elseArrow.GetLatestSegmentPos(), false);
 
         this.linkedShape = conditionalShape;
         this.hasBeenRendered = true;
@@ -308,20 +318,6 @@ export class ConditionalStatement extends ProgramNode {
         if (this.thenArrow !== null) this.thenArrow.Delete();
         if (this.elseArrow !== null) this.elseArrow.Delete();
         this.hasBeenRendered = false;
-    }
-
-    public override GetSize(): Utils.Vec2 {
-        let beenRenderedPreviously: boolean = this.hasBeenRendered;
-        if (!beenRenderedPreviously) this.Render(Utils.Vec2.Zero());
-
-        let shapeSize: Utils.Vec2 = super.GetSize();
-        let thenArrowHeight: number = this.thenArrow === null ? 0 : this.thenArrow.GetSize().y,
-            elseArrowHeight: number = this.elseArrow === null ? 0 : this.elseArrow.GetSize().y;
-        let largerBlockHeight: number = Math.max(thenArrowHeight, elseArrowHeight);
-        shapeSize.y += largerBlockHeight;
-
-        if (!beenRenderedPreviously) this.Delete();
-        return shapeSize;
     }
 }
 

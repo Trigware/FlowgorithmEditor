@@ -1,5 +1,5 @@
 import * as Utils from "./Utils.js";
-let currentPlane;
+export let currentPlane;
 export function SetPlane(plane) { currentPlane = plane; }
 export var ShapeType;
 (function (ShapeType) {
@@ -79,78 +79,9 @@ const displayTypeToClassMap = new Map([
     [ShapeDisplayType.Hexagon, "HexagonShape"], [ShapeDisplayType.Elipse, "ElipticShape"],
     [ShapeDisplayType.Rectangle, "RectangleShape"]
 ]);
-const arrowEndingOffsetMultiplier = 0.475;
-export class ArrowPath {
-    position = Utils.Vec2.Zero();
-    segmentLengths = [];
-    segmentAngles = [];
-    segmentElements = [];
-    connectionElements = [];
-    arrowSize = Utils.Vec2.Zero();
-    constructor(pos, lengthsArr, directions) {
-        this.position = pos;
-        this.segmentLengths = lengthsArr;
-        this.segmentAngles = directions;
-        this.arrowSize = this.ConstructArrow();
-    }
-    GetSize() { return this.arrowSize; }
-    ConstructArrow() {
-        let segmentCount = this.segmentLengths.length;
-        let invalidArrayInfo = this.segmentLengths.length != this.segmentAngles.length || segmentCount === 0;
-        if (invalidArrayInfo)
-            return Utils.Vec2.Zero();
-        let currentPosition = this.position;
-        let arrowEnding = Utils.CreateElement("div", "ShapeArrowEnding", currentPlane);
-        let arrowEndingSize = Utils.GetNumericPixels(Utils.GetProperty(arrowEnding, "--arrow-ending-size"));
-        let endingOffset = Utils.Vec2.Zero();
-        for (let i = 0; i < segmentCount; i++) {
-            let segmentLength = this.segmentLengths[i];
-            let segmentAngle = this.segmentAngles[i];
-            let arrowSegment = Utils.CreateElement("div", "ShapeArrowSegment", currentPlane);
-            this.segmentElements.push(arrowSegment);
-            let isLastSegment = i === segmentCount - 1;
-            let segmentDirVec = Utils.Vec2.FromAngleDeg(segmentAngle);
-            let segmentOffset = segmentDirVec.Times(segmentLength / 2);
-            currentPosition = currentPosition.Plus(segmentOffset.x, segmentOffset.y);
-            let arrowConnector = null;
-            if (!isLastSegment) {
-                arrowConnector = Utils.CreateElement("div", "ShapeArrowConnector", currentPlane);
-                this.connectionElements.push(arrowConnector);
-            }
-            Utils.SetProperty(arrowSegment, "--arrow-length", segmentLength.toString() + "px");
-            Utils.SetProperty(arrowSegment, "--rotation", segmentAngle.toString() + "deg");
-            SetShapePosition(arrowSegment, currentPosition);
-            endingOffset = segmentDirVec.Times(arrowEndingSize * arrowEndingOffsetMultiplier);
-            if (isLastSegment)
-                segmentOffset = segmentOffset.Plus(endingOffset.x, endingOffset.y);
-            currentPosition = currentPosition.Plus(segmentOffset.x, segmentOffset.y);
-            if (arrowConnector !== null)
-                SetShapePosition(arrowConnector, currentPosition);
-        }
-        this.connectionElements.push(arrowEnding);
-        let latestAngleDegrees = this.segmentAngles[segmentCount - 1];
-        Utils.SetProperty(arrowEnding, "--rotation", latestAngleDegrees.toString() + "deg");
-        SetShapePosition(arrowEnding, currentPosition);
-        let arrowSize = currentPosition.Minus(this.position.x, this.position.y);
-        arrowSize = arrowSize.Plus(endingOffset.x, endingOffset.y);
-        return arrowSize;
-    }
-    Delete() {
-        for (let segment of this.segmentElements)
-            segment.remove();
-        for (let connection of this.connectionElements)
-            connection.remove();
-    }
-}
-function SetShapePosition(currentShape, shapePosition) {
+export function SetShapePosition(currentShape, shapePosition) {
     Utils.SetProperty(currentShape, "--shape-x", shapePosition.x.toString() + "px");
     Utils.SetProperty(currentShape, "--shape-y", shapePosition.y.toString() + "px");
-}
-export function GetArrowEndSize() {
-    let arrowEnding = Utils.CreateElement("div", "ShapeArrowEnding", currentPlane);
-    let arrowEndingSize = Utils.GetNumericPixels(Utils.GetProperty(arrowEnding, "--arrow-ending-size"));
-    arrowEnding.remove();
-    return arrowEndingSize;
 }
 const nonBreakingSpace = '\u00A0';
 export var TextType;
@@ -221,7 +152,6 @@ export function UpdateShapeProperties(currentShape) {
     let widthSizeIncrease = shapeWidth / defaultWidth;
     Utils.SetProperty(currentShape, "--width-size-increase", widthSizeIncrease.toString());
 }
-const regularShapeZIndex = 2, shadowShapeZIndex = 1;
 function ConstructShape(shapeType, position, shapeContent, offsetShape, isShadow) {
     let shapeDisplayInfo = shapeDisplayArr.get(shapeType);
     let shapeColorInfo = shapeColorsArr.get(shapeDisplayInfo.colorType);
@@ -237,8 +167,6 @@ function ConstructShape(shapeType, position, shapeContent, offsetShape, isShadow
     SetShapePosition(constructedShape, position);
     let usedShapeColor = isShadow ? shapeColorInfo.shadowColor : shapeColorInfo.shapeColor;
     constructedShape.style.backgroundColor = usedShapeColor;
-    let currentZIndex = isShadow ? shadowShapeZIndex : regularShapeZIndex;
-    Utils.SetProperty(constructedShape, "z-index", currentZIndex.toString());
     if (isShadow)
         constructedShape.classList.add("ShapeShadow");
     return constructedShape;

@@ -15,7 +15,7 @@ img {
     background-color: #6b6b6b;
     border-bottom: 3px solid #4b4b4b;
     user-select: none;
-    z-index: 2;
+    z-index: 4;
 }
 
 .ShapePlane {
@@ -46,6 +46,7 @@ img {
     width: min-content;
     padding: 0 20px;
     white-space: nowrap;
+    z-index: 3;
 
     position: absolute;
     height: calc(var(--default-width) / var(--aspect-ratio));
@@ -89,7 +90,7 @@ img {
 
 .ElipticShape { border-radius: 32px; background-color: #906eb8; }
 
-.ShapeShadow { color: transparent; }
+.ShapeShadow { color: transparent; z-index: 1; }
 .ShapeShadow.ParallelogramShape { --shadow-offset-x: 2.5px; --shadow-offset-y: 5px; }
 .ShapeShadow.DiamondShape { --shadow-offset-x: 0px; --shadow-offset-y: 6px; }
 .ShapeShadow.HexagonShape { --shadow-offset-x: 5px; --shadow-offset-y: 7px; }
@@ -100,6 +101,7 @@ img {
     --default-width: 0px;
     background-color: #404040;
     padding: 0 0;
+    z-index: 2;
 }
 
 .ShapeArrowSegment {

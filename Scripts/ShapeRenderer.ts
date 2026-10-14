@@ -1,6 +1,6 @@
 import * as Utils from "./Utils.js"
 
-let currentPlane: HTMLDivElement;
+export let currentPlane: HTMLDivElement;
 
 export function SetPlane(plane: HTMLDivElement) { currentPlane = plane; }
 
@@ -60,89 +60,9 @@ const displayTypeToClassMap: Map<ShapeDisplayType, string> = new Map([
     [ShapeDisplayType.Rectangle, "RectangleShape"]
 ]);
 
-const arrowEndingOffsetMultiplier: number = 0.475;
-
-export class ArrowPath {
-    public position: Utils.Vec2 = Utils.Vec2.Zero();
-    public segmentLengths: number[] = [];
-    public segmentAngles: number[] = [];
-
-    private segmentElements: HTMLDivElement[] = [];
-    private connectionElements: HTMLDivElement[] = [];
-    private arrowSize: Utils.Vec2 = Utils.Vec2.Zero();
-
-    public constructor(pos: Utils.Vec2, lengthsArr: number[], directions: number[]) {
-        this.position = pos;
-        this.segmentLengths = lengthsArr;
-        this.segmentAngles = directions;
-        this.arrowSize = this.ConstructArrow();
-    }
-
-    public GetSize(): Utils.Vec2 { return this.arrowSize; }
-
-    private ConstructArrow(): Utils.Vec2 {
-        let segmentCount: number = this.segmentLengths.length;
-        let invalidArrayInfo: boolean = this.segmentLengths.length != this.segmentAngles.length || segmentCount === 0;
-        if (invalidArrayInfo) return Utils.Vec2.Zero();
-
-        let currentPosition: Utils.Vec2 = this.position;
-        let arrowEnding: HTMLDivElement = Utils.CreateElement("div", "ShapeArrowEnding", currentPlane) as HTMLDivElement;
-        let arrowEndingSize: number = Utils.GetNumericPixels(Utils.GetProperty(arrowEnding, "--arrow-ending-size"));
-        let endingOffset: Utils.Vec2 = Utils.Vec2.Zero();
-
-        for (let i: number = 0; i < segmentCount; i++) {
-            let segmentLength: number = this.segmentLengths[i];
-            let segmentAngle: number = this.segmentAngles[i];
-            let arrowSegment: HTMLDivElement = Utils.CreateElement("div", "ShapeArrowSegment", currentPlane) as HTMLDivElement;
-            this.segmentElements.push(arrowSegment);
-            let isLastSegment: boolean = i === segmentCount - 1;
-
-            let segmentDirVec: Utils.Vec2 = Utils.Vec2.FromAngleDeg(segmentAngle);
-            let segmentOffset: Utils.Vec2 = segmentDirVec.Times(segmentLength / 2);
-            currentPosition = currentPosition.Plus(segmentOffset.x, segmentOffset.y);
-
-            let arrowConnector: HTMLDivElement | null = null;
-            if (!isLastSegment) {
-                arrowConnector = Utils.CreateElement("div", "ShapeArrowConnector", currentPlane) as HTMLDivElement;
-                this.connectionElements.push(arrowConnector);
-            }
-            
-            Utils.SetProperty(arrowSegment, "--arrow-length", segmentLength.toString() + "px");
-            Utils.SetProperty(arrowSegment, "--rotation", segmentAngle.toString() + "deg");
-            SetShapePosition(arrowSegment, currentPosition);
-
-            endingOffset = segmentDirVec.Times(arrowEndingSize * arrowEndingOffsetMultiplier);
-            if (isLastSegment) segmentOffset = segmentOffset.Plus(endingOffset.x, endingOffset.y);
-            currentPosition = currentPosition.Plus(segmentOffset.x, segmentOffset.y);
-            if (arrowConnector !== null) SetShapePosition(arrowConnector, currentPosition);
-        }
-
-        this.connectionElements.push(arrowEnding);
-        let latestAngleDegrees = this.segmentAngles[segmentCount - 1];
-        Utils.SetProperty(arrowEnding, "--rotation", latestAngleDegrees.toString() + "deg");
-        SetShapePosition(arrowEnding, currentPosition);
-
-        let arrowSize: Utils.Vec2 = currentPosition.Minus(this.position.x, this.position.y);
-        arrowSize = arrowSize.Plus(endingOffset.x, endingOffset.y);
-        return arrowSize;
-    }
-
-    public Delete() {
-        for (let segment of this.segmentElements) segment.remove();
-        for (let connection of this.connectionElements) connection.remove();
-    }
-}
-
-function SetShapePosition(currentShape: HTMLDivElement, shapePosition: Utils.Vec2) {
+export function SetShapePosition(currentShape: HTMLDivElement, shapePosition: Utils.Vec2) {
     Utils.SetProperty(currentShape, "--shape-x", shapePosition.x.toString() + "px");
     Utils.SetProperty(currentShape, "--shape-y", shapePosition.y.toString() + "px");
-}
-
-export function GetArrowEndSize(): number {
-    let arrowEnding: HTMLDivElement = Utils.CreateElement("div", "ShapeArrowEnding", currentPlane) as HTMLDivElement;
-    let arrowEndingSize: number = Utils.GetNumericPixels(Utils.GetProperty(arrowEnding, "--arrow-ending-size"));
-    arrowEnding.remove();
-    return arrowEndingSize;
 }
 
 const nonBreakingSpace: string = '\u00A0';
@@ -216,8 +136,6 @@ export function UpdateShapeProperties(currentShape: HTMLDivElement) {
     Utils.SetProperty(currentShape, "--width-size-increase", widthSizeIncrease.toString());
 }
 
-const regularShapeZIndex: number = 2, shadowShapeZIndex: number = 1;
-
 function ConstructShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent: ShapeContent, offsetShape: boolean, isShadow: boolean): HTMLDivElement {
     let shapeDisplayInfo: ShapeDisplayInfo = shapeDisplayArr.get(shapeType)!;
     let shapeColorInfo: ShapeColorInfo = shapeColorsArr.get(shapeDisplayInfo.colorType)!;
@@ -234,8 +152,6 @@ function ConstructShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent
     SetShapePosition(constructedShape, position);
     let usedShapeColor: string = isShadow ? shapeColorInfo.shadowColor : shapeColorInfo.shapeColor;
     constructedShape.style.backgroundColor = usedShapeColor;
-    let currentZIndex: number = isShadow ? shadowShapeZIndex : regularShapeZIndex;
-    Utils.SetProperty(constructedShape, "z-index", currentZIndex.toString());
     if (isShadow) constructedShape.classList.add("ShapeShadow");
 
     return constructedShape;

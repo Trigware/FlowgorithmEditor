@@ -2,6 +2,7 @@ import * as Utils from "./Utils.js";
 import { Expression } from "./Expression.js";
 import * as Identifier from "./Identifier.js";
 import * as ShapeRenderer from "./ShapeRenderer.js";
+import { ArrowPath } from "./ArrowRenderer.js";
 function GetEmptyContent() { return new ShapeRenderer.ShapeContent(); }
 export class ProgramNode {
     subNodes = [];
@@ -25,10 +26,14 @@ export class ProgramNode {
             this.Delete();
         return shapeSize;
     }
-    RenderSubnodes(position) {
+    RenderSubnodes(position, drawFirstArrow = true) {
         let updatedPosition = position.Copy();
-        for (let currentNode of this.subNodes) {
-            updatedPosition = this.RenderArrow(updatedPosition);
+        for (let i = 0; i < this.subNodes.length; i++) {
+            let currentNode = this.subNodes[i];
+            let isFirstNode = i === 0;
+            let drawCurrentArrow = !isFirstNode || drawFirstArrow;
+            if (drawCurrentArrow)
+                updatedPosition = this.RenderArrow(updatedPosition);
             currentNode.Render(updatedPosition);
             let currentNodeSize = currentNode.GetSize();
             updatedPosition.y += currentNodeSize.y;
@@ -37,7 +42,7 @@ export class ProgramNode {
     }
     RenderArrow(position) {
         let updatedPosition = position.Copy();
-        let connectingArrow = new ShapeRenderer.ArrowPath(position, [defaultArrowLength], [defaultArrowAngle]);
+        let connectingArrow = new ArrowPath(position, [defaultArrowLength], [defaultArrowAngle]);
         let arrowTotalSize = connectingArrow.GetSize();
         updatedPosition = position.Plus(arrowTotalSize.x, arrowTotalSize.y);
         return updatedPosition;
@@ -249,8 +254,11 @@ export class ConditionalStatement extends ProgramNode {
         let downwardSegmentLength = shapeSize.y / 2 + defaultArrowLength;
         this.thenBlockSize = this.thenNode.GetSubnodesSize();
         this.elseBlockSize = this.elseNode.GetSubnodesSize();
-        this.thenArrow = new ShapeRenderer.ArrowPath(diamondCenter.Plus(-arrowPositionOffset, arrowOffsetY), [this.thenBlockSize.x / 2 + branchingArrowOffset, downwardSegmentLength], [180, defaultArrowAngle]);
-        this.elseArrow = new ShapeRenderer.ArrowPath(diamondCenter.Plus(arrowPositionOffset, arrowOffsetY), [this.elseBlockSize.x / 2 + branchingArrowOffset, downwardSegmentLength], [360, defaultArrowAngle]);
+        let thenArrowDownwardSize = this.thenBlockSize.x / 2 + branchingArrowOffset, elseArrowDownwardSize = this.elseBlockSize.x / 2 + branchingArrowOffset;
+        this.thenArrow = new ArrowPath(diamondCenter.Plus(-arrowPositionOffset, arrowOffsetY), [thenArrowDownwardSize, downwardSegmentLength], [180, defaultArrowAngle]);
+        this.elseArrow = new ArrowPath(diamondCenter.Plus(arrowPositionOffset, arrowOffsetY), [elseArrowDownwardSize, downwardSegmentLength], [360, defaultArrowAngle]);
+        this.thenNode.RenderSubnodes(this.thenArrow.GetLatestSegmentPos(), false);
+        this.elseNode.RenderSubnodes(this.elseArrow.GetLatestSegmentPos(), false);
         this.linkedShape = conditionalShape;
         this.hasBeenRendered = true;
     }
@@ -261,18 +269,6 @@ export class ConditionalStatement extends ProgramNode {
         if (this.elseArrow !== null)
             this.elseArrow.Delete();
         this.hasBeenRendered = false;
-    }
-    GetSize() {
-        let beenRenderedPreviously = this.hasBeenRendered;
-        if (!beenRenderedPreviously)
-            this.Render(Utils.Vec2.Zero());
-        let shapeSize = super.GetSize();
-        let thenArrowHeight = this.thenArrow === null ? 0 : this.thenArrow.GetSize().y, elseArrowHeight = this.elseArrow === null ? 0 : this.elseArrow.GetSize().y;
-        let largerBlockHeight = Math.max(thenArrowHeight, elseArrowHeight);
-        shapeSize.y += largerBlockHeight;
-        if (!beenRenderedPreviously)
-            this.Delete();
-        return shapeSize;
     }
 }
 export class ForLoop extends ProgramNode {
