@@ -1,0 +1,123 @@
+body {
+    padding: 0; margin: 0;
+    font-family: Georgia, 'Times New Roman', Times, serif;
+    overflow: hidden;
+}
+
+img {
+    image-rendering: pixelated;
+}
+
+.HeaderSection {
+    position: sticky;
+    height: fit-content;
+    width: 100vw;
+    background-color: #6b6b6b;
+    border-bottom: 3px solid #4b4b4b;
+    user-select: none;
+    z-index: 2;
+}
+
+.ShapePlane {
+    --camera-x: 0px; --camera-y: 0px;
+    --zoom-level: 1.0;
+    --tile-size: 60px;
+    --zoomed-tile-size: calc(var(--tile-size) * var(--zoom-level));
+    
+    background: conic-gradient(#b0b0b0 25%, #b5b5b5 0 50%, #b0b0b0 0 75%, #b5b5b5 0);
+    background-size: var(--zoomed-tile-size) var(--zoomed-tile-size);
+    background-position: calc(var(--camera-x)) calc(var(--camera-y));
+
+    position: absolute;
+    user-select: none;
+    width: 100vw; height: 100vh;
+}
+
+.ShapePlane > * {
+    --aspect-ratio: 2.5;
+    --default-width: 120px;
+    --shape-x: 0px; --shape-y: 0px;
+    --offset-x: 0px; --offset-y: 0px;
+    --shadow-offset-x: 0px; --shadow-offset-y: 0px;
+    --width-size-increase: 1;
+    --rotation: 0deg;
+
+    min-width: var(--default-width);
+    width: min-content;
+    padding: 0 20px;
+    white-space: nowrap;
+
+    position: absolute;
+    height: calc(var(--default-width) / var(--aspect-ratio));
+    transform:
+        translateX(calc(var(--camera-x) + var(--shape-x) * var(--zoom-level) + var(--offset-x) + var(--shadow-offset-x) * var(--zoom-level)))
+        translateY(calc(var(--camera-y) + var(--shape-y) * var(--zoom-level) + var(--offset-y) + var(--shadow-offset-y) * var(--zoom-level)))
+        rotate(var(--rotation))
+        scale(var(--zoom-level));
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25em;
+}
+
+.ParallelogramShape {
+    --base-steapness: 20%;
+    --steapness: calc(var(--base-steapness) / var(--width-size-increase));
+    clip-path: polygon(0% 100%, var(--steapness) 0%, 100% 0%, calc(100% - var(--steapness)) 100%);
+}
+
+.DiamondShape {
+    --aspect-ratio: calc(2.5 / var(--width-size-increase));
+    padding: 0 30px;
+    clip-path: polygon(0% 50%, 50% 0%, 100% 50%, 50% 100%);
+}
+
+.HexagonShape {
+    --base-middle-gap: 50%;
+    --middle-gap: calc(100% - var(--base-middle-gap) / var(--width-size-increase));
+
+    clip-path: polygon(
+        0% 50%, calc(50% - var(--middle-gap) / 2) 0%,
+        calc(50% + var(--middle-gap) / 2) 0%, 100% 50%,
+        calc(50% + var(--middle-gap) / 2) 100%, calc(50% - var(--middle-gap) / 2) 100%
+    );
+}
+
+.ElipticShape { border-radius: 32px; }
+
+.ShapeShadow { color: transparent; }
+.ShapeShadow.ParallelogramShape { --shadow-offset-x: 2.5px; --shadow-offset-y: 5px; }
+.ShapeShadow.DiamondShape { --shadow-offset-x: 0px; --shadow-offset-y: 6px; }
+.ShapeShadow.HexagonShape { --shadow-offset-x: 5px; --shadow-offset-y: 7px; }
+.ShapeShadow.ElipticShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; }
+.ShapeShadow.RectangleShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; }
+
+.ShapeArrowSegment, .ShapeArrowConnector, .ShapeArrowEnding {
+    --default-width: 0px;
+    background-color: #404040;
+    padding: 0 0;
+}
+
+.ShapeArrowSegment {
+    --arrow-length: 100px;
+    width: var(--arrow-length); height: 6px;
+}
+
+.ShapeArrowConnector {
+    width: 15px; height: 15px;
+    border-radius: 15px;
+}
+
+.ShapeArrowEnding {
+    --arrow-ending-size: 20px;
+
+    width: 20px; height: 20px;
+    clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+}
+
+.ContentUnderlined {
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 2px;
+}
