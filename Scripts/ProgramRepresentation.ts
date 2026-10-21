@@ -16,18 +16,45 @@ export class ProgramNode {
     public Delete() { this.linkedShape.Delete(); }
 
     public GetSize(): Utils.Vec2 {
-        let isNotRendered: boolean = this.linkedShape.mainShape === null;
-        if (isNotRendered) return this.GetSizeByRender();
+        let isRendered: boolean = this.linkedShape.mainShape !== null;
+        if (isRendered) return this.CalculateSize();
 
-        let nodeSize: Utils.Vec2 = this.linkedShape.GetSize();
+        this.Render(Utils.Vec2.Zero());
+        let nodeSize: Utils.Vec2 = this.CalculateSize();
+        this.Delete();
         return nodeSize;
     }
 
-    private GetSizeByRender(): Utils.Vec2 {
-        this.Render(Utils.Vec2.Zero());
-        let nodeSize: Utils.Vec2 = this.GetSize();
-        this.Delete();
-        return nodeSize;
+    public RenderSubnodes(position: Utils.Vec2) {
+        for (let i = 0; i < this.subNodes.length; i++) {
+            this.RenderDefaultArrow(position);
+            let currentNode: ProgramNode = this.subNodes[i];
+            let currentHeight: number = currentNode.GetSize().y;
+            currentNode.Render(position);
+            position.y += currentHeight;
+        }
+    }
+
+    public CalculateSize(): Utils.Vec2 { return this.linkedShape.GetSize(); }
+
+    public RenderDefaultArrow(position: Utils.Vec2): ArrowPath {
+        let renderedArrow: ArrowPath = new ArrowPath(position, [defaultArrowLength], [defaultArrowAngle]);
+        let arrowTotalSize: Utils.Vec2 = renderedArrow.GetArrowSize();
+        position.y += arrowTotalSize.y;
+
+        return renderedArrow;
+    }
+
+    public GetEntireNodeSize(): Utils.Vec2 {
+        let entireNodeSize: Utils.Vec2 = this.GetSize();
+        for (let nodeChild of this.subNodes) {
+            entireNodeSize.y += defaultArrowLength;
+            let currentNodeSize: Utils.Vec2 = nodeChild.GetEntireNodeSize();
+            entireNodeSize.x = Math.max(entireNodeSize.x, currentNodeSize.x);
+            entireNodeSize.y += currentNodeSize.y;
+        }
+
+        return entireNodeSize;
     }
 }
 
@@ -78,8 +105,8 @@ export class Program extends ProgramNode {
     }
 }
 
-const defaultArrowLength: number = 60;
-const defaultArrowAngle: number = 90;
+export const defaultArrowLength: number = 60;
+export const defaultArrowAngle: number = 90;
 
 export class FunctionSignature extends ProgramNode {
     public name: string = "";
@@ -117,25 +144,15 @@ export class FunctionSignature extends ProgramNode {
         let functionSignatureShape: ShapeRenderer.RenderedShape = ShapeRenderer.AddShape(
             ShapeRenderer.ShapeType.FunctionSignature, position, this.GetContent(), false
         );
+        
         latestShapePosition.y += functionSignatureShape.GetSize().y / 2;
         this.linkedShape = functionSignatureShape;
-
-        let ownedShapeCount: number = this.subNodes.length + 1;
-        for (let i = 0; i < ownedShapeCount; i++) {
-            let isLastShape: boolean = i === ownedShapeCount - 1;
-            let connectingArrow: ArrowPath = new ArrowPath(latestShapePosition, [defaultArrowLength], [defaultArrowAngle]);
-            let arrowTotalSize: Utils.Vec2 = connectingArrow.GetArrowSize();
-            latestShapePosition.y += arrowTotalSize.y;
-            if (isLastShape) { this.RenderEndShape(latestShapePosition); break; }
-
-            let currentNode: ProgramNode = this.subNodes[i];
-            let currentHeight: number = currentNode.GetSize().y;
-            currentNode.Render(latestShapePosition);
-            latestShapePosition.y += currentHeight;
-        }
+        this.RenderSubnodes(position);
+        this.RenderEndShape(latestShapePosition);
     }
 
     private RenderEndShape(position: Utils.Vec2) {
+        this.RenderDefaultArrow(position);
         let returnShapeContent: ShapeRenderer.ShapeContent = GetEmptyContent();
         let doesFunctionReturn: boolean = this.returnType !== VariableType.Void;
         let returnTypeAsStr: string = VariableType[this.returnType];
@@ -223,28 +240,6 @@ export class CallInstruction extends ProgramNode {
 
     public override Render(position: Utils.Vec2) {
         this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Call, position, this.GetContent());
-    }
-}
-
-export class ConditionalStatement extends ProgramNode {
-    public conditional: Expression = new Expression();
-    public thenNode: ProgramNode = new ProgramNode();
-    public elseNode: ProgramNode = new ProgramNode();
-
-    public MoveSubnodes(moveToThen: boolean) {
-        let selectedNode: ProgramNode = moveToThen ? this.thenNode : this.elseNode;
-        selectedNode.subNodes = this.subNodes.slice();
-        this.subNodes = [];
-    }
-
-    public override GetContent(): ShapeRenderer.ShapeContent {
-        let resultContent: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent("if ");
-        resultContent.Append(this.conditional.expressionAsStr, ShapeRenderer.TextType.Bolded);
-        return resultContent;
-    }
-
-    public override Render(position: Utils.Vec2) {
-        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Conditional, position, this.GetContent());
     }
 }
 

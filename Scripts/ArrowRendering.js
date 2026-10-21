@@ -61,6 +61,14 @@ export class ArrowPath {
         this.currentPosition = this.currentPosition.Plus(endingOffset.x, endingOffset.y);
         this.arrowSize = this.currentPosition.Minus(this.position.x, this.position.y);
     }
+    Delete() {
+        let allArrowDivs = [...this.arrowSegments, ...this.arrowConnections];
+        for (let currentArrowDiv of allArrowDivs) {
+            currentArrowDiv.remove();
+        }
+        this.arrowSegments = [];
+        this.arrowConnections = [];
+    }
 }
 function GetArrowEndSize() {
     let arrowEnding = Utils.CreateElement("div", "ShapeArrowEnding", ShapeRenderer.currentPlane);

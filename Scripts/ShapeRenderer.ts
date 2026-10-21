@@ -152,7 +152,6 @@ function ConstructShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent
     let offsetPosition: Utils.Vec2 = Utils.Vec2.Zero();
     UpdateShapeProperties(constructedShape);
     let shapeHeight: number = Utils.GetNumericPixels(Utils.GetProperty(constructedShape, "height"));
-    console.log(Utils.GetProperty(constructedShape, "--width-size-increase"));
     if (offsetShape) offsetPosition.y = shapeHeight / 2;
     position = position.Plus(offsetPosition.x, offsetPosition.y);
     SetShapePosition(constructedShape, position);

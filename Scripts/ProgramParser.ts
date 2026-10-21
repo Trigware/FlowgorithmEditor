@@ -2,6 +2,7 @@ import { Expression, ParenthesisType } from "./Expression.js";
 import * as Flowgorithm from "./ProgramRepresentation.js"
 import * as Utils from "./Utils.js"
 import * as Identifier from "./Identifier.js"
+import { ConditionalStatement } from "./ConditionalStatement.js"
 
 let previouslyParsedElements: Element[] = [];
 
@@ -171,7 +172,7 @@ function ParseIOTag(currentElement: Element, isInput: boolean): Flowgorithm.IOIn
 }
 
 function ParseConditionalTag(currentElement: Element): Flowgorithm.ProgramNode {
-    let conditionalTag: Flowgorithm.ConditionalStatement = new Flowgorithm.ConditionalStatement();
+    let conditionalTag: ConditionalStatement = new ConditionalStatement();
     let expressionValue: string | null = currentElement.getAttribute("expression");
     if (expressionValue !== null) conditionalTag.conditional = Expression.FromString(expressionValue);
 

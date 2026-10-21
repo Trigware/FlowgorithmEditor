@@ -13,7 +13,6 @@ function OnStart() {
     document.addEventListener("wheel", OnWheelScrolled);
     ShapeRenderer.SetPlane(shapePlane);
     openedProgram.Render(Utils.Vec2.Zero());
-    console.log(openedProgram);
     OnDraw();
 }
 let previousTimeSinceStarted = 0;
