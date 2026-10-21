@@ -6,11 +6,25 @@ import { ArrowPath } from "./ArrowRendering.js";
 function GetEmptyContent() { return new ShapeRenderer.ShapeContent(); }
 export class ProgramNode {
     subNodes = [];
-    Clear() {
-        this.subNodes = [];
-    }
+    linkedShape = new ShapeRenderer.RenderedShape();
+    Clear() { this.subNodes = []; if (this.linkedShape !== null)
+        this.linkedShape.Delete(); }
     GetContent() { return GetEmptyContent(); }
     Render(position) { }
+    Delete() { this.linkedShape.Delete(); }
+    GetSize() {
+        let isNotRendered = this.linkedShape.mainShape === null;
+        if (isNotRendered)
+            return this.GetSizeByRender();
+        let nodeSize = this.linkedShape.GetSize();
+        return nodeSize;
+    }
+    GetSizeByRender() {
+        this.Render(Utils.Vec2.Zero());
+        let nodeSize = this.GetSize();
+        this.Delete();
+        return nodeSize;
+    }
 }
 var VariableType;
 (function (VariableType) {
@@ -72,6 +86,7 @@ export class FunctionSignature extends ProgramNode {
     returnVariableName = "";
     nameError = Identifier.IdentifierError.None;
     returnError = Identifier.IdentifierError.None;
+    functionEndShape = new ShapeRenderer.RenderedShape();
     GetContent() {
         let functionContent = GetEmptyContent();
         functionContent.Append(this.name, ShapeRenderer.TextType.Bolded);
@@ -95,19 +110,21 @@ export class FunctionSignature extends ProgramNode {
         let latestShapePosition = position;
         let functionSignatureShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.FunctionSignature, position, this.GetContent(), false);
         latestShapePosition.y += functionSignatureShape.GetSize().y / 2;
+        this.linkedShape = functionSignatureShape;
         let ownedShapeCount = this.subNodes.length + 1;
         for (let i = 0; i < ownedShapeCount; i++) {
             let isLastShape = i === ownedShapeCount - 1;
             let connectingArrow = new ArrowPath(latestShapePosition, [defaultArrowLength], [defaultArrowAngle]);
             let arrowTotalSize = connectingArrow.GetArrowSize();
-            console.log(arrowTotalSize);
-            latestShapePosition = latestShapePosition.Plus(arrowTotalSize.x, arrowTotalSize.y);
+            latestShapePosition.y += arrowTotalSize.y;
             if (isLastShape) {
                 this.RenderEndShape(latestShapePosition);
                 break;
             }
             let currentNode = this.subNodes[i];
+            let currentHeight = currentNode.GetSize().y;
             currentNode.Render(latestShapePosition);
+            latestShapePosition.y += currentHeight;
         }
     }
     RenderEndShape(position) {
@@ -120,8 +137,9 @@ export class FunctionSignature extends ProgramNode {
         }
         else
             returnShapeContent.Append("End", ShapeRenderer.TextType.Bolded);
-        ShapeRenderer.AddShape(ShapeRenderer.ShapeType.FunctionEnd, position, returnShapeContent);
+        this.functionEndShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.FunctionEnd, position, returnShapeContent);
     }
+    Delete() { super.Delete(); this.functionEndShape.Delete(); }
 }
 export class DeclarationInstruction extends ProgramNode {
     declaredVariables = [];
@@ -144,14 +162,18 @@ export class DeclarationInstruction extends ProgramNode {
         }
         return declarationContent;
     }
-    Render(position) { ShapeRenderer.AddShape(ShapeRenderer.ShapeType.VariableDeclaration, position, this.GetContent()); }
+    Render(position) {
+        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.VariableDeclaration, position, this.GetContent());
+    }
 }
 export class AssignmentInstruction extends ProgramNode {
     lvalue = new Expression();
     rvalue = new Expression();
     isValidLValue = true;
     GetContent() { return new ShapeRenderer.ShapeContent(`${this.lvalue.expressionAsStr} = ${this.rvalue.expressionAsStr}`); }
-    Render(position) { ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Assignment, position, this.GetContent()); }
+    Render(position) {
+        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Assignment, position, this.GetContent());
+    }
 }
 export class IOInstruction extends ProgramNode {
     expression = new Expression();
@@ -168,7 +190,7 @@ export class IOInstruction extends ProgramNode {
     }
     Render(position) {
         let shapeType = this.isInput ? ShapeRenderer.ShapeType.Input : ShapeRenderer.ShapeType.Output;
-        let renderedShape = ShapeRenderer.AddShape(shapeType, position, this.GetContent());
+        this.linkedShape = ShapeRenderer.AddShape(shapeType, position, this.GetContent());
     }
 }
 export class CallInstruction extends ProgramNode {
@@ -177,7 +199,9 @@ export class CallInstruction extends ProgramNode {
     GetContent() {
         return new ShapeRenderer.ShapeContent(this.callExpression.expressionAsStr);
     }
-    Render(position) { ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Call, position, this.GetContent()); }
+    Render(position) {
+        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Call, position, this.GetContent());
+    }
 }
 export class ConditionalStatement extends ProgramNode {
     conditional = new Expression();
@@ -187,6 +211,14 @@ export class ConditionalStatement extends ProgramNode {
         let selectedNode = moveToThen ? this.thenNode : this.elseNode;
         selectedNode.subNodes = this.subNodes.slice();
         this.subNodes = [];
+    }
+    GetContent() {
+        let resultContent = new ShapeRenderer.ShapeContent("if ");
+        resultContent.Append(this.conditional.expressionAsStr, ShapeRenderer.TextType.Bolded);
+        return resultContent;
+    }
+    Render(position) {
+        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Conditional, position, this.GetContent());
     }
 }
 export class ForLoop extends ProgramNode {

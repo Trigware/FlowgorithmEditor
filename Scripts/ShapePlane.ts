@@ -15,12 +15,12 @@ function OnStart() {
     document.addEventListener("wheel", OnWheelScrolled);
     ShapeRenderer.SetPlane(shapePlane);
     openedProgram.Render(Utils.Vec2.Zero());
+    console.log(openedProgram)
     OnDraw();
 }
 
 let previousTimeSinceStarted: number = 0;
 let deltaTime: number = 0;
-const shapeOffsetMultiplier: Utils.Vec2 = new Utils.Vec2(0.5, 0.075);
 
 function OnDraw() {
     let currentTimeSinceStarted: number = Utils.GetTimeSinceStarted();
@@ -33,7 +33,7 @@ function OnDraw() {
     if (holdingMouse) MoveShapePlane(mouseDiff);
     previousTimeSinceStarted = currentTimeSinceStarted;
 
-    UpdateShapeOffset();
+    UpdateAllShapes();
     requestAnimationFrame(OnDraw);
 }
 
@@ -70,21 +70,10 @@ function OnWheelScrolled(event: WheelEvent) {
     shapePlane.style.setProperty("--zoom-level", currentZoomLevel.toString());
 }
 
-function UpdateShapeOffset() {
-    let planeSize: Utils.Vec2 = new Utils.Vec2(shapePlane.clientWidth, shapePlane.clientHeight);
-
+function UpdateAllShapes() {
     for (let i: number = 0; i < shapePlane.children.length; i++) {
         let currentShape: HTMLDivElement = shapePlane.children[i] as HTMLDivElement;
-        let shapeWidth: number = currentShape.clientWidth;
-
-        let shapeOffset: Utils.Vec2 = planeSize.Times(shapeOffsetMultiplier.x, shapeOffsetMultiplier.y)
-            .Minus(shapeWidth / 2, currentShape.clientHeight / 2);
-        
-        Utils.SetProperty(currentShape, "--offset-x", shapeOffset.x.toString() + "px");
-        Utils.SetProperty(currentShape, "--offset-y", shapeOffset.y.toString() + "px");
-        let defaultWidth: number = Utils.GetNumericPixels(Utils.GetProperty(currentShape, "--default-width"));
-        let widthSizeIncrease: number = shapeWidth / defaultWidth;
-        Utils.SetProperty(currentShape, "--width-size-increase", widthSizeIncrease.toString());
+        ShapeRenderer.UpdateShapeProperties(currentShape);
     }
 }
 

@@ -8,11 +8,27 @@ function GetEmptyContent(): ShapeRenderer.ShapeContent { return new ShapeRendere
 
 export class ProgramNode {
     public subNodes: ProgramNode[] = [];
-    private linkedShape: HTMLDivElement | null = null;
+    protected linkedShape: ShapeRenderer.RenderedShape = new ShapeRenderer.RenderedShape();
 
-    public Clear() { this.subNodes = []; if (this.linkedShape !== null) this.linkedShape.remove(); }
+    public Clear() { this.subNodes = []; if (this.linkedShape !== null) this.linkedShape.Delete(); }
     public GetContent(): ShapeRenderer.ShapeContent { return GetEmptyContent(); }
     public Render(position: Utils.Vec2) {}
+    public Delete() { this.linkedShape.Delete(); }
+
+    public GetSize(): Utils.Vec2 {
+        let isNotRendered: boolean = this.linkedShape.mainShape === null;
+        if (isNotRendered) return this.GetSizeByRender();
+
+        let nodeSize: Utils.Vec2 = this.linkedShape.GetSize();
+        return nodeSize;
+    }
+
+    private GetSizeByRender(): Utils.Vec2 {
+        this.Render(Utils.Vec2.Zero());
+        let nodeSize: Utils.Vec2 = this.GetSize();
+        this.Delete();
+        return nodeSize;
+    }
 }
 
 enum VariableType { Void, Integer, Real, String, Boolean }
@@ -74,6 +90,8 @@ export class FunctionSignature extends ProgramNode {
     public nameError: Identifier.IdentifierError = Identifier.IdentifierError.None;
     public returnError: Identifier.IdentifierError = Identifier.IdentifierError.None;
 
+    private functionEndShape: ShapeRenderer.RenderedShape = new ShapeRenderer.RenderedShape();
+
     public override GetContent(): ShapeRenderer.ShapeContent {
         let functionContent: ShapeRenderer.ShapeContent = GetEmptyContent();
         functionContent.Append(this.name, ShapeRenderer.TextType.Bolded);
@@ -100,18 +118,20 @@ export class FunctionSignature extends ProgramNode {
             ShapeRenderer.ShapeType.FunctionSignature, position, this.GetContent(), false
         );
         latestShapePosition.y += functionSignatureShape.GetSize().y / 2;
+        this.linkedShape = functionSignatureShape;
 
         let ownedShapeCount: number = this.subNodes.length + 1;
         for (let i = 0; i < ownedShapeCount; i++) {
             let isLastShape: boolean = i === ownedShapeCount - 1;
             let connectingArrow: ArrowPath = new ArrowPath(latestShapePosition, [defaultArrowLength], [defaultArrowAngle]);
             let arrowTotalSize: Utils.Vec2 = connectingArrow.GetArrowSize();
-            console.log(arrowTotalSize);
-            latestShapePosition = latestShapePosition.Plus(arrowTotalSize.x, arrowTotalSize.y);
+            latestShapePosition.y += arrowTotalSize.y;
             if (isLastShape) { this.RenderEndShape(latestShapePosition); break; }
 
             let currentNode: ProgramNode = this.subNodes[i];
+            let currentHeight: number = currentNode.GetSize().y;
             currentNode.Render(latestShapePosition);
+            latestShapePosition.y += currentHeight;
         }
     }
 
@@ -125,8 +145,10 @@ export class FunctionSignature extends ProgramNode {
             returnShapeContent.Append(` ${returnTypeAsStr} ${this.returnVariableName}`);
         } else returnShapeContent.Append("End", ShapeRenderer.TextType.Bolded);
 
-        ShapeRenderer.AddShape(ShapeRenderer.ShapeType.FunctionEnd, position, returnShapeContent);
+        this.functionEndShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.FunctionEnd, position, returnShapeContent);
     }
+
+    public override Delete() { super.Delete(); this.functionEndShape.Delete(); }
 }
 
 export class DeclarationInstruction extends ProgramNode {
@@ -154,7 +176,9 @@ export class DeclarationInstruction extends ProgramNode {
         return declarationContent;
     }
 
-    public override Render(position: Utils.Vec2) { ShapeRenderer.AddShape(ShapeRenderer.ShapeType.VariableDeclaration, position, this.GetContent()); }
+    public override Render(position: Utils.Vec2) {
+        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.VariableDeclaration, position, this.GetContent());
+    }
 }
 
 export class AssignmentInstruction extends ProgramNode {
@@ -163,7 +187,9 @@ export class AssignmentInstruction extends ProgramNode {
     public isValidLValue: boolean = true;
 
     public override GetContent(): ShapeRenderer.ShapeContent { return new ShapeRenderer.ShapeContent(`${this.lvalue.expressionAsStr} = ${this.rvalue.expressionAsStr}`); }
-    public override Render(position: Utils.Vec2) { ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Assignment, position, this.GetContent()); }
+    public override Render(position: Utils.Vec2) {
+        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Assignment, position, this.GetContent());
+    }
 }
 
 export class IOInstruction extends ProgramNode {
@@ -183,7 +209,7 @@ export class IOInstruction extends ProgramNode {
 
     public override Render(position: Utils.Vec2) {
         let shapeType: ShapeRenderer.ShapeType = this.isInput ? ShapeRenderer.ShapeType.Input : ShapeRenderer.ShapeType.Output;
-        let renderedShape: ShapeRenderer.RenderedShape = ShapeRenderer.AddShape(shapeType, position, this.GetContent());
+        this.linkedShape = ShapeRenderer.AddShape(shapeType, position, this.GetContent());
     }
 }
 
@@ -195,7 +221,9 @@ export class CallInstruction extends ProgramNode {
         return new ShapeRenderer.ShapeContent(this.callExpression.expressionAsStr);
     }
 
-    public override Render(position: Utils.Vec2) { ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Call, position, this.GetContent()); }
+    public override Render(position: Utils.Vec2) {
+        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Call, position, this.GetContent());
+    }
 }
 
 export class ConditionalStatement extends ProgramNode {
@@ -207,6 +235,16 @@ export class ConditionalStatement extends ProgramNode {
         let selectedNode: ProgramNode = moveToThen ? this.thenNode : this.elseNode;
         selectedNode.subNodes = this.subNodes.slice();
         this.subNodes = [];
+    }
+
+    public override GetContent(): ShapeRenderer.ShapeContent {
+        let resultContent: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent("if ");
+        resultContent.Append(this.conditional.expressionAsStr, ShapeRenderer.TextType.Bolded);
+        return resultContent;
+    }
+
+    public override Render(position: Utils.Vec2) {
+        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Conditional, position, this.GetContent());
     }
 }
 
