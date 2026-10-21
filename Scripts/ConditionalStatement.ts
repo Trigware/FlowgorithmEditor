@@ -6,6 +6,9 @@ import { ArrowPath } from "./ArrowRendering.js"
 
 type ArrowPathOpt = ArrowPath | null;
 
+const leftPointingRotation: number = 0; const rightPointingRotation: number = 180;
+const conditionalArrowXOffset: number = 10;
+
 export class ConditionalStatement extends Flowgorithm.ProgramNode {
     public conditional: Expression = new Expression();
     public thenNode: Flowgorithm.ProgramNode = new Flowgorithm.ProgramNode();
@@ -13,6 +16,8 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
 
     private thenBranchArrow: ArrowPathOpt = null; private elseBranchArrow: ArrowPathOpt = null;
     private thenMergeArrow: ArrowPathOpt = null; private elseMergeArrow: ArrowPathOpt = null;
+
+    private currentPosition: Utils.Vec2 = Utils.Vec2.Zero();
 
     public MoveSubnodes(moveToThen: boolean) {
         let selectedNode: Flowgorithm.ProgramNode = moveToThen ? this.thenNode : this.elseNode;
@@ -32,8 +37,9 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
     }
 
     public override Render(position: Utils.Vec2) {
-        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Conditional, position, this.GetContent());
-        console.log(`THEN: ${this.thenNode.GetEntireNodeSize().ToString()}, ELSE: ${this.elseNode.GetEntireNodeSize().ToString()}`);
+        this.currentPosition = position.Copy();
+        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Conditional, this.currentPosition, this.GetContent());
+        this.RenderBranchArrow(true); this.RenderBranchArrow(false);
     }
 
     public override Delete() {
@@ -45,5 +51,24 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         for (let currentArrowPath of divsMarkedForDeletion) {
             if (currentArrowPath !== null) currentArrowPath.Delete();
         }
+    }
+
+    private RenderBranchArrow(isThen: boolean) {
+        if (this.linkedShape.shadowShape === null) return;
+
+        let bodySize: Utils.Vec2 = this.linkedShape.GetSize();
+        let diamondCenter: Utils.Vec2 = this.currentPosition.Plus(0, bodySize.y / 2);
+        let arrowOffset: Utils.Vec2 = Utils.Vec2.Zero();
+        arrowOffset.x = bodySize.x / 2 - conditionalArrowXOffset;
+        if (!isThen) arrowOffset.x = -arrowOffset.x;
+        arrowOffset.y = Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y")) / 2;
+        let arrowPosition: Utils.Vec2 = diamondCenter.Plus(arrowOffset.x, arrowOffset.y);
+
+        let arrowRotation: number = isThen ? leftPointingRotation : rightPointingRotation;
+        let horizontalArrowLength: number = Flowgorithm.defaultArrowLength + conditionalArrowXOffset;
+        let branchArrow: ArrowPath = new ArrowPath(arrowPosition, [horizontalArrowLength], [arrowRotation]);
+
+        if (isThen) this.thenBranchArrow = branchArrow;
+        else this.elseBranchArrow = branchArrow;
     }
 }

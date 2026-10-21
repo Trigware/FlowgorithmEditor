@@ -177,8 +177,8 @@ export function UpdateShapeProperties(currentShape: HTMLDivElement) {
 
 export function AddShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent: ShapeContent, offsetShape: boolean = true): RenderedShape {
     let renderedShape: RenderedShape = new RenderedShape();
-    renderedShape.mainShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
-    renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, false);
+    renderedShape.mainShape = ConstructShape(shapeType, position, shapeContent, offsetShape, false);
+    renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
     return renderedShape;
 }
 
@@ -190,10 +190,7 @@ export class RenderedShape {
 
     public GetSize(): Utils.Vec2 {
         if (this.mainShape === null) return Utils.Vec2.Zero();
-        let widthAsStr: string = Utils.GetProperty(this.mainShape, "width"),
-            heightAsStr: string = Utils.GetProperty(this.mainShape, "height");
-        let shapeSize: Utils.Vec2 = new Utils.Vec2(Utils.GetNumericPixels(widthAsStr), Utils.GetNumericPixels(heightAsStr));
-
+        let shapeSize: Utils.Vec2 = new Utils.Vec2(this.mainShape.clientWidth, this.mainShape.clientHeight);
         return shapeSize;
     }
 

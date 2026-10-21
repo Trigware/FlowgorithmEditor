@@ -1,6 +1,6 @@
 :root {
-    --shape-shadow-layer: 0;
-    --arrow-layer: 1;
+    --arrow-layer: 0;
+    --shape-shadow-layer: 1;
     --regular-shape-layer: 2;
     --website-header-layer: 3;
 

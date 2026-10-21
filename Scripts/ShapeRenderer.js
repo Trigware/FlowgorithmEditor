@@ -193,8 +193,8 @@ export function UpdateShapeProperties(currentShape) {
 }
 export function AddShape(shapeType, position, shapeContent, offsetShape = true) {
     let renderedShape = new RenderedShape();
-    renderedShape.mainShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
-    renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, false);
+    renderedShape.mainShape = ConstructShape(shapeType, position, shapeContent, offsetShape, false);
+    renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
     return renderedShape;
 }
 export function ClearPlane() { currentPlane.replaceChildren(); }
@@ -204,8 +204,7 @@ export class RenderedShape {
     GetSize() {
         if (this.mainShape === null)
             return Utils.Vec2.Zero();
-        let widthAsStr = Utils.GetProperty(this.mainShape, "width"), heightAsStr = Utils.GetProperty(this.mainShape, "height");
-        let shapeSize = new Utils.Vec2(Utils.GetNumericPixels(widthAsStr), Utils.GetNumericPixels(heightAsStr));
+        let shapeSize = new Utils.Vec2(this.mainShape.clientWidth, this.mainShape.clientHeight);
         return shapeSize;
     }
     Delete() {
