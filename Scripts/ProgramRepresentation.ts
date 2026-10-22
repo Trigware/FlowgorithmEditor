@@ -36,6 +36,7 @@ export class ProgramNode {
             if (!isFirstNode || renderFirstArrow) this.nodeConnections.push(this.RenderDefaultArrow(position));
             let currentNode: ProgramNode = this.subNodes[i];
             let currentHeight: number = currentNode.GetSize().y;
+            
             currentNode.Render(position);
             position.y += currentHeight;
         }

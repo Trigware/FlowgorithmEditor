@@ -301,4 +301,12 @@ export function ReplaceSurrounding(originalStr: string, replacedChar: string, ne
     return resultStr;
 }
 
+export function GetFirstChildTag(parentElement: Element, tagName: string): Element | null {
+    for (let childElement of parentElement.children) {
+        let isMatchingTag: boolean = childElement.tagName === tagName;
+        if (isMatchingTag) return childElement;
+    }
+    return null;
+}
+
 OnStart();

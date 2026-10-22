@@ -139,6 +139,12 @@ export class ShapeContent {
         let appendedSegment = new TextSegment(segmentContent, textTypes);
         this.segments.push(appendedSegment);
     }
+    ToString() {
+        let result = "";
+        for (let currentSegment of this.segments)
+            result += currentSegment.segmentContent;
+        return result;
+    }
 }
 function ConstructShape(shapeType, position, shapeContent, offsetShape, isShadow) {
     let shapeDisplayInfo = shapeDisplayArr.get(shapeType);

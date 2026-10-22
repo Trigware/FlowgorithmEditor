@@ -259,4 +259,12 @@ export function ReplaceSurrounding(originalStr, replacedChar, newChar) {
     resultStr = ReplaceSurroundingByType(resultStr, replacedChar, newChar, false);
     return resultStr;
 }
+export function GetFirstChildTag(parentElement, tagName) {
+    for (let childElement of parentElement.children) {
+        let isMatchingTag = childElement.tagName === tagName;
+        if (isMatchingTag)
+            return childElement;
+    }
+    return null;
+}
 OnStart();

@@ -36,15 +36,15 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         let thenBlockSize: Utils.Vec2 = this.thenNode.GetEntireNodeSize(), elseBlockSize: Utils.Vec2 = this.elseNode.GetEntireNodeSize();
         let greaterBlockHeight: number = Math.max(thenBlockSize.y, elseBlockSize.y);
         statementSize.y += greaterBlockHeight;
-        console.log(statementSize);
 
         return statementSize;
     }
 
     public override Render(position: Utils.Vec2) {
         this.currentPosition = position.Copy();
-        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Conditional, this.currentPosition, this.GetContent());
-        this.RenderBranch(true); this.RenderBranch(false);
+        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Conditional, position.Copy(), this.GetContent());
+        this.RenderBranch(true);
+        this.RenderBranch(false);
     }
 
     public override Delete() {

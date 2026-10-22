@@ -118,6 +118,12 @@ export class ShapeContent {
         let appendedSegment: TextSegment = new TextSegment(segmentContent, textTypes);
         this.segments.push(appendedSegment);
     }
+
+    public ToString(): string {
+        let result: string = "";
+        for (let currentSegment of this.segments) result += currentSegment.segmentContent;
+        return result;
+    }
 }
 
 function ConstructShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent: ShapeContent, offsetShape: boolean, isShadow: boolean): HTMLDivElement {

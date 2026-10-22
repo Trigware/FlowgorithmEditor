@@ -48,6 +48,7 @@ function OnFileSelected() {
     selectedFile.text().then((fileContent: string) => {
         Parser.Setup(openedProgram, fileContent);
         openedProgram.Render(Utils.Vec2.Zero());
+        console.log(openedProgram);
     });
 }
 

@@ -4,8 +4,6 @@ import * as Utils from "./Utils.js"
 import * as Identifier from "./Identifier.js"
 import { ConditionalStatement } from "./ConditionalStatement.js"
 
-let previouslyParsedElements: Element[] = [];
-
 enum ProgramTag {
     Unknown, Function, Declare, Assign, Input, Output, If, Call, For, While, Do
 }
@@ -14,23 +12,21 @@ export function Setup(program: Flowgorithm.Program, scriptContents: string) {
     program.Clear();
     const xmlParser: DOMParser = new DOMParser();
     const xmlDocument: XMLDocument = xmlParser.parseFromString(scriptContents, "application/xml") as XMLDocument;
-    previouslyParsedElements = [];
-    ParseElement(xmlDocument.documentElement, program);
+    let rootElement: Element = xmlDocument.documentElement;
+    ParseElement(rootElement, program);
 }
 
 function ParseElement(currentElement: Element, parentNode: Flowgorithm.ProgramNode) {
     let currentTagName: string = currentElement.tagName;
-    let elementAlreadyParsed: boolean = previouslyParsedElements.includes(currentElement);
-    let skipElement: boolean = currentTagName.length === 0 || elementAlreadyParsed;
+    let skipElement: boolean = currentTagName.length === 0;
     if (skipElement) return;
 
     let firstLetterUpper: string = currentTagName[0].toUpperCase();
     currentTagName = firstLetterUpper + currentTagName.substring(1);
     let actualTag: ProgramTag | null = Utils.GetEnumValueFromName(ProgramTag, currentTagName);
     
-    previouslyParsedElements.push(currentElement);
     let isNodeTag: boolean = actualTag !== null;
-    if (isNodeTag) ParseSpecificTag(currentElement, actualTag!, parentNode);
+    if (isNodeTag) { ParseSpecificTag(currentElement, actualTag!, parentNode); return; }
 
     for (let childElement of currentElement.children) {
        ParseElement(childElement, parentNode);
@@ -43,6 +39,7 @@ function ParseSpecificTag(currentElement: Element, currentTag: ProgramTag, paren
 
     let parsingFunction: (currentElement: Element) => Flowgorithm.ProgramNode = tagParsingFunctionMap.get(currentTag)!;
     let tagAsInstruction: Flowgorithm.ProgramNode = parsingFunction.call(undefined, currentElement);
+    //console.log(`CONTENT: ${tagAsInstruction.GetContent().ToString()}, PARENT: ${parentNode.GetContent().ToString()}`);
     parentNode.subNodes.push(tagAsInstruction);
 }
 
@@ -176,9 +173,9 @@ function ParseConditionalTag(currentElement: Element): Flowgorithm.ProgramNode {
     let expressionValue: string | null = currentElement.getAttribute("expression");
     if (expressionValue !== null) conditionalTag.conditional = Expression.FromString(expressionValue);
 
-    let conditionThenTag: Element | null = currentElement.querySelector("then");
+    let conditionThenTag: Element | null = Utils.GetFirstChildTag(currentElement, "then");
     if (conditionThenTag !== null) { ParseElement(conditionThenTag, conditionalTag); conditionalTag.MoveSubnodes(true); }
-    let conditionElseTag: Element | null = currentElement.querySelector("else");
+    let conditionElseTag: Element | null = Utils.GetFirstChildTag(currentElement, "else");
     if (conditionElseTag !== null) { ParseElement(conditionElseTag, conditionalTag); conditionalTag.MoveSubnodes(false); }
 
     return conditionalTag;
