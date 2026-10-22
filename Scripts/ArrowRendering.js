@@ -16,6 +16,7 @@ export class ArrowPath {
         this.ConstructArrow();
     }
     GetArrowSize() { return this.arrowSize; }
+    GetArrowEndPos() { return this.currentPosition; }
     ConstructArrow() {
         let segmentCount = this.segmentLengths.length;
         let invalidArrayInfo = this.segmentLengths.length != this.segmentAngles.length || segmentCount === 0;

@@ -6,12 +6,19 @@ import { ArrowPath } from "./ArrowRendering.js";
 function GetEmptyContent() { return new ShapeRenderer.ShapeContent(); }
 export class ProgramNode {
     subNodes = [];
+    nodeConnections = [];
     linkedShape = new ShapeRenderer.RenderedShape();
     Clear() { this.subNodes = []; if (this.linkedShape !== null)
         this.linkedShape.Delete(); }
     GetContent() { return GetEmptyContent(); }
     Render(position) { }
-    Delete() { this.linkedShape.Delete(); }
+    Delete() {
+        this.linkedShape.Delete();
+        for (let childNode of this.subNodes)
+            childNode.Delete();
+        for (let currentArrow of this.nodeConnections)
+            currentArrow.Delete();
+    }
     GetSize() {
         let isRendered = this.linkedShape.mainShape !== null;
         if (isRendered)
@@ -21,9 +28,11 @@ export class ProgramNode {
         this.Delete();
         return nodeSize;
     }
-    RenderSubnodes(position) {
+    RenderSubnodes(position, renderFirstArrow = true) {
         for (let i = 0; i < this.subNodes.length; i++) {
-            this.RenderDefaultArrow(position);
+            let isFirstNode = i === 0;
+            if (!isFirstNode || renderFirstArrow)
+                this.nodeConnections.push(this.RenderDefaultArrow(position));
             let currentNode = this.subNodes[i];
             let currentHeight = currentNode.GetSize().y;
             currentNode.Render(position);
@@ -37,11 +46,14 @@ export class ProgramNode {
         position.y += arrowTotalSize.y;
         return renderedArrow;
     }
-    GetEntireNodeSize() {
+    GetEntireNodeSize(countFirstArrow = true) {
         let entireNodeSize = this.GetSize();
-        for (let nodeChild of this.subNodes) {
-            entireNodeSize.y += defaultArrowLength;
-            let currentNodeSize = nodeChild.GetEntireNodeSize();
+        for (let i = 0; i < this.subNodes.length; i++) {
+            let isFirstNode = i === 0;
+            let nodeChild = this.subNodes[i];
+            if (!isFirstNode || countFirstArrow)
+                entireNodeSize.y += defaultArrowLength;
+            let currentNodeSize = nodeChild.GetEntireNodeSize(countFirstArrow);
             entireNodeSize.x = Math.max(entireNodeSize.x, currentNodeSize.x);
             entireNodeSize.y += currentNodeSize.y;
         }

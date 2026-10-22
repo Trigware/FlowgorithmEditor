@@ -8,12 +8,17 @@ function GetEmptyContent(): ShapeRenderer.ShapeContent { return new ShapeRendere
 
 export class ProgramNode {
     public subNodes: ProgramNode[] = [];
+    public nodeConnections: ArrowPath[] = [];
     protected linkedShape: ShapeRenderer.RenderedShape = new ShapeRenderer.RenderedShape();
 
     public Clear() { this.subNodes = []; if (this.linkedShape !== null) this.linkedShape.Delete(); }
     public GetContent(): ShapeRenderer.ShapeContent { return GetEmptyContent(); }
     public Render(position: Utils.Vec2) {}
-    public Delete() { this.linkedShape.Delete(); }
+    public Delete() {
+        this.linkedShape.Delete();
+        for (let childNode of this.subNodes) childNode.Delete();
+        for (let currentArrow of this.nodeConnections) currentArrow.Delete();
+    }
 
     public GetSize(): Utils.Vec2 {
         let isRendered: boolean = this.linkedShape.mainShape !== null;
@@ -25,9 +30,10 @@ export class ProgramNode {
         return nodeSize;
     }
 
-    public RenderSubnodes(position: Utils.Vec2) {
+    public RenderSubnodes(position: Utils.Vec2, renderFirstArrow: boolean = true) {
         for (let i = 0; i < this.subNodes.length; i++) {
-            this.RenderDefaultArrow(position);
+            let isFirstNode: boolean = i === 0;
+            if (!isFirstNode || renderFirstArrow) this.nodeConnections.push(this.RenderDefaultArrow(position));
             let currentNode: ProgramNode = this.subNodes[i];
             let currentHeight: number = currentNode.GetSize().y;
             currentNode.Render(position);
@@ -45,11 +51,14 @@ export class ProgramNode {
         return renderedArrow;
     }
 
-    public GetEntireNodeSize(): Utils.Vec2 {
+    public GetEntireNodeSize(countFirstArrow: boolean = true): Utils.Vec2 {
         let entireNodeSize: Utils.Vec2 = this.GetSize();
-        for (let nodeChild of this.subNodes) {
-            entireNodeSize.y += defaultArrowLength;
-            let currentNodeSize: Utils.Vec2 = nodeChild.GetEntireNodeSize();
+        for (let i: number = 0; i < this.subNodes.length; i++) {
+            let isFirstNode: boolean = i === 0;
+            let nodeChild: ProgramNode = this.subNodes[i];
+            if (!isFirstNode || countFirstArrow) entireNodeSize.y += defaultArrowLength;
+
+            let currentNodeSize: Utils.Vec2 = nodeChild.GetEntireNodeSize(countFirstArrow);
             entireNodeSize.x = Math.max(entireNodeSize.x, currentNodeSize.x);
             entireNodeSize.y += currentNodeSize.y;
         }

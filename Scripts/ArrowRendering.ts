@@ -4,9 +4,9 @@ import * as ShapeRenderer from "./ShapeRenderer.js"
 const arrowEndingOffsetMultiplier: number = 0.475;
 
 export class ArrowPath {
-    public position: Utils.Vec2 = Utils.Vec2.Zero();
-    public segmentLengths: number[] = [];
-    public segmentAngles: number[] = [];
+    private position: Utils.Vec2 = Utils.Vec2.Zero();
+    private segmentLengths: number[] = [];
+    private segmentAngles: number[] = [];
 
     private arrowSegments: HTMLDivElement[] = [];
     private arrowConnections: HTMLDivElement[] = [];
@@ -21,6 +21,7 @@ export class ArrowPath {
     }
 
     public GetArrowSize(): Utils.Vec2 { return this.arrowSize; }
+    public GetArrowEndPos(): Utils.Vec2 { return this.currentPosition; }
 
     private ConstructArrow() {
         let segmentCount: number = this.segmentLengths.length;
@@ -79,7 +80,7 @@ export class ArrowPath {
         for (let currentArrowDiv of allArrowDivs) {
             currentArrowDiv.remove();
         }
-        
+
         this.arrowSegments = [];
         this.arrowConnections = [];
     }

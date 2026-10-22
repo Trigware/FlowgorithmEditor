@@ -212,5 +212,7 @@ export class RenderedShape {
             this.mainShape.remove();
         if (this.shadowShape !== null)
             this.shadowShape.remove();
+        this.mainShape = null;
+        this.shadowShape = null;
     }
 }

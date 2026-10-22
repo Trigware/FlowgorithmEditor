@@ -197,5 +197,6 @@ export class RenderedShape {
     public Delete() {
         if (this.mainShape !== null) this.mainShape.remove();
         if (this.shadowShape !== null) this.shadowShape.remove();
+        this.mainShape = null; this.shadowShape = null;
     }
 }

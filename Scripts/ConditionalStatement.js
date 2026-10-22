@@ -26,17 +26,21 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         return resultContent;
     }
     CalculateSize() {
-        let blockSize = super.CalculateSize();
-        return blockSize;
+        let statementSize = super.CalculateSize();
+        let thenBlockSize = this.thenNode.GetEntireNodeSize(), elseBlockSize = this.elseNode.GetEntireNodeSize();
+        let greaterBlockHeight = Math.max(thenBlockSize.y, elseBlockSize.y);
+        statementSize.y += greaterBlockHeight;
+        console.log(statementSize);
+        return statementSize;
     }
     Render(position) {
         this.currentPosition = position.Copy();
         this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Conditional, this.currentPosition, this.GetContent());
-        this.RenderBranchArrow(true);
-        this.RenderBranchArrow(false);
+        this.RenderBranch(true);
+        this.RenderBranch(false);
     }
     Delete() {
-        this.linkedShape.Delete();
+        super.Delete();
         let divsMarkedForDeletion = [
             this.thenBranchArrow, this.elseBranchArrow, this.thenMergeArrow, this.elseMergeArrow
         ];
@@ -46,22 +50,32 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         }
     }
     RenderBranchArrow(isThen) {
-        if (this.linkedShape.shadowShape === null)
-            return;
+        let currentNode = isThen ? this.thenNode : this.elseNode;
+        let blockSize = currentNode.GetEntireNodeSize();
         let bodySize = this.linkedShape.GetSize();
         let diamondCenter = this.currentPosition.Plus(0, bodySize.y / 2);
         let arrowOffset = Utils.Vec2.Zero();
         arrowOffset.x = bodySize.x / 2 - conditionalArrowXOffset;
         if (!isThen)
             arrowOffset.x = -arrowOffset.x;
-        arrowOffset.y = Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y")) / 2;
+        if (this.linkedShape.shadowShape !== null)
+            arrowOffset.y = Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y")) / 2;
         let arrowPosition = diamondCenter.Plus(arrowOffset.x, arrowOffset.y);
         let arrowRotation = isThen ? leftPointingRotation : rightPointingRotation;
-        let horizontalArrowLength = Flowgorithm.defaultArrowLength + conditionalArrowXOffset;
-        let branchArrow = new ArrowPath(arrowPosition, [horizontalArrowLength], [arrowRotation]);
+        let horizontalArrowLength = Math.max(Flowgorithm.defaultArrowLength, blockSize.x / 2);
+        horizontalArrowLength += conditionalArrowXOffset;
+        let downwardArrowLength = this.linkedShape.GetSize().y / 2 + Flowgorithm.defaultArrowLength - arrowOffset.y;
+        let branchArrow = new ArrowPath(arrowPosition, [horizontalArrowLength, downwardArrowLength], [arrowRotation, Flowgorithm.defaultArrowAngle]);
         if (isThen)
             this.thenBranchArrow = branchArrow;
         else
             this.elseBranchArrow = branchArrow;
+        return branchArrow;
+    }
+    RenderBranch(isThen) {
+        let branchArrow = this.RenderBranchArrow(isThen);
+        let branchNode = isThen ? this.thenNode : this.elseNode;
+        let arrowEndPos = branchArrow.GetArrowEndPos();
+        branchNode.RenderSubnodes(arrowEndPos, false);
     }
 }
