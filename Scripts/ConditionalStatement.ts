@@ -6,7 +6,7 @@ import { ArrowPath } from "./ArrowRendering.js"
 
 type ArrowPathOpt = ArrowPath | null;
 
-const leftPointingRotation: number = 0; const rightPointingRotation: number = 180;
+const leftPointingRotation: number = 180; const rightPointingRotation: number = 0;
 const mergePointSizeMultiplier: number = 1.65;
 
 export class ConditionalStatement extends Flowgorithm.ProgramNode {
@@ -53,9 +53,13 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         this.thenBlockSize = this.thenNode.GetEntireNodeSize();
         this.elseBlockSize = this.elseNode.GetEntireNodeSize();
 
+        this.mergePoint = Utils.CreateElement("div", "ShapeArrowConnector", ShapeRenderer.currentPlane) as HTMLDivElement;
+        let mergePointSize: number = Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size")) * mergePointSizeMultiplier;
+        Utils.SetProperty(this.mergePoint, "--connector-size", mergePointSize.toString() + "px");
+
         let thenBranchEndPos: Utils.Vec2 = this.RenderBranch(true);
         let elseBranchEndPos: Utils.Vec2 = this.RenderBranch(false);
-        this.mergePoint = Utils.CreateElement("div", "ShapeArrowConnector", ShapeRenderer.currentPlane) as HTMLDivElement;
+        this.RenderMergePoint();
         this.RenderMergeArrow(thenBranchEndPos, true);
         this.RenderMergeArrow(elseBranchEndPos, false);
     }
@@ -72,27 +76,60 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         if (this.mergePoint !== null) this.mergePoint.remove();
     }
 
+    private RenderMergePoint() {
+        if (this.mergePoint === null) return;
+        let mergePointColor: string = ShapeRenderer.GetColorInfo(ShapeRenderer.ShapeType.Conditional).mergePointColor;
+        Utils.SetProperty(this.mergePoint, "background-color", mergePointColor);
+
+        let mergePointPosition: Utils.Vec2 = this.currentPosition;
+        let greaterBlockHeight: number = Math.max(this.thenBlockSize.y, this.elseBlockSize.y);
+        let conditionalBodySize: Utils.Vec2 = this.linkedShape.GetSize(); 
+        mergePointPosition.y += greaterBlockHeight + conditionalBodySize.y + Flowgorithm.defaultArrowLength;
+        ShapeRenderer.SetShapePosition(this.mergePoint, mergePointPosition);
+    }
+
     private RenderBranchArrow(isThen: boolean): ArrowPath {
-        let blockSize: Utils.Vec2 = isThen ? this.thenBlockSize : this.elseBlockSize;
         let bodySize: Utils.Vec2 = this.linkedShape.GetSize();
         let diamondCenter: Utils.Vec2 = this.currentPosition.Plus(0, bodySize.y / 2);
         let arrowOffset: Utils.Vec2 = Utils.Vec2.Zero();
         arrowOffset.x = bodySize.x / 2 - bodySize.x / 2;
+
         if (!isThen) arrowOffset.x = -arrowOffset.x;
         if (this.linkedShape.shadowShape !== null)
-            arrowOffset.y = Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y")) / 2;
+            arrowOffset.y = Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y")) / 2;        
         let arrowPosition: Utils.Vec2 = diamondCenter.Plus(arrowOffset.x, arrowOffset.y);
-
-        let arrowRotation: number = isThen ? leftPointingRotation : rightPointingRotation;
-        let horizontalArrowLength: number = Math.max(Flowgorithm.defaultArrowLength, blockSize.x / 2);
-        horizontalArrowLength += bodySize.x;
-        let downwardArrowLength: number = this.linkedShape.GetSize().y / 2 + Flowgorithm.defaultArrowLength - arrowOffset.y;
-        let branchArrow: ArrowPath = new ArrowPath(
-            arrowPosition, [horizontalArrowLength, downwardArrowLength], [arrowRotation, Flowgorithm.defaultArrowAngle]
-        );
-
+        let branchArrow: ArrowPath = this.CreateBranchArrow(isThen, arrowPosition, arrowOffset);
+        
         if (isThen) this.thenBranchArrow = branchArrow;
         else this.elseBranchArrow = branchArrow;
+        return branchArrow;
+    }
+
+    private CreateBranchArrow(isThen: boolean, arrowPosition: Utils.Vec2, arrowOffset: Utils.Vec2): ArrowPath {
+        let currentNode: Flowgorithm.ProgramNode = isThen ? this.thenNode : this.elseNode;
+        let bodySize: Utils.Vec2 = this.linkedShape.GetSize();
+        let currentBlockSize: Utils.Vec2 = isThen ? this.thenBlockSize : this.elseBlockSize;
+        let greaterBlockHeight: number = Math.max(this.thenBlockSize.y, this.elseBlockSize.y);
+        let emptyBlockArrowExtension: number = greaterBlockHeight - currentBlockSize.y;
+        let mergePointSize: number = this.mergePoint === null ? 0 : Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size"));
+
+        let arrowRotation: number = isThen ? rightPointingRotation : leftPointingRotation;
+        let horizontalArrowLength: number = Math.max(Flowgorithm.defaultArrowLength, currentBlockSize.x / 2);
+        horizontalArrowLength += bodySize.x;
+        let downwardArrowLength: number = this.linkedShape.GetSize().y / 2 + Flowgorithm.defaultArrowLength - arrowOffset.y;
+
+        let isBlockEmpty: boolean = currentNode.subNodes.length === 0;
+        if (isBlockEmpty) downwardArrowLength += emptyBlockArrowExtension;
+
+        let arrowLengthsArray: number[] = [horizontalArrowLength, downwardArrowLength];
+        let arrowAnglesArray: number[] = [arrowRotation, Flowgorithm.defaultArrowAngle];
+        if (isBlockEmpty) {
+            let mergeArrowAngle: number = isThen ? leftPointingRotation : rightPointingRotation;
+            let mergeArrowLength: number = horizontalArrowLength - mergePointSize / 2;
+            arrowLengthsArray.push(mergeArrowLength); arrowAnglesArray.push(mergeArrowAngle);
+        }
+
+        let branchArrow: ArrowPath = new ArrowPath(arrowPosition, arrowLengthsArray, arrowAnglesArray);
         return branchArrow;
     }
 
@@ -105,22 +142,19 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
 
     private RenderMergeArrow(arrowPosition: Utils.Vec2, isThen: boolean) {
         let currentBranchingArrow: ArrowPathOpt = isThen ? this.thenBranchArrow : this.elseBranchArrow;
-        if (currentBranchingArrow === null || this.mergePoint === null) return;
+        let currentBlock: Flowgorithm.ProgramNode = isThen ? this.thenNode : this.elseNode;
+        let subNodeCount: number = currentBlock.subNodes.length;
+        let containsSubnodes: boolean = subNodeCount > 0;
+        if (currentBranchingArrow === null || this.mergePoint === null || !containsSubnodes) return;
 
         let greaterBlockHeight: number = Math.max(this.thenBlockSize.y, this.elseBlockSize.y);
         let currentBlockSize: Utils.Vec2 = isThen ? this.thenBlockSize : this.elseBlockSize;
         let mergePointSize: number = Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size"));
-        if (isThen) mergePointSize *= mergePointSizeMultiplier;
-        Utils.SetProperty(this.mergePoint, "--connector-size", mergePointSize.toString() + "px");
-        let mergePointColor: string = ShapeRenderer.GetColorInfo(ShapeRenderer.ShapeType.Conditional).mergePointColor;
-        Utils.SetProperty(this.mergePoint, "background-color", mergePointColor);
 
         let mergingArrowDownwardLength: number = greaterBlockHeight - currentBlockSize.y + Flowgorithm.defaultArrowLength;
         let mergePointXOffset: number = currentBranchingArrow.GetSegmentLengths()[0];
-        let mergingHorizontalArrowAngle: number = isThen ? 180 : 0;
-        let mergePointPos: Utils.Vec2 = arrowPosition.Plus(mergePointXOffset, mergingArrowDownwardLength);
+        let mergingHorizontalArrowAngle: number = isThen ? leftPointingRotation : rightPointingRotation;
         let mergingHorizontalLength: number = mergePointXOffset - mergePointSize / 2;
-        ShapeRenderer.SetShapePosition(this.mergePoint, mergePointPos);
 
         let mergingArrow: ArrowPath = new ArrowPath(
             arrowPosition, [mergingArrowDownwardLength, mergingHorizontalLength], [Flowgorithm.defaultArrowAngle, mergingHorizontalArrowAngle]
