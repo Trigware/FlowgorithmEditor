@@ -2,7 +2,8 @@
     --arrow-layer: 0;
     --shape-shadow-layer: 1;
     --regular-shape-layer: 2;
-    --website-header-layer: 3;
+    --arrow-connector-layer: 3;
+    --website-header-layer: 4;
 
     --shape-aspect-ratio: 2.5;
 }
@@ -116,14 +117,17 @@ img {
 }
 
 .ShapeArrowConnector {
-    width: 15px; height: 15px;
-    border-radius: 15px;
+    --connector-size: 15px;
+
+    width: var(--connector-size); height: var(--connector-size);
+    border-radius: var(--connector-size);
+    z-index: var(--arrow-connector-layer);
 }
 
 .ShapeArrowEnding {
     --arrow-ending-size: 20px;
 
-    width: 20px; height: 20px;
+    width: var(--arrow-ending-size); height: var(--arrow-ending-size);
     clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
 }
 

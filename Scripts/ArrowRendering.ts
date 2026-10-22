@@ -22,6 +22,7 @@ export class ArrowPath {
 
     public GetArrowSize(): Utils.Vec2 { return this.arrowSize; }
     public GetArrowEndPos(): Utils.Vec2 { return this.currentPosition; }
+    public GetSegmentLengths(): number[] { return [...this.segmentLengths] }
 
     private ConstructArrow() {
         let segmentCount: number = this.segmentLengths.length;
@@ -37,7 +38,7 @@ export class ArrowPath {
         let segmentLength: number = this.segmentLengths[segmentIndex];
         let segmentAngle: number = this.segmentAngles[segmentIndex];
         let isLastSegment: boolean = segmentIndex === this.segmentLengths.length - 1;
-        let arrowEndingSize: number = GetArrowEndSize();
+        let arrowEndingSize: number = ArrowPath.GetArrowEndSize();
         if (isLastSegment) segmentLength -= arrowEndingSize / 2;
 
         let currentSegment: HTMLDivElement = Utils.CreateElement("div", "ShapeArrowSegment", ShapeRenderer.currentPlane) as HTMLDivElement;
@@ -67,7 +68,7 @@ export class ArrowPath {
 
     private CalculateArrowSize() {
         let lastSegmentRotation: number = this.segmentAngles[this.segmentAngles.length - 1];
-        let arrowEndingSize: number = GetArrowEndSize();
+        let arrowEndingSize: number = ArrowPath.GetArrowEndSize();
         let lastRotationVec: Utils.Vec2 = Utils.Vec2.FromAngleDeg(lastSegmentRotation);
         let endingOffset: Utils.Vec2 = lastRotationVec.Times(arrowEndingSize / 2);
 
@@ -84,11 +85,11 @@ export class ArrowPath {
         this.arrowSegments = [];
         this.arrowConnections = [];
     }
-}
 
-function GetArrowEndSize(): number {
-    let arrowEnding: HTMLDivElement = Utils.CreateElement("div", "ShapeArrowEnding", ShapeRenderer.currentPlane) as HTMLDivElement;
-    let endingSize: number = Utils.GetNumericPixels(Utils.GetProperty(arrowEnding, "--arrow-ending-size"));
-    arrowEnding.remove();
-    return endingSize;
+    public static GetArrowEndSize(): number {
+        let arrowEnding: HTMLDivElement = Utils.CreateElement("div", "ShapeArrowEnding", ShapeRenderer.currentPlane) as HTMLDivElement;
+        let endingSize: number = Utils.GetNumericPixels(Utils.GetProperty(arrowEnding, "--arrow-ending-size"));
+        arrowEnding.remove();
+        return endingSize;
+    }
 }

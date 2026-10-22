@@ -9,7 +9,7 @@ function GetEmptyContent(): ShapeRenderer.ShapeContent { return new ShapeRendere
 export class ProgramNode {
     public subNodes: ProgramNode[] = [];
     public nodeConnections: ArrowPath[] = [];
-    protected linkedShape: ShapeRenderer.RenderedShape = new ShapeRenderer.RenderedShape();
+    public linkedShape: ShapeRenderer.RenderedShape = new ShapeRenderer.RenderedShape();
 
     public Clear() { this.subNodes = []; if (this.linkedShape !== null) this.linkedShape.Delete(); }
     public GetContent(): ShapeRenderer.ShapeContent { return GetEmptyContent(); }
@@ -30,7 +30,7 @@ export class ProgramNode {
         return nodeSize;
     }
 
-    public RenderSubnodes(position: Utils.Vec2, renderFirstArrow: boolean = true) {
+    public RenderSubnodes(position: Utils.Vec2, renderFirstArrow: boolean = true): Utils.Vec2 {
         for (let i = 0; i < this.subNodes.length; i++) {
             let isFirstNode: boolean = i === 0;
             if (!isFirstNode || renderFirstArrow) this.nodeConnections.push(this.RenderDefaultArrow(position));
@@ -40,6 +40,7 @@ export class ProgramNode {
             currentNode.Render(position);
             position.y += currentHeight;
         }
+        return position.Copy();
     }
 
     public CalculateSize(): Utils.Vec2 { return this.linkedShape.GetSize(); }

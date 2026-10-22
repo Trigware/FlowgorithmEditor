@@ -39,9 +39,14 @@ var ShapeColorType;
 class ShapeColorInfo {
     shapeColor = "";
     shadowColor = "";
-    constructor(colorOfShape, colorOfShadow) {
+    mergePointColor = "";
+    constructor(colorOfShape, colorOfShadow, colorOfMergePoint = "#000000") {
         this.shapeColor = colorOfShape;
         this.shadowColor = colorOfShadow;
+        this.mergePointColor = colorOfMergePoint;
+    }
+    static Default() {
+        return new ShapeColorInfo("#000000", "#000000");
     }
 }
 class ShapeDisplayInfo {
@@ -58,7 +63,7 @@ const shapeColorsArr = new Map([
     [ShapeColorType.Blue, new ShapeColorInfo("#62a2de", "#376fa3")],
     [ShapeColorType.Green, new ShapeColorInfo("#4fc26a", "#2f8a5b")],
     [ShapeColorType.Yellow, new ShapeColorInfo("#edd040", "#a08d30")],
-    [ShapeColorType.Red, new ShapeColorInfo("#d13434", "#7d1e1e")],
+    [ShapeColorType.Red, new ShapeColorInfo("#d13434", "#7d1e1e", "#992323")],
     [ShapeColorType.Orange, new ShapeColorInfo("#c06e22", "#a56020")]
 ]);
 const shapeDisplayArr = new Map([
@@ -145,6 +150,15 @@ export class ShapeContent {
             result += currentSegment.segmentContent;
         return result;
     }
+}
+export function GetColorInfo(shapeType) {
+    let shapeDisplayInfo = shapeDisplayArr.get(shapeType);
+    if (shapeDisplayInfo === undefined)
+        return ShapeColorInfo.Default();
+    let shapeColorInfo = shapeColorsArr.get(shapeDisplayInfo.colorType);
+    if (shapeColorInfo === undefined)
+        return ShapeColorInfo.Default();
+    return shapeColorInfo;
 }
 function ConstructShape(shapeType, position, shapeContent, offsetShape, isShadow) {
     let shapeDisplayInfo = shapeDisplayArr.get(shapeType);

@@ -16,9 +16,12 @@ enum ShapeDisplayType { Unknown = -1, Parallelogram, Diamond, Hexagon, Elipse, R
 enum ShapeColorType { Unknown = -1, Purple, Blue, Green, Yellow, Red, Orange, LightPurple }
 
 class ShapeColorInfo {
-    public shapeColor: string = ""; public shadowColor: string = "";
-    public constructor(colorOfShape: string, colorOfShadow: string) {
-        this.shapeColor = colorOfShape; this.shadowColor = colorOfShadow;
+    public shapeColor: string = ""; public shadowColor: string = ""; public mergePointColor: string = "";
+    public constructor(colorOfShape: string, colorOfShadow: string, colorOfMergePoint: string = "#000000") {
+        this.shapeColor = colorOfShape; this.shadowColor = colorOfShadow; this.mergePointColor = colorOfMergePoint;
+    }
+    public static Default(): ShapeColorInfo {
+        return new ShapeColorInfo("#000000", "#000000");
     }
 }
 
@@ -36,7 +39,7 @@ const shapeColorsArr: Map<ShapeColorType, ShapeColorInfo> = new Map([
     [ShapeColorType.Blue, new ShapeColorInfo("#62a2de", "#376fa3")],
     [ShapeColorType.Green, new ShapeColorInfo("#4fc26a", "#2f8a5b")],
     [ShapeColorType.Yellow, new ShapeColorInfo("#edd040", "#a08d30")],
-    [ShapeColorType.Red, new ShapeColorInfo("#d13434", "#7d1e1e")],
+    [ShapeColorType.Red, new ShapeColorInfo("#d13434", "#7d1e1e", "#992323")],
     [ShapeColorType.Orange, new ShapeColorInfo("#c06e22", "#a56020")]
 ]);
 
@@ -124,6 +127,15 @@ export class ShapeContent {
         for (let currentSegment of this.segments) result += currentSegment.segmentContent;
         return result;
     }
+}
+
+export function GetColorInfo(shapeType: ShapeType): ShapeColorInfo {
+    let shapeDisplayInfo: ShapeDisplayInfo | undefined = shapeDisplayArr.get(shapeType);
+    if (shapeDisplayInfo === undefined) return ShapeColorInfo.Default();
+    let shapeColorInfo: ShapeColorInfo | undefined = shapeColorsArr.get(shapeDisplayInfo.colorType);
+    if (shapeColorInfo === undefined) return ShapeColorInfo.Default();
+
+    return shapeColorInfo;
 }
 
 function ConstructShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent: ShapeContent, offsetShape: boolean, isShadow: boolean): HTMLDivElement {

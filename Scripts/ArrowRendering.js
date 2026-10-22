@@ -17,6 +17,7 @@ export class ArrowPath {
     }
     GetArrowSize() { return this.arrowSize; }
     GetArrowEndPos() { return this.currentPosition; }
+    GetSegmentLengths() { return [...this.segmentLengths]; }
     ConstructArrow() {
         let segmentCount = this.segmentLengths.length;
         let invalidArrayInfo = this.segmentLengths.length != this.segmentAngles.length || segmentCount === 0;
@@ -31,7 +32,7 @@ export class ArrowPath {
         let segmentLength = this.segmentLengths[segmentIndex];
         let segmentAngle = this.segmentAngles[segmentIndex];
         let isLastSegment = segmentIndex === this.segmentLengths.length - 1;
-        let arrowEndingSize = GetArrowEndSize();
+        let arrowEndingSize = ArrowPath.GetArrowEndSize();
         if (isLastSegment)
             segmentLength -= arrowEndingSize / 2;
         let currentSegment = Utils.CreateElement("div", "ShapeArrowSegment", ShapeRenderer.currentPlane);
@@ -56,7 +57,7 @@ export class ArrowPath {
     }
     CalculateArrowSize() {
         let lastSegmentRotation = this.segmentAngles[this.segmentAngles.length - 1];
-        let arrowEndingSize = GetArrowEndSize();
+        let arrowEndingSize = ArrowPath.GetArrowEndSize();
         let lastRotationVec = Utils.Vec2.FromAngleDeg(lastSegmentRotation);
         let endingOffset = lastRotationVec.Times(arrowEndingSize / 2);
         this.currentPosition = this.currentPosition.Plus(endingOffset.x, endingOffset.y);
@@ -70,10 +71,10 @@ export class ArrowPath {
         this.arrowSegments = [];
         this.arrowConnections = [];
     }
-}
-function GetArrowEndSize() {
-    let arrowEnding = Utils.CreateElement("div", "ShapeArrowEnding", ShapeRenderer.currentPlane);
-    let endingSize = Utils.GetNumericPixels(Utils.GetProperty(arrowEnding, "--arrow-ending-size"));
-    arrowEnding.remove();
-    return endingSize;
+    static GetArrowEndSize() {
+        let arrowEnding = Utils.CreateElement("div", "ShapeArrowEnding", ShapeRenderer.currentPlane);
+        let endingSize = Utils.GetNumericPixels(Utils.GetProperty(arrowEnding, "--arrow-ending-size"));
+        arrowEnding.remove();
+        return endingSize;
+    }
 }

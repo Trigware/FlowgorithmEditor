@@ -38,6 +38,7 @@ export class ProgramNode {
             currentNode.Render(position);
             position.y += currentHeight;
         }
+        return position.Copy();
     }
     CalculateSize() { return this.linkedShape.GetSize(); }
     RenderDefaultArrow(position) {
