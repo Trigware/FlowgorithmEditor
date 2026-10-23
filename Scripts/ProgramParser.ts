@@ -39,7 +39,6 @@ function ParseSpecificTag(currentElement: Element, currentTag: ProgramTag, paren
 
     let parsingFunction: (currentElement: Element) => Flowgorithm.ProgramNode = tagParsingFunctionMap.get(currentTag)!;
     let tagAsInstruction: Flowgorithm.ProgramNode = parsingFunction.call(undefined, currentElement);
-    //console.log(`CONTENT: ${tagAsInstruction.GetContent().ToString()}, PARENT: ${parentNode.GetContent().ToString()}`);
     parentNode.subNodes.push(tagAsInstruction);
 }
 

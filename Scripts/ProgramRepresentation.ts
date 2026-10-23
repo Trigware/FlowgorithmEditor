@@ -6,6 +6,10 @@ import { ArrowPath } from "./ArrowRendering.js"
 
 function GetEmptyContent(): ShapeRenderer.ShapeContent { return new ShapeRenderer.ShapeContent(); }
 
+export enum SizeCountType {
+    CountAll, OnlyLeft, OnlyRight
+}
+
 export class ProgramNode {
     public subNodes: ProgramNode[] = [];
     public nodeConnections: ArrowPath[] = [];
@@ -20,12 +24,12 @@ export class ProgramNode {
         for (let currentArrow of this.nodeConnections) currentArrow.Delete();
     }
 
-    public GetSize(): Utils.Vec2 {
+    public GetSize(countType: SizeCountType = SizeCountType.CountAll): Utils.Vec2 {
         let isRendered: boolean = this.linkedShape.mainShape !== null;
-        if (isRendered) return this.CalculateSize();
+        if (isRendered) return this.CalculateSize(countType);
 
         this.Render(Utils.Vec2.Zero());
-        let nodeSize: Utils.Vec2 = this.CalculateSize();
+        let nodeSize: Utils.Vec2 = this.CalculateSize(countType);
         this.Delete();
         return nodeSize;
     }
@@ -36,7 +40,6 @@ export class ProgramNode {
             if (!isFirstNode || renderFirstArrow) this.nodeConnections.push(this.RenderDefaultArrow(position));
             let currentNode: ProgramNode = this.subNodes[i];
             let currentNodeSize: Utils.Vec2 = currentNode.GetSize();
-            console.log(`CONTENT: ${currentNode.GetContent().ToString()}, SIZE: ${currentNodeSize.ToString()}`);
             
             currentNode.Render(position);
             position.y += currentNodeSize.y;
@@ -44,7 +47,11 @@ export class ProgramNode {
         return position.Copy();
     }
 
-    public CalculateSize(): Utils.Vec2 { return this.linkedShape.GetSize(); }
+    public CalculateSize(countType: SizeCountType = SizeCountType.CountAll): Utils.Vec2 {
+        let countedSize: Utils.Vec2 = this.linkedShape.GetSize();
+        if (countType !== SizeCountType.CountAll) countedSize.x /= 2;
+        return countedSize;
+    }
 
     public RenderDefaultArrow(position: Utils.Vec2): ArrowPath {
         let renderedArrow: ArrowPath = new ArrowPath(position, [defaultArrowLength], [defaultArrowAngle]);
@@ -54,14 +61,16 @@ export class ProgramNode {
         return renderedArrow;
     }
 
-    public GetEntireNodeSize(countFirstArrow: boolean = true): Utils.Vec2 {
-        let entireNodeSize: Utils.Vec2 = this.GetSize();
+    public GetEntireNodeSize(countFirstArrow: boolean = true, countType: SizeCountType = SizeCountType.CountAll, depth: number = 0): Utils.Vec2 {
+        let entireNodeSize: Utils.Vec2 = this.GetSize(countType);
         for (let i: number = 0; i < this.subNodes.length; i++) {
             let isFirstNode: boolean = i === 0;
             let nodeChild: ProgramNode = this.subNodes[i];
             if (!isFirstNode || countFirstArrow) entireNodeSize.y += defaultArrowLength;
 
-            let currentNodeSize: Utils.Vec2 = nodeChild.GetEntireNodeSize(countFirstArrow);
+            let isFirstDepth: boolean = depth === 0;
+            let nextCountType: SizeCountType = isFirstDepth ? countType : SizeCountType.CountAll;
+            let currentNodeSize: Utils.Vec2 = nodeChild.GetEntireNodeSize(countFirstArrow, nextCountType, depth + 1);
             entireNodeSize.x = Math.max(entireNodeSize.x, currentNodeSize.x);
             entireNodeSize.y += currentNodeSize.y;
         }

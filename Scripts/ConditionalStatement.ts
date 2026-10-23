@@ -17,7 +17,7 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
 
     private thenBranchArrow: ArrowPathOpt = null; private elseBranchArrow: ArrowPathOpt = null;
     private thenMergeArrow: ArrowPathOpt = null; private elseMergeArrow: ArrowPathOpt = null;
-    private thenBlockSize: Utils.Vec2 = Utils.Vec2.Zero(); private elseBlockSize: Utils.Vec2 = Utils.Vec2.Zero();
+    private thenBlockImportantSize: Utils.Vec2 = Utils.Vec2.Zero(); private elseBlockImportantSize: Utils.Vec2 = Utils.Vec2.Zero();
 
     private thenLabel: OptionalDiv = null; private elseLabel: OptionalDiv = null;
     private mergePoint: OptionalDiv = null;
@@ -36,12 +36,21 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         return resultContent;
     }
 
-    public override CalculateSize(): Utils.Vec2 {
-        let statementSize: Utils.Vec2 = super.CalculateSize();
+    public override CalculateSize(countType: Flowgorithm.SizeCountType = Flowgorithm.SizeCountType.CountAll): Utils.Vec2 {
+        let statementSize: Utils.Vec2 = super.CalculateSize(countType);
 
-        let thenBlockSize: Utils.Vec2 = this.thenNode.GetEntireNodeSize(true),
-            elseBlockSize: Utils.Vec2 = this.elseNode.GetEntireNodeSize(true);
-        let statementWidth: number = thenBlockSize.x + elseBlockSize.x;
+        let thenBlockSize: Utils.Vec2 = this.thenNode.GetEntireNodeSize(),
+            elseBlockSize: Utils.Vec2 = this.elseNode.GetEntireNodeSize();
+        let thenBlockWidth: number = Math.max(thenBlockSize.x, Flowgorithm.defaultArrowLength),
+            elseBlockWidth: number = Math.max(elseBlockSize.x, Flowgorithm.defaultArrowLength);
+
+        let statementWidth: number = 0;
+        switch (countType) {
+            case Flowgorithm.SizeCountType.CountAll: statementWidth = thenBlockWidth + elseBlockWidth; break;
+            case Flowgorithm.SizeCountType.OnlyLeft: statementWidth = thenBlockWidth; break;
+            case Flowgorithm.SizeCountType.OnlyRight: statementWidth = elseBlockWidth; break;
+        }
+
         let greaterBlockHeight: number = Math.max(thenBlockSize.y, elseBlockSize.y);
         statementSize = statementSize.Plus(statementWidth, greaterBlockHeight);
         statementSize.y += Flowgorithm.defaultArrowLength;
@@ -53,8 +62,8 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         this.currentPosition = position.Copy();
         this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Conditional, position.Copy(), this.GetContent());
 
-        this.thenBlockSize = this.thenNode.GetEntireNodeSize();
-        this.elseBlockSize = this.elseNode.GetEntireNodeSize();
+        this.thenBlockImportantSize = this.thenNode.GetEntireNodeSize(true, Flowgorithm.SizeCountType.OnlyRight);
+        this.elseBlockImportantSize = this.elseNode.GetEntireNodeSize(true, Flowgorithm.SizeCountType.OnlyLeft);
 
         this.mergePoint = Utils.CreateElement("div", "ShapeArrowConnector", ShapeRenderer.currentPlane) as HTMLDivElement;
         let mergePointSize: number = Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size")) * mergePointSizeMultiplier;
@@ -88,7 +97,7 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         Utils.SetProperty(this.mergePoint, "background-color", mergePointColor);
 
         let mergePointPosition: Utils.Vec2 = this.currentPosition;
-        let greaterBlockHeight: number = Math.max(this.thenBlockSize.y, this.elseBlockSize.y);
+        let greaterBlockHeight: number = Math.max(this.thenBlockImportantSize.y, this.elseBlockImportantSize.y);
         let conditionalBodySize: Utils.Vec2 = this.linkedShape.GetSize(); 
         mergePointPosition.y += greaterBlockHeight + conditionalBodySize.y + Flowgorithm.defaultArrowLength;
         ShapeRenderer.SetShapePosition(this.mergePoint, mergePointPosition);
@@ -123,13 +132,13 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
     private CreateBranchArrow(isThen: boolean, arrowPosition: Utils.Vec2, arrowOffset: Utils.Vec2): ArrowPath {
         let currentNode: Flowgorithm.ProgramNode = isThen ? this.thenNode : this.elseNode;
         let bodySize: Utils.Vec2 = this.linkedShape.GetSize();
-        let currentBlockSize: Utils.Vec2 = isThen ? this.thenBlockSize : this.elseBlockSize;
-        let greaterBlockHeight: number = Math.max(this.thenBlockSize.y, this.elseBlockSize.y);
-        let emptyBlockArrowExtension: number = greaterBlockHeight - currentBlockSize.y;
+        let currentBlockImportantSize: Utils.Vec2 = isThen ? this.thenBlockImportantSize : this.elseBlockImportantSize;
+        let greaterBlockHeight: number = Math.max(this.thenBlockImportantSize.y, this.elseBlockImportantSize.y);
+        let emptyBlockArrowExtension: number = greaterBlockHeight - currentBlockImportantSize.y;
         let mergePointSize: number = this.mergePoint === null ? 0 : Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size"));
 
         let arrowRotation: number = isThen ? rightPointingRotation : leftPointingRotation;
-        let horizontalArrowLength: number = Math.max(Flowgorithm.defaultArrowLength, currentBlockSize.x / 2);
+        let horizontalArrowLength: number = Math.max(Flowgorithm.defaultArrowLength, currentBlockImportantSize.x);
         horizontalArrowLength += bodySize.x / 2;
         let downwardArrowLength: number = this.linkedShape.GetSize().y / 2 + Flowgorithm.defaultArrowLength - arrowOffset.y;
 
@@ -162,8 +171,8 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         let containsSubnodes: boolean = subNodeCount > 0;
         if (currentBranchingArrow === null || this.mergePoint === null || !containsSubnodes) return;
 
-        let greaterBlockHeight: number = Math.max(this.thenBlockSize.y, this.elseBlockSize.y);
-        let currentBlockSize: Utils.Vec2 = isThen ? this.thenBlockSize : this.elseBlockSize;
+        let greaterBlockHeight: number = Math.max(this.thenBlockImportantSize.y, this.elseBlockImportantSize.y);
+        let currentBlockSize: Utils.Vec2 = isThen ? this.thenBlockImportantSize : this.elseBlockImportantSize;
         let mergePointSize: number = Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size"));
 
         let mergingArrowDownwardLength: number = greaterBlockHeight - currentBlockSize.y + Flowgorithm.defaultArrowLength;
