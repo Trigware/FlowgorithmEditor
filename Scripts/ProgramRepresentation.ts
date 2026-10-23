@@ -35,10 +35,11 @@ export class ProgramNode {
             let isFirstNode: boolean = i === 0;
             if (!isFirstNode || renderFirstArrow) this.nodeConnections.push(this.RenderDefaultArrow(position));
             let currentNode: ProgramNode = this.subNodes[i];
-            let currentHeight: number = currentNode.GetSize().y;
+            let currentNodeSize: Utils.Vec2 = currentNode.GetSize();
+            console.log(`CONTENT: ${currentNode.GetContent().ToString()}, SIZE: ${currentNodeSize.ToString()}`);
             
             currentNode.Render(position);
-            position.y += currentHeight;
+            position.y += currentNodeSize.y;
         }
         return position.Copy();
     }

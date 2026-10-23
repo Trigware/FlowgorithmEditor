@@ -97,19 +97,15 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
     private RenderBranchArrow(isThen: boolean): ArrowPath {
         let bodySize: Utils.Vec2 = this.linkedShape.GetSize();
         let diamondCenter: Utils.Vec2 = this.currentPosition.Plus(0, bodySize.y / 2);
-        let arrowOffset: Utils.Vec2 = Utils.Vec2.Zero();
-        arrowOffset.x = bodySize.x / 2 - bodySize.x / 2;
+        let arrowYOffset: number = 0;
 
-        if (!isThen) arrowOffset.x = -arrowOffset.x;
         if (this.linkedShape.shadowShape !== null)
-            arrowOffset.y = Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y")) / 2;        
-        let arrowPosition: Utils.Vec2 = diamondCenter.Plus(arrowOffset.x, arrowOffset.y);
-        let branchArrow: ArrowPath = this.CreateBranchArrow(isThen, arrowPosition, arrowOffset);
+            arrowYOffset = Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y")) / 2;        
+        let arrowPosition: Utils.Vec2 = diamondCenter.Plus(0, arrowYOffset);
+        let branchArrow: ArrowPath = this.CreateBranchArrow(isThen, arrowPosition, new Utils.Vec2(0, arrowYOffset));
         
         let labelText: string = isThen ? "True" : "False";
-        let branchSegmentLengths: number[] = branchArrow.GetSegmentLengths();
-        let branchHorizontalLength: number = branchSegmentLengths[0];
-        let labelOffset: Utils.Vec2 = new Utils.Vec2(branchHorizontalLength / 2, 0);
+        let labelOffset: Utils.Vec2 = new Utils.Vec2(bodySize.x / 2, 0);
         if (!isThen) labelOffset.x *= -1;
         let labelPosition: Utils.Vec2 = diamondCenter.Plus(labelOffset.x, labelOffset.y);
 
@@ -134,7 +130,7 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
 
         let arrowRotation: number = isThen ? rightPointingRotation : leftPointingRotation;
         let horizontalArrowLength: number = Math.max(Flowgorithm.defaultArrowLength, currentBlockSize.x / 2);
-        horizontalArrowLength += bodySize.x;
+        horizontalArrowLength += bodySize.x / 2;
         let downwardArrowLength: number = this.linkedShape.GetSize().y / 2 + Flowgorithm.defaultArrowLength - arrowOffset.y;
 
         let isBlockEmpty: boolean = currentNode.subNodes.length === 0;

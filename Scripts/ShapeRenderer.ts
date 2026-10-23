@@ -220,7 +220,7 @@ export function ConstructLabel(labelPosition: Utils.Vec2, labelContent: ShapeCon
     let labelOffset: Utils.Vec2 = new Utils.Vec2(0, -labelSize.y * usedYMultiplier);
     let xOffsetMultiplier: number = 0;
     if (labelAlign !== LabelAlign.Center) xOffsetMultiplier = labelAlign === LabelAlign.Right ? 1 : -1;
-    labelOffset.x += labelSize.x * xOffsetMultiplier;
+    labelOffset.x += labelSize.x / 2 * xOffsetMultiplier;
 
     let offsetLabelPos: Utils.Vec2 = labelPosition.Plus(labelOffset.x, labelOffset.y);
     SetShapePosition(constructedLabel, offsetLabelPos);
