@@ -1,9 +1,10 @@
 :root {
     --arrow-layer: 0;
-    --shape-shadow-layer: 1;
-    --regular-shape-layer: 2;
-    --arrow-connector-layer: 3;
-    --website-header-layer: 4;
+    --label-layer: 6;
+    --shape-shadow-layer: 2;
+    --regular-shape-layer: 3;
+    --arrow-connector-layer: 4;
+    --website-header-layer: 5;
 
     --shape-aspect-ratio: 2.5;
 }
@@ -135,4 +136,11 @@ img {
     text-decoration: underline;
     text-decoration-thickness: 1.5px;
     text-underline-offset: 2px;
+}
+
+.LabelObject {
+    z-index: var(--label-layer);
+    width: fit-content; height: fit-content;
+    padding: 0;
+    min-width: 0;
 }

@@ -12,6 +12,8 @@ export enum ShapeType {
     While, For, Do
 }
 
+export enum LabelAlign { Center, Left, Right }
+
 enum ShapeDisplayType { Unknown = -1, Parallelogram, Diamond, Hexagon, Elipse, Rectangle }
 enum ShapeColorType { Unknown = -1, Purple, Blue, Green, Yellow, Red, Orange, LightPurple }
 
@@ -127,6 +129,26 @@ export class ShapeContent {
         for (let currentSegment of this.segments) result += currentSegment.segmentContent;
         return result;
     }
+
+    public SetContent(contentParent: HTMLDivElement) {
+        for (let currentTextSegment of this.segments) {
+            let usedSegmentContent: string = Utils.ReplaceSurrounding(currentTextSegment.segmentContent, ' ', nonBreakingSpace);
+            let isSegmentEmpty: boolean = usedSegmentContent.length === 0;
+            if (isSegmentEmpty) continue;
+
+            let stylingElementsArr: TextStylingElement[] = GetElementInfoByTextType(currentTextSegment.appliedTypes);
+            let stylingElementsCount: number = stylingElementsArr.length;
+            let latestStylingParent: HTMLElement = contentParent;
+
+            for (let i: number = 0; i < stylingElementsArr.length; i++) {
+                let currentStylingInfo: TextStylingElement = stylingElementsArr[i];
+                let isLastStylingElement: boolean = i === stylingElementsCount - 1;
+                let currentStylingElemnt: HTMLElement = Utils.CreateElement(currentStylingInfo.textType, currentStylingInfo.elementClass, latestStylingParent);
+                if (isLastStylingElement) currentStylingElemnt.textContent = usedSegmentContent;
+                latestStylingParent = currentStylingElemnt;
+            }
+        }
+    }
 }
 
 export function GetColorInfo(shapeType: ShapeType): ShapeColorInfo {
@@ -147,25 +169,7 @@ function ConstructShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent
 
     constructedShape.style.backgroundColor = usedShapeColor;
     if (isShadow) constructedShape.classList.add("ShapeShadow");
-    if (typeof shapeContent === "string") { constructedShape.textContent = shapeContent; return constructedShape; }
-
-    for (let currentTextSegment of shapeContent.segments) {
-        let usedSegmentContent: string = Utils.ReplaceSurrounding(currentTextSegment.segmentContent, ' ', nonBreakingSpace);
-        let isSegmentEmpty: boolean = usedSegmentContent.length === 0;
-        if (isSegmentEmpty) continue;
-
-        let stylingElementsArr: TextStylingElement[] = GetElementInfoByTextType(currentTextSegment.appliedTypes);
-        let stylingElementsCount: number = stylingElementsArr.length;
-        let latestStylingParent: HTMLElement = constructedShape;
-
-        for (let i: number = 0; i < stylingElementsArr.length; i++) {
-            let currentStylingInfo: TextStylingElement = stylingElementsArr[i];
-            let isLastStylingElement: boolean = i === stylingElementsCount - 1;
-            let currentStylingElemnt: HTMLElement = Utils.CreateElement(currentStylingInfo.textType, currentStylingInfo.elementClass, latestStylingParent);
-            if (isLastStylingElement) currentStylingElemnt.textContent = usedSegmentContent;
-            latestStylingParent = currentStylingElemnt;
-        }
-    }
+    shapeContent.SetContent(constructedShape);
 
     let offsetPosition: Utils.Vec2 = Utils.Vec2.Zero();
     UpdateShapeProperties(constructedShape);
@@ -201,6 +205,27 @@ export function AddShape(shapeType: ShapeType, position: Utils.Vec2, shapeConten
 }
 
 export function ClearPlane() { currentPlane.replaceChildren(); }
+
+const labelYOffsetMultiplier: number = 0.2;
+
+export function ConstructLabel(labelPosition: Utils.Vec2, labelContent: ShapeContent, labelAlign: LabelAlign = LabelAlign.Center): HTMLDivElement {
+    let constructedLabel: HTMLDivElement = Utils.CreateElement("div", "LabelObject", currentPlane) as HTMLDivElement;
+    labelContent.SetContent(constructedLabel);
+    let labelSize: Utils.Vec2 = new Utils.Vec2(
+        Utils.GetNumericPixels(Utils.GetProperty(constructedLabel, "width")),
+        Utils.GetNumericPixels(Utils.GetProperty(constructedLabel, "height"))
+    );
+
+    let usedYMultiplier: number = (1 + labelYOffsetMultiplier) / 2;
+    let labelOffset: Utils.Vec2 = new Utils.Vec2(0, -labelSize.y * usedYMultiplier);
+    let xOffsetMultiplier: number = 0;
+    if (labelAlign !== LabelAlign.Center) xOffsetMultiplier = labelAlign === LabelAlign.Right ? 1 : -1;
+    labelOffset.x += labelSize.x * xOffsetMultiplier;
+
+    let offsetLabelPos: Utils.Vec2 = labelPosition.Plus(labelOffset.x, labelOffset.y);
+    SetShapePosition(constructedLabel, offsetLabelPos);
+    return constructedLabel;
+}
 
 export class RenderedShape {
     public mainShape: HTMLDivElement | null = null;

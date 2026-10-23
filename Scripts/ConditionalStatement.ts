@@ -5,6 +5,7 @@ import * as ShapeRenderer from "./ShapeRenderer.js"
 import { ArrowPath } from "./ArrowRendering.js"
 
 type ArrowPathOpt = ArrowPath | null;
+type OptionalDiv = HTMLDivElement | null;
 
 const leftPointingRotation: number = 180; const rightPointingRotation: number = 0;
 const mergePointSizeMultiplier: number = 1.65;
@@ -17,7 +18,9 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
     private thenBranchArrow: ArrowPathOpt = null; private elseBranchArrow: ArrowPathOpt = null;
     private thenMergeArrow: ArrowPathOpt = null; private elseMergeArrow: ArrowPathOpt = null;
     private thenBlockSize: Utils.Vec2 = Utils.Vec2.Zero(); private elseBlockSize: Utils.Vec2 = Utils.Vec2.Zero();
-    private mergePoint: HTMLDivElement | null = null;
+
+    private thenLabel: OptionalDiv = null; private elseLabel: OptionalDiv = null;
+    private mergePoint: OptionalDiv = null;
 
     private currentPosition: Utils.Vec2 = Utils.Vec2.Zero();
 
@@ -69,11 +72,14 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         let arrowsMarkedForDeletion: ArrowPathOpt[] = [
             this.thenBranchArrow, this.elseBranchArrow, this.thenMergeArrow, this.elseMergeArrow
         ];
-
         for (let currentArrowPath of arrowsMarkedForDeletion) {
             if (currentArrowPath !== null) currentArrowPath.Delete();
         }
-        if (this.mergePoint !== null) this.mergePoint.remove();
+
+        let divsMarkedForDeletion: OptionalDiv[] = [this.thenLabel, this.elseLabel, this.mergePoint]
+        for (let currentDiv of divsMarkedForDeletion) {
+            if (currentDiv != null) currentDiv.remove();
+        }
     }
 
     private RenderMergePoint() {
@@ -100,6 +106,19 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         let arrowPosition: Utils.Vec2 = diamondCenter.Plus(arrowOffset.x, arrowOffset.y);
         let branchArrow: ArrowPath = this.CreateBranchArrow(isThen, arrowPosition, arrowOffset);
         
+        let labelText: string = isThen ? "True" : "False";
+        let branchSegmentLengths: number[] = branchArrow.GetSegmentLengths();
+        let branchHorizontalLength: number = branchSegmentLengths[0];
+        let labelOffset: Utils.Vec2 = new Utils.Vec2(branchHorizontalLength / 2, 0);
+        if (!isThen) labelOffset.x *= -1;
+        let labelPosition: Utils.Vec2 = diamondCenter.Plus(labelOffset.x, labelOffset.y);
+
+        let labelContent: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent(labelText, ShapeRenderer.TextType.Bolded);
+        let labelAlign: ShapeRenderer.LabelAlign = isThen ? ShapeRenderer.LabelAlign.Right : ShapeRenderer.LabelAlign.Left;
+        let currentLabel: HTMLDivElement = ShapeRenderer.ConstructLabel(labelPosition, labelContent, labelAlign);
+        if (isThen) this.thenLabel = currentLabel;
+        else this.elseLabel = currentLabel;
+
         if (isThen) this.thenBranchArrow = branchArrow;
         else this.elseBranchArrow = branchArrow;
         return branchArrow;
