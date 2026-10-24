@@ -10,13 +10,34 @@ export enum SizeCountType {
     CountAll, OnlyLeft, OnlyRight
 }
 
+let calculationsCount: number = 0;
+
+export class CachedSize {
+    public leftPortion: Utils.Vec2 = Utils.Vec2.Zero();
+    public rightPortion: Utils.Vec2 = Utils.Vec2.Zero();
+    public isCached: boolean = false;
+
+    public GetByCountType(countType: SizeCountType = SizeCountType.CountAll): Utils.Vec2 {
+        switch (countType) {
+            case SizeCountType.CountAll: return new Utils.Vec2(
+                this.leftPortion.x + this.rightPortion.x,
+                Math.max(this.leftPortion.y, this.rightPortion.y)
+            );
+            case SizeCountType.OnlyLeft: return this.leftPortion;
+            case SizeCountType.OnlyRight: return this.rightPortion;
+        }
+    }
+}
+
 export class ProgramNode {
     public subNodes: ProgramNode[] = [];
     public nodeConnections: ArrowPath[] = [];
     public linkedShape: ShapeRenderer.RenderedShape = new ShapeRenderer.RenderedShape();
+    protected sizeCache: CachedSize = new CachedSize();
 
     public Clear() { this.subNodes = []; if (this.linkedShape !== null) this.linkedShape.Delete(); }
     public GetContent(): ShapeRenderer.ShapeContent { return GetEmptyContent(); }
+    public GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Unknown; }
     public Render(position: Utils.Vec2) {}
     public Delete() {
         this.linkedShape.Delete();
@@ -24,14 +45,13 @@ export class ProgramNode {
         for (let currentArrow of this.nodeConnections) currentArrow.Delete();
     }
 
-    public GetSize(countType: SizeCountType = SizeCountType.CountAll): Utils.Vec2 {
-        let isRendered: boolean = this.linkedShape.mainShape !== null;
-        if (isRendered) return this.CalculateSize(countType);
+    protected AddShape(position: Utils.Vec2) {
+        this.linkedShape = ShapeRenderer.AddShape(this.GetType(), position, this.GetContent());
+    }
 
-        this.Render(Utils.Vec2.Zero());
-        let nodeSize: Utils.Vec2 = this.CalculateSize(countType);
-        this.Delete();
-        return nodeSize;
+    public GetSize(countType: SizeCountType = SizeCountType.CountAll): Utils.Vec2 {
+        if (!this.sizeCache.isCached) this.sizeCache = this.CalculateSizeCache();
+        return this.sizeCache.GetByCountType(countType);
     }
 
     public RenderSubnodes(position: Utils.Vec2, renderFirstArrow: boolean = true): Utils.Vec2 {
@@ -39,18 +59,23 @@ export class ProgramNode {
             let isFirstNode: boolean = i === 0;
             if (!isFirstNode || renderFirstArrow) this.nodeConnections.push(this.RenderDefaultArrow(position));
             let currentNode: ProgramNode = this.subNodes[i];
-            let currentNodeSize: Utils.Vec2 = currentNode.GetSize();
-            
+
             currentNode.Render(position);
+            let currentNodeSize: Utils.Vec2 = currentNode.GetSize();
             position.y += currentNodeSize.y;
         }
         return position.Copy();
     }
 
-    public CalculateSize(countType: SizeCountType = SizeCountType.CountAll): Utils.Vec2 {
-        let countedSize: Utils.Vec2 = this.linkedShape.GetSize();
-        if (countType !== SizeCountType.CountAll) countedSize.x /= 2;
-        return countedSize;
+    public CalculateSizeCache(): CachedSize {
+        let sizeCache: CachedSize = new CachedSize();
+        this.sizeCache.isCached = true;
+        
+        let headSize: Utils.Vec2 = this.linkedShape.GetSize(this.GetContent(), this.GetType());
+        let headPortionHalfSize: Utils.Vec2 = new Utils.Vec2(headSize.x / 2, headSize.y);
+        sizeCache.leftPortion = headPortionHalfSize; sizeCache.rightPortion = headPortionHalfSize;
+
+        return sizeCache;
     }
 
     public RenderDefaultArrow(position: Utils.Vec2): ArrowPath {
@@ -75,6 +100,7 @@ export class ProgramNode {
             entireNodeSize.y += currentNodeSize.y;
         }
 
+        calculationsCount++;
         return entireNodeSize;
     }
 }
@@ -118,11 +144,13 @@ export class Program extends ProgramNode {
 
     public override Render(position: Utils.Vec2) {
         ShapeRenderer.ClearPlane();
+        calculationsCount = 0;
         for (let i = 0; i < this.subNodes.length; i++) {
             if (i > 0) break;
             let currentFunction: FunctionSignature = this.subNodes[i] as FunctionSignature;
             currentFunction.Render(position);
         }
+        //console.log(calculationsCount);
     }
 }
 
@@ -165,8 +193,9 @@ export class FunctionSignature extends ProgramNode {
         let functionSignatureShape: ShapeRenderer.RenderedShape = ShapeRenderer.AddShape(
             ShapeRenderer.ShapeType.FunctionSignature, position, this.GetContent(), false
         );
-        
-        latestShapePosition.y += functionSignatureShape.GetSize().y / 2;
+        let functionSignatureSize: Utils.Vec2 = functionSignatureShape.GetSize();
+        latestShapePosition.y += functionSignatureSize.y / 2;
+
         this.linkedShape = functionSignatureShape;
         this.RenderSubnodes(position);
         this.RenderEndShape(latestShapePosition);
@@ -214,9 +243,8 @@ export class DeclarationInstruction extends ProgramNode {
         return declarationContent;
     }
 
-    public override Render(position: Utils.Vec2) {
-        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.VariableDeclaration, position, this.GetContent());
-    }
+    public override Render(position: Utils.Vec2) { this.AddShape(position); }
+    public override GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.VariableDeclaration; }
 }
 
 export class AssignmentInstruction extends ProgramNode {
@@ -225,6 +253,7 @@ export class AssignmentInstruction extends ProgramNode {
     public isValidLValue: boolean = true;
 
     public override GetContent(): ShapeRenderer.ShapeContent { return new ShapeRenderer.ShapeContent(`${this.lvalue.expressionAsStr} = ${this.rvalue.expressionAsStr}`); }
+    public override GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Assignment; }
     public override Render(position: Utils.Vec2) {
         this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Assignment, position, this.GetContent());
     }
@@ -245,10 +274,8 @@ export class IOInstruction extends ProgramNode {
         return instructionContent;
     }
 
-    public override Render(position: Utils.Vec2) {
-        let shapeType: ShapeRenderer.ShapeType = this.isInput ? ShapeRenderer.ShapeType.Input : ShapeRenderer.ShapeType.Output;
-        this.linkedShape = ShapeRenderer.AddShape(shapeType, position, this.GetContent());
-    }
+    public override GetType(): ShapeRenderer.ShapeType { return this.isInput ? ShapeRenderer.ShapeType.Input : ShapeRenderer.ShapeType.Output; }
+    public override Render(position: Utils.Vec2) { this.AddShape(position); }
 }
 
 export class CallInstruction extends ProgramNode {
@@ -259,9 +286,7 @@ export class CallInstruction extends ProgramNode {
         return new ShapeRenderer.ShapeContent(this.callExpression.expressionAsStr);
     }
 
-    public override Render(position: Utils.Vec2) {
-        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Call, position, this.GetContent());
-    }
+    public override Render(position: Utils.Vec2) { this.AddShape(position); }
 }
 
 export class ForLoop extends ProgramNode {

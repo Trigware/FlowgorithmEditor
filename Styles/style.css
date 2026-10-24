@@ -7,11 +7,14 @@
     --website-header-layer: 5;
 
     --shape-aspect-ratio: 2.5;
+    --shape-font-size: 1.25rem;
+    --default-shape-width: 120px;
+    --shape-horizontal-padding: 20px;
 }
 
 body {
     padding: 0; margin: 0;
-    font-family: Georgia, 'Times New Roman', Times, serif;
+    font-family: 'Times New Roman', Times, serif;
     overflow: hidden;
 }
 
@@ -46,20 +49,19 @@ img {
 
 .ShapePlane > * {
     --aspect-ratio: var(--shape-aspect-ratio);
-    --default-width: 120px;
     --shape-x: 0px; --shape-y: 0px;
     --offset-x: 0px; --offset-y: 0px;
     --shadow-offset-x: 0px; --shadow-offset-y: 0px;
     --width-size-increase: 1;
     --rotation: 0deg;
 
-    min-width: var(--default-width);
+    min-width: var(--default-shape-width);
     width: min-content;
-    padding: 0 20px;
+    padding: 0 var(--shape-horizontal-padding);
     white-space: nowrap;
 
     position: absolute;
-    height: calc(var(--default-width) / var(--aspect-ratio));
+    height: calc(var(--default-shape-width) / var(--aspect-ratio));
     transform:
         translateX(calc(var(--camera-x) + var(--shape-x) * var(--zoom-level) + var(--offset-x) + var(--shadow-offset-x) * var(--zoom-level)))
         translateY(calc(var(--camera-y) + var(--shape-y) * var(--zoom-level) + var(--offset-y) + var(--shadow-offset-y) * var(--zoom-level)))
@@ -69,7 +71,7 @@ img {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25em;
+    font-size: var(--shape-font-size);
     z-index: var(--regular-shape-layer)
 }
 
@@ -106,7 +108,7 @@ img {
 .ShapeShadow.RectangleShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; }
 
 .ShapeArrowSegment, .ShapeArrowConnector, .ShapeArrowEnding {
-    --default-width: 0px;
+    --default-shape-width: 0px;
     background-color: #404040;
     padding: 0 0;
     z-index: var(--arrow-layer);

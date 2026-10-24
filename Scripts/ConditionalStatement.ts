@@ -36,26 +36,9 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         return resultContent;
     }
 
-    public override CalculateSize(countType: Flowgorithm.SizeCountType = Flowgorithm.SizeCountType.CountAll): Utils.Vec2 {
-        let statementSize: Utils.Vec2 = super.CalculateSize(countType);
-
-        let thenBlockSize: Utils.Vec2 = this.thenNode.GetEntireNodeSize(),
-            elseBlockSize: Utils.Vec2 = this.elseNode.GetEntireNodeSize();
-        let thenBlockWidth: number = Math.max(thenBlockSize.x, Flowgorithm.defaultArrowLength),
-            elseBlockWidth: number = Math.max(elseBlockSize.x, Flowgorithm.defaultArrowLength);
-
-        let statementWidth: number = 0;
-        switch (countType) {
-            case Flowgorithm.SizeCountType.CountAll: statementWidth = thenBlockWidth + elseBlockWidth; break;
-            case Flowgorithm.SizeCountType.OnlyLeft: statementWidth = thenBlockWidth; break;
-            case Flowgorithm.SizeCountType.OnlyRight: statementWidth = elseBlockWidth; break;
-        }
-
-        let greaterBlockHeight: number = Math.max(thenBlockSize.y, elseBlockSize.y);
-        statementSize = statementSize.Plus(statementWidth, greaterBlockHeight);
-        statementSize.y += Flowgorithm.defaultArrowLength;
-
-        return statementSize;
+    public override CalculateSizeCache(): Flowgorithm.CachedSize {
+        let sizeCache: Flowgorithm.CachedSize = super.CalculateSizeCache();
+        return sizeCache;
     }
 
     public override Render(position: Utils.Vec2) {

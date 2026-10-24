@@ -1,6 +1,9 @@
 import * as Utils from "./Utils.js"
 
 export let currentPlane: HTMLDivElement;
+let measuringCanvas: HTMLCanvasElement = document.createElement("canvas");
+let measuringContext: CanvasRenderingContext2D = measuringCanvas.getContext("2d")!;
+let bodyElement: HTMLBodyElement = document.getElementById("DocumentBody") as HTMLBodyElement;
 
 export function SetPlane(plane: HTMLDivElement) { currentPlane = plane; }
 
@@ -73,6 +76,9 @@ export function SetShapePosition(currentShape: HTMLDivElement, shapePosition: Ut
 const nonBreakingSpace: string = '\u00A0';
 
 export enum TextType { Bolded, Italic, Underline }
+const textStylingMap: Map<TextType, string> = new Map([
+    [TextType.Bolded, "bold"], [TextType.Italic, "italic"]
+]);
 
 export class TextSegment {
     public segmentContent: string = "";
@@ -82,6 +88,20 @@ export class TextSegment {
         this.segmentContent = content;
         if (!Array.isArray(type)) { this.appliedTypes = [type]; return; }
         this.appliedTypes = type;
+    }
+
+    public Equals(otherSegment: TextSegment) {
+        let contentMatches: boolean = this.segmentContent === otherSegment.segmentContent;
+        let stylingCountMatches: boolean = this.appliedTypes.length === otherSegment.appliedTypes.length;
+        if (!contentMatches || !stylingCountMatches) return false;
+
+        let stylingCount: number = this.appliedTypes.length;
+        for (let i: number = 0; i < stylingCount; i++) {
+            let firstStyle: TextType = this.appliedTypes[i], otherStyle: TextType = otherSegment.appliedTypes[i];
+            if (firstStyle !== otherStyle) return false;
+        }
+
+        return true;
     }
 }
 
@@ -122,6 +142,21 @@ export class ShapeContent {
     public Append(segmentContent: string, textTypes: TextType | TextType[] = []) {
         let appendedSegment: TextSegment = new TextSegment(segmentContent, textTypes);
         this.segments.push(appendedSegment);
+    }
+
+    public Equals(comparedContent: ShapeContent | null) {
+        if (comparedContent === null) return false;
+
+        let segmentCountMatches: boolean = this.segments.length === comparedContent.segments.length;
+        if (!segmentCountMatches) return false;
+
+        let segmentCount: number = this.segments.length;
+        for (let i: number = 0; i < segmentCount; i++) {
+            let firstSegment: TextSegment = this.segments[i], otherSegment: TextSegment = comparedContent.segments[i];
+            if (!firstSegment.Equals(otherSegment)) return false;
+        }
+
+        return true;
     }
 
     public ToString(): string {
@@ -192,13 +227,13 @@ export function UpdateShapeProperties(currentShape: HTMLDivElement) {
         
     Utils.SetProperty(currentShape, "--offset-x", shapeOffset.x.toString() + "px");
     Utils.SetProperty(currentShape, "--offset-y", shapeOffset.y.toString() + "px");
-    let defaultWidth: number = Utils.GetNumericPixels(Utils.GetProperty(currentShape, "--default-width"));
+    let defaultWidth: number = Utils.GetNumericPixels(Utils.GetProperty(currentShape, "--default-shape-width"));
     let widthSizeIncrease: number = shapeWidth / defaultWidth;
     Utils.SetProperty(currentShape, "--width-size-increase", widthSizeIncrease.toString());
 }
 
 export function AddShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent: ShapeContent, offsetShape: boolean = true): RenderedShape {
-    let renderedShape: RenderedShape = new RenderedShape();
+    let renderedShape: RenderedShape = new RenderedShape(shapeContent, shapeType);
     renderedShape.mainShape = ConstructShape(shapeType, position, shapeContent, offsetShape, false);
     renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
     return renderedShape;
@@ -231,10 +266,78 @@ export class RenderedShape {
     public mainShape: HTMLDivElement | null = null;
     public shadowShape: HTMLDivElement | null = null;
 
-    public GetSize(): Utils.Vec2 {
-        if (this.mainShape === null) return Utils.Vec2.Zero();
-        let shapeSize: Utils.Vec2 = new Utils.Vec2(this.mainShape.clientWidth, this.mainShape.clientHeight);
+    private shapeContent: ShapeContent = new ShapeContent();
+    private shapeType: ShapeType = ShapeType.Unknown;
+    private cachedSize: Utils.Vec2 = Utils.Vec2.Zero();
+    private isSizeCached: boolean = false;
+
+    public constructor(content: ShapeContent = new ShapeContent(), type: ShapeType = ShapeType.Unknown) {
+        this.shapeContent = content; this.shapeType = type;
+    }
+
+    public GetSize(content: ShapeContent | null = null, type: ShapeType | null = null): Utils.Vec2 {
+        if (type === ShapeType.Unknown) return Utils.Vec2.Zero();
+        let paramsTypedExplicly: boolean = content !== null || type !== null;
+        let sizeParamsChanged: boolean = paramsTypedExplicly && (this.shapeContent.Equals(content) || this.shapeType === type);
+        let willUseCache: boolean = !sizeParamsChanged && this.isSizeCached;
+        if (willUseCache) return this.cachedSize;
+
+        if (content !== null) this.shapeContent = content;
+        if (type !== null) this.shapeType = type;
+
+        let textSize: Utils.Vec2 = this.MeasureTextSize();
+        let defaultShapeWidth: number = Utils.GetNumericPixels(Utils.GetProperty(document.documentElement, "--default-shape-width"));
+        let shapeAspectRatio: number = Number(Utils.GetProperty(document.documentElement, "--shape-aspect-ratio"));
+        let shapeHeight: number = defaultShapeWidth / shapeAspectRatio;
+
+        let horizontalPadding: number = Utils.GetNumericPixels(Utils.GetProperty(document.documentElement, "--shape-horizontal-padding"));
+        let shapeWidth: number = Math.max(textSize.x + horizontalPadding * 2, defaultShapeWidth);
+        let shapeSize: Utils.Vec2 = new Utils.Vec2(shapeWidth, shapeHeight);
+        console.log(`TYPE: ${ShapeType[this.shapeType]}, SIZE: ${shapeSize.ToString()}`);
+
+        this.isSizeCached = true;
+        this.cachedSize = shapeSize;
         return shapeSize;
+    }
+
+    private MeasureTextSize(): Utils.Vec2 {
+        let shapeSize: Utils.Vec2 = Utils.Vec2.Zero();
+
+        for (let currentSegment of this.shapeContent.segments) {
+            let fontValue: string = this.GetFontValue(currentSegment);
+            measuringContext.font = fontValue;
+            let segmentMeasurement: TextMetrics = measuringContext.measureText(currentSegment.segmentContent);
+
+            shapeSize.x += segmentMeasurement.width;
+            let segmentHeight: number = segmentMeasurement.actualBoundingBoxAscent + segmentMeasurement.actualBoundingBoxDescent;
+            shapeSize.y = Math.max(shapeSize.y, segmentHeight);
+        }
+
+        return shapeSize;
+    }
+
+    private GetFontValue(currentSegment: TextSegment): string {
+        let fontStylesStr: string = "";
+        let pageFontFamily: string = Utils.GetProperty(bodyElement, "font-family");
+        let shapeFontSize: string = Utils.GetProperty(document.documentElement, "--shape-font-size");
+
+        for (let appliedStyle of currentSegment.appliedTypes) {
+            if (!textStylingMap.has(appliedStyle)) continue;
+
+            let styleAsStr: string = textStylingMap.get(appliedStyle)!;
+            if (fontStylesStr !== "") fontStylesStr += ' ';
+            fontStylesStr += styleAsStr;
+        }
+
+        let fontValue: string = "";
+        fontValue += fontStylesStr;
+        if (fontValue !== "") fontValue += ' ';
+        fontValue += shapeFontSize;
+
+        if (fontValue !== "") fontValue += ' ';
+        fontValue += pageFontFamily;
+
+        return fontValue;
     }
 
     public Delete() {

@@ -13,6 +13,7 @@ function OnStart() {
     prevMousePos = Utils.GetMousePos();
     openFileInput.addEventListener("change", OnFileSelected);
     document.addEventListener("wheel", OnWheelScrolled);
+
     ShapeRenderer.SetPlane(shapePlane);
     openedProgram.Render(Utils.Vec2.Zero());
     OnDraw();
@@ -48,7 +49,7 @@ function OnFileSelected() {
     selectedFile.text().then((fileContent: string) => {
         Parser.Setup(openedProgram, fileContent);
         openedProgram.Render(Utils.Vec2.Zero());
-        console.log(openedProgram);
+        //console.log(openedProgram);
     });
 }
 
