@@ -13,19 +13,34 @@ export enum SizeCountType {
 let calculationsCount: number = 0;
 
 export class CachedSize {
-    public leftPortion: Utils.Vec2 = Utils.Vec2.Zero();
-    public rightPortion: Utils.Vec2 = Utils.Vec2.Zero();
+    public leftPortion: Utils.Vec2 = Utils.Vec2.Zero(); public rightPortion: Utils.Vec2 = Utils.Vec2.Zero();
+    public subLeftPortion: Utils.Vec2 = Utils.Vec2.Zero(); public subRightPortion: Utils.Vec2 = Utils.Vec2.Zero();
     public isCached: boolean = false;
 
-    public GetByCountType(countType: SizeCountType = SizeCountType.CountAll): Utils.Vec2 {
+    public GetByCountType(countType: SizeCountType = SizeCountType.CountAll, countSubnodes: boolean = false): Utils.Vec2 {
+        let usedLeftPortion: Utils.Vec2 = this.leftPortion;
+        let usedRightPortion: Utils.Vec2 = this.rightPortion;
+        if (countSubnodes) {
+            usedLeftPortion = new Utils.Vec2(
+                this.leftPortion.x + this.subLeftPortion.x, this.leftPortion.y + this.subLeftPortion.y
+            );
+            usedRightPortion = new Utils.Vec2(
+                this.rightPortion.x + this.subRightPortion.x, this.rightPortion.y + this.subRightPortion.y
+            );
+        }
+
         switch (countType) {
             case SizeCountType.CountAll: return new Utils.Vec2(
-                this.leftPortion.x + this.rightPortion.x,
-                Math.max(this.leftPortion.y, this.rightPortion.y)
+                usedLeftPortion.x + usedRightPortion.x,
+                Math.max(usedLeftPortion.y, usedRightPortion.y)
             );
-            case SizeCountType.OnlyLeft: return this.leftPortion;
-            case SizeCountType.OnlyRight: return this.rightPortion;
+            case SizeCountType.OnlyLeft: return usedLeftPortion;
+            case SizeCountType.OnlyRight: return usedRightPortion;
         }
+    }
+
+    public ApplyToSub(x: number, y: number) {
+        this.subLeftPortion = this.subLeftPortion.Plus(x, y); this.subRightPortion = this.subRightPortion.Plus(x, y);
     }
 }
 
@@ -49,9 +64,20 @@ export class ProgramNode {
         this.linkedShape = ShapeRenderer.AddShape(this.GetType(), position, this.GetContent());
     }
 
-    public GetSize(countType: SizeCountType = SizeCountType.CountAll): Utils.Vec2 {
-        if (!this.sizeCache.isCached) this.sizeCache = this.CalculateSizeCache();
-        return this.sizeCache.GetByCountType(countType);
+    public GetSize(countType: SizeCountType = SizeCountType.CountAll, countSubnodes: boolean = false): Utils.Vec2 {
+        if (!this.sizeCache.isCached) {
+            this.sizeCache = this.CalculateSizeCache();
+            this.SetSubnodesCache(this.sizeCache);
+            console.log(`CONTENT: ${this.GetContent().ToString()}, 
+                SIZE LEFT HEAD: ${this.sizeCache.GetByCountType(SizeCountType.OnlyLeft).ToString()}, 
+                SIZE RIGHT HEAD: ${this.sizeCache.GetByCountType(SizeCountType.OnlyRight).ToString()},
+                SIZE LEFT ALL: ${this.sizeCache.GetByCountType(SizeCountType.OnlyLeft, true).ToString()}, 
+                SIZE RIGHT ALL: ${this.sizeCache.GetByCountType(SizeCountType.OnlyRight, true).ToString()},
+            `);
+            console.log(this.sizeCache);
+        }
+
+        return this.sizeCache.GetByCountType(countType, countSubnodes);
     }
 
     public RenderSubnodes(position: Utils.Vec2, renderFirstArrow: boolean = true): Utils.Vec2 {
@@ -61,7 +87,7 @@ export class ProgramNode {
             let currentNode: ProgramNode = this.subNodes[i];
 
             currentNode.Render(position);
-            let currentNodeSize: Utils.Vec2 = currentNode.GetSize();
+            let currentNodeSize: Utils.Vec2 = currentNode.GetSize(SizeCountType.CountAll, true);
             position.y += currentNodeSize.y;
         }
         return position.Copy();
@@ -69,13 +95,25 @@ export class ProgramNode {
 
     public CalculateSizeCache(): CachedSize {
         let sizeCache: CachedSize = new CachedSize();
-        this.sizeCache.isCached = true;
+        sizeCache.isCached = true;
         
         let headSize: Utils.Vec2 = this.linkedShape.GetSize(this.GetContent(), this.GetType());
         let headPortionHalfSize: Utils.Vec2 = new Utils.Vec2(headSize.x / 2, headSize.y);
         sizeCache.leftPortion = headPortionHalfSize; sizeCache.rightPortion = headPortionHalfSize;
-
+        calculationsCount++;
         return sizeCache;
+    }
+
+    public SetSubnodesCache(currentSizeCache: CachedSize) {
+        for (let nodeChild of this.subNodes) {
+            let childLeftSize: Utils.Vec2 = nodeChild.GetSize(SizeCountType.OnlyLeft, true);
+            let childRightSize: Utils.Vec2 = nodeChild.GetSize(SizeCountType.OnlyRight, true);
+
+            currentSizeCache.subLeftPortion.x = Math.max(childLeftSize.x, currentSizeCache.subLeftPortion.x);
+            currentSizeCache.subRightPortion.x = Math.max(childRightSize.x, currentSizeCache.subRightPortion.x);
+            currentSizeCache.subLeftPortion.y += defaultArrowLength + childLeftSize.y;
+            currentSizeCache.subRightPortion.y += defaultArrowLength + childRightSize.y;
+        }
     }
 
     public RenderDefaultArrow(position: Utils.Vec2): ArrowPath {
@@ -84,24 +122,6 @@ export class ProgramNode {
         position.y += arrowTotalSize.y;
 
         return renderedArrow;
-    }
-
-    public GetEntireNodeSize(countFirstArrow: boolean = true, countType: SizeCountType = SizeCountType.CountAll, depth: number = 0): Utils.Vec2 {
-        let entireNodeSize: Utils.Vec2 = this.GetSize(countType);
-        for (let i: number = 0; i < this.subNodes.length; i++) {
-            let isFirstNode: boolean = i === 0;
-            let nodeChild: ProgramNode = this.subNodes[i];
-            if (!isFirstNode || countFirstArrow) entireNodeSize.y += defaultArrowLength;
-
-            let isFirstDepth: boolean = depth === 0;
-            let nextCountType: SizeCountType = isFirstDepth ? countType : SizeCountType.CountAll;
-            let currentNodeSize: Utils.Vec2 = nodeChild.GetEntireNodeSize(countFirstArrow, nextCountType, depth + 1);
-            entireNodeSize.x = Math.max(entireNodeSize.x, currentNodeSize.x);
-            entireNodeSize.y += currentNodeSize.y;
-        }
-
-        calculationsCount++;
-        return entireNodeSize;
     }
 }
 
@@ -287,6 +307,7 @@ export class CallInstruction extends ProgramNode {
     }
 
     public override Render(position: Utils.Vec2) { this.AddShape(position); }
+    public override GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Call; }
 }
 
 export class ForLoop extends ProgramNode {

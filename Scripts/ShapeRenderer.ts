@@ -285,16 +285,21 @@ export class RenderedShape {
         if (content !== null) this.shapeContent = content;
         if (type !== null) this.shapeType = type;
 
+        let isConditional: boolean = this.shapeType === ShapeType.Conditional;
         let textSize: Utils.Vec2 = this.MeasureTextSize();
         let defaultShapeWidth: number = Utils.GetNumericPixels(Utils.GetProperty(document.documentElement, "--default-shape-width"));
-        let shapeAspectRatio: number = Number(Utils.GetProperty(document.documentElement, "--shape-aspect-ratio"));
-        let shapeHeight: number = defaultShapeWidth / shapeAspectRatio;
+        let defaultAspectRatio: number = Number(Utils.GetProperty(document.documentElement, "--shape-aspect-ratio"));
 
-        let horizontalPadding: number = Utils.GetNumericPixels(Utils.GetProperty(document.documentElement, "--shape-horizontal-padding"));
-        let shapeWidth: number = Math.max(textSize.x + horizontalPadding * 2, defaultShapeWidth);
+        let paddingPropertyName: string = isConditional ? "--diamond-horizonal-padding" : "--shape-horizontal-padding" ;
+        let horizontalPadding: number = Utils.GetNumericPixels(Utils.GetProperty(document.documentElement, paddingPropertyName));
+        let shapeWidth: number = Math.max(textSize.x, defaultShapeWidth);
+        shapeWidth += horizontalPadding * 2;
+
+        let widthSizeIncrease: number = shapeWidth / defaultShapeWidth;
+        let actualAspectRatio: number = isConditional ? defaultAspectRatio / widthSizeIncrease : defaultAspectRatio;
+        let shapeHeight: number = defaultShapeWidth / actualAspectRatio;
+
         let shapeSize: Utils.Vec2 = new Utils.Vec2(shapeWidth, shapeHeight);
-        console.log(`TYPE: ${ShapeType[this.shapeType]}, SIZE: ${shapeSize.ToString()}`);
-
         this.isSizeCached = true;
         this.cachedSize = shapeSize;
         return shapeSize;

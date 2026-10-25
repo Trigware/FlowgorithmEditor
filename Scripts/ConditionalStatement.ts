@@ -36,8 +36,19 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         return resultContent;
     }
 
+    public override GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Conditional; }
+
     public override CalculateSizeCache(): Flowgorithm.CachedSize {
         let sizeCache: Flowgorithm.CachedSize = super.CalculateSizeCache();
+        let thenNodeSize: Utils.Vec2 = this.thenNode.GetSize(Flowgorithm.SizeCountType.OnlyLeft, true);
+        let elseNodeSize: Utils.Vec2 = this.elseNode.GetSize(Flowgorithm.SizeCountType.OnlyRight, true);
+
+        let subBlockHeight: number = Math.max(thenNodeSize.y, elseNodeSize.y);
+        subBlockHeight += Flowgorithm.defaultArrowLength;
+        sizeCache.ApplyToSub(0, subBlockHeight);
+        sizeCache.subLeftPortion.x = Math.max(Flowgorithm.defaultArrowLength, elseNodeSize.x);
+        sizeCache.subRightPortion.x = Math.max(Flowgorithm.defaultArrowLength, thenNodeSize.x);
+
         return sizeCache;
     }
 
@@ -45,8 +56,8 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         this.currentPosition = position.Copy();
         this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Conditional, position.Copy(), this.GetContent());
 
-        this.thenBlockImportantSize = this.thenNode.GetEntireNodeSize(true, Flowgorithm.SizeCountType.OnlyRight);
-        this.elseBlockImportantSize = this.elseNode.GetEntireNodeSize(true, Flowgorithm.SizeCountType.OnlyLeft);
+        this.thenBlockImportantSize = this.thenNode.GetSize(Flowgorithm.SizeCountType.OnlyRight, true);
+        this.elseBlockImportantSize = this.elseNode.GetSize(Flowgorithm.SizeCountType.OnlyLeft, true);
 
         this.mergePoint = Utils.CreateElement("div", "ShapeArrowConnector", ShapeRenderer.currentPlane) as HTMLDivElement;
         let mergePointSize: number = Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size")) * mergePointSizeMultiplier;

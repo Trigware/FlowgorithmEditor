@@ -10,6 +10,7 @@
     --shape-font-size: 1.25rem;
     --default-shape-width: 120px;
     --shape-horizontal-padding: 20px;
+    --diamond-horizonal-padding: 30px;
 }
 
 body {
@@ -83,7 +84,7 @@ img {
 
 .DiamondShape {
     --aspect-ratio: calc(var(--shape-aspect-ratio) / var(--width-size-increase));
-    padding: 0 30px;
+    padding: 0 var(--diamond-horizonal-padding);
     clip-path: polygon(0% 50%, 50% 0%, 100% 50%, 50% 100%);
 }
 
