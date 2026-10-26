@@ -136,6 +136,15 @@ export class Expression {
         return matchesTemplate;
     }
 
+    public IsLiteralOne(): boolean {
+        if (this.tokens.length !== 1) return false;
+
+        let onlyToken: ExprToken = this.tokens[0];
+        let isNumber: boolean = onlyToken.type === TokenType.IntegerLiteral || onlyToken.type === TokenType.RealLiteral;
+        let isOne: boolean = onlyToken.value === 1.0;
+        return isNumber && isOne;
+    }
+
     private ParseApostrophe() {
         this.ParseSymbol();
         this.inStringLiteral = !this.inStringLiteral;
@@ -183,6 +192,7 @@ export class Expression {
         let valueAsStr: string = (latestToken.value as number).toString();
         valueAsStr += '.' + tokenAsStr;
         let tokenValue: number = Number(valueAsStr);
+        this.tokens.pop();
         this.ReplaceLatestToken(TokenType.RealLiteral, tokenValue);
     }
 
@@ -240,7 +250,6 @@ export class Expression {
 
     private ParseParenthesis(groupingInfo: GroupingInfo) {
         let latestToken: ExprToken = this.GetLatestToken();
-        let isLatestOperand: boolean = IsOperand(latestToken.type);
 
         if (!groupingInfo.isClosing) {
             let followsIdentifier: boolean = latestToken.type == TokenType.Identifier;

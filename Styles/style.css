@@ -104,7 +104,7 @@ img {
 .ShapeShadow { color: transparent; z-index: var(--shape-shadow-layer); }
 .ShapeShadow.ParallelogramShape { --shadow-offset-x: 2.5px; --shadow-offset-y: 5px; }
 .ShapeShadow.DiamondShape { --shadow-offset-x: 0px; --shadow-offset-y: 6px; }
-.ShapeShadow.HexagonShape { --shadow-offset-x: 5px; --shadow-offset-y: 7px; }
+.ShapeShadow.HexagonShape { --shadow-offset-x: 0px; --shadow-offset-y: 5px; }
 .ShapeShadow.ElipticShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; }
 .ShapeShadow.RectangleShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; }
 

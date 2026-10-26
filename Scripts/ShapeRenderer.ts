@@ -45,7 +45,7 @@ const shapeColorsArr: Map<ShapeColorType, ShapeColorInfo> = new Map([
     [ShapeColorType.Green, new ShapeColorInfo("#4fc26a", "#2f8a5b")],
     [ShapeColorType.Yellow, new ShapeColorInfo("#edd040", "#a08d30")],
     [ShapeColorType.Red, new ShapeColorInfo("#d13434", "#7d1e1e", "#992323")],
-    [ShapeColorType.Orange, new ShapeColorInfo("#c06e22", "#a56020")]
+    [ShapeColorType.Orange, new ShapeColorInfo("#d67345", "#9e5431")]
 ]);
 
 const shapeDisplayArr: Map<ShapeType, ShapeDisplayInfo> = new Map([
@@ -142,6 +142,12 @@ export class ShapeContent {
     public Append(segmentContent: string, textTypes: TextType | TextType[] = []) {
         let appendedSegment: TextSegment = new TextSegment(segmentContent, textTypes);
         this.segments.push(appendedSegment);
+    }
+
+    public AppendContent(appendedContent: ShapeContent) {
+        for (let currentSegment of appendedContent.segments) {
+            this.segments.push(currentSegment);
+        }
     }
 
     public Equals(comparedContent: ShapeContent | null) {
