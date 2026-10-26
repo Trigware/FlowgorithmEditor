@@ -119,7 +119,7 @@ export class ProgramNode {
                 leftAllSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyLeft, SubnodeCountType.CountAll),
                 rightAllSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyRight, SubnodeCountType.CountAll);
 
-            let currentLeftWidth: number = rightHeadSize.x + allSubnodeSize.x, currentRightWidth: number = leftHeadSize.x + allSubnodeSize.x;
+            let currentLeftWidth: number = rightHeadSize.x, currentRightWidth: number = leftHeadSize.x;
             currentSizeCache.subLeftPortion.x = Math.max(currentSizeCache.subLeftPortion.x, currentLeftWidth);
             currentSizeCache.subRightPortion.x = Math.max(currentSizeCache.subRightPortion.x, currentRightWidth);
             currentSizeCache.subLeftPortion.y += defaultArrowLength + leftAllSize.y;
