@@ -7,7 +7,6 @@ import { ArrowPath } from "./ArrowRendering.js"
 type ArrowPathOpt = ArrowPath | null;
 type OptionalDiv = HTMLDivElement | null;
 
-const leftPointingRotation: number = 180; const rightPointingRotation: number = 0;
 const mergePointSizeMultiplier: number = 1.65;
 
 export class ConditionalStatement extends Flowgorithm.ProgramNode {
@@ -94,14 +93,14 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
 
         let mergePointPosition: Utils.Vec2 = this.currentPosition;
         let greaterBlockHeight: number = Math.max(this.thenBlockImportantSize.y, this.elseBlockImportantSize.y);
-        let conditionalBodySize: Utils.Vec2 = this.linkedShape.GetSize(); 
-        mergePointPosition.y += greaterBlockHeight + conditionalBodySize.y + Flowgorithm.defaultArrowLength;
+        let conditionalHeadSize: Utils.Vec2 = this.linkedShape.GetSize(); 
+        mergePointPosition.y += greaterBlockHeight + conditionalHeadSize.y + Flowgorithm.defaultArrowLength;
         ShapeRenderer.SetShapePosition(this.mergePoint, mergePointPosition);
     }
 
     private RenderBranchArrow(isThen: boolean): ArrowPath {
-        let bodySize: Utils.Vec2 = this.linkedShape.GetSize();
-        let diamondCenter: Utils.Vec2 = this.currentPosition.Plus(0, bodySize.y / 2);
+        let headSize: Utils.Vec2 = this.linkedShape.GetSize();
+        let diamondCenter: Utils.Vec2 = this.currentPosition.Plus(0, headSize.y / 2);
         let arrowYOffset: number = 0;
 
         if (this.linkedShape.shadowShape !== null)
@@ -110,13 +109,12 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         let branchArrow: ArrowPath = this.CreateBranchArrow(isThen, arrowPosition, new Utils.Vec2(0, arrowYOffset));
         
         let labelText: string = isThen ? "True" : "False";
-        let labelOffset: Utils.Vec2 = new Utils.Vec2(bodySize.x / 2, 0);
+        let labelOffset: Utils.Vec2 = new Utils.Vec2(headSize.x / 2, 0);
         if (!isThen) labelOffset.x *= -1;
         let labelPosition: Utils.Vec2 = diamondCenter.Plus(labelOffset.x, labelOffset.y);
 
-        let labelContent: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent(labelText, ShapeRenderer.TextType.Bolded);
         let labelAlign: ShapeRenderer.LabelAlign = isThen ? ShapeRenderer.LabelAlign.Right : ShapeRenderer.LabelAlign.Left;
-        let currentLabel: HTMLDivElement = ShapeRenderer.ConstructLabel(labelPosition, labelContent, labelAlign);
+        let currentLabel: HTMLDivElement = ShapeRenderer.ConstructLabel(labelPosition, labelText, labelAlign);
         if (isThen) this.thenLabel = currentLabel;
         else this.elseLabel = currentLabel;
 
@@ -133,7 +131,7 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         let emptyBlockArrowExtension: number = greaterBlockHeight - currentBlockImportantSize.y;
         let mergePointSize: number = this.mergePoint === null ? 0 : Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size"));
 
-        let arrowRotation: number = isThen ? rightPointingRotation : leftPointingRotation;
+        let arrowRotation: number = isThen ? Flowgorithm.rightPointingRotation : Flowgorithm.leftPointingRotation;
         let horizontalArrowLength: number = Math.max(Flowgorithm.defaultArrowLength, currentBlockImportantSize.x);
         horizontalArrowLength += bodySize.x / 2;
         let downwardArrowLength: number = this.linkedShape.GetSize().y / 2 + Flowgorithm.defaultArrowLength - arrowOffset.y;
@@ -144,7 +142,7 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         let arrowLengthsArray: number[] = [horizontalArrowLength, downwardArrowLength];
         let arrowAnglesArray: number[] = [arrowRotation, Flowgorithm.defaultArrowAngle];
         if (isBlockEmpty) {
-            let mergeArrowAngle: number = isThen ? leftPointingRotation : rightPointingRotation;
+            let mergeArrowAngle: number = isThen ? Flowgorithm.leftPointingRotation : Flowgorithm.rightPointingRotation;
             let mergeArrowLength: number = horizontalArrowLength - mergePointSize / 2;
             arrowLengthsArray.push(mergeArrowLength); arrowAnglesArray.push(mergeArrowAngle);
         }
@@ -173,7 +171,7 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
 
         let mergingArrowDownwardLength: number = greaterBlockHeight - currentBlockSize.y + Flowgorithm.defaultArrowLength;
         let mergePointXOffset: number = currentBranchingArrow.GetSegmentLengths()[0];
-        let mergingHorizontalArrowAngle: number = isThen ? leftPointingRotation : rightPointingRotation;
+        let mergingHorizontalArrowAngle: number = isThen ? Flowgorithm.leftPointingRotation : Flowgorithm.rightPointingRotation;
         let mergingHorizontalLength: number = mergePointXOffset - mergePointSize / 2;
 
         let mergingArrow: ArrowPath = new ArrowPath(

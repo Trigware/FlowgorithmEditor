@@ -3,6 +3,7 @@ import * as Flowgorithm from "./ProgramRepresentation.js"
 import * as Utils from "./Utils.js"
 import * as Identifier from "./Identifier.js"
 import { ConditionalStatement } from "./ConditionalStatement.js"
+import { ForLoop, ConditionalCycle } from "./LoopStatement.js"
 
 enum ProgramTag {
     Unknown, Function, Declare, Assign, Input, Output, If, Call, For, While, Do
@@ -195,7 +196,7 @@ function ParseCallTag(currentElement: Element): Flowgorithm.ProgramNode {
 }
 
 function ParseForTag(currentElement: Element): Flowgorithm.ProgramNode {
-    let forLoop: Flowgorithm.ForLoop = new Flowgorithm.ForLoop();
+    let forLoop: ForLoop = new ForLoop();
     for (let attribute of currentElement.attributes) {
         switch (attribute.name) {
             case "variable": forLoop.iteratorName = attribute.value; break;
@@ -216,7 +217,7 @@ function ParseWhileTag(currentElement: Element): Flowgorithm.ProgramNode { retur
 function ParseDoWhileTag(currentElement: Element): Flowgorithm.ProgramNode { return ParseConditionalCycleTag(currentElement, true); }
 
 function ParseConditionalCycleTag(currentElement: Element, isDoWhile: boolean): Flowgorithm.ProgramNode {
-    let conditionalCycle: Flowgorithm.ConditionalCycle = new Flowgorithm.ConditionalCycle();
+    let conditionalCycle: ConditionalCycle = new ConditionalCycle();
     conditionalCycle.isDoWhile = isDoWhile;
 
     let expressionValue: string | null = currentElement.getAttribute("expression");

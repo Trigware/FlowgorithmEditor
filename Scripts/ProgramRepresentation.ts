@@ -14,6 +14,8 @@ export enum SubnodeCountType {
     HeadOnly, SubnodeOnly, CountAll
 }
 
+type ProgramNodeOpt = ProgramNode | null;
+
 let calculationsCount: number = 0;
 
 export class CachedSize {
@@ -53,18 +55,19 @@ export class CachedSize {
 
 export class ProgramNode {
     public subNodes: ProgramNode[] = [];
-    public nodeConnections: ArrowPath[] = [];
+    public subArrows: ArrowPath[] = [];
     public linkedShape: ShapeRenderer.RenderedShape = new ShapeRenderer.RenderedShape();
     protected sizeCache: CachedSize = new CachedSize();
 
     public Clear() { this.subNodes = []; if (this.linkedShape !== null) this.linkedShape.Delete(); }
     public GetContent(): ShapeRenderer.ShapeContent { return GetEmptyContent(); }
     public GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Unknown; }
+    public WillExtendArrow(): boolean { return false; }
     public Render(position: Utils.Vec2) {}
     public Delete() {
         this.linkedShape.Delete();
         for (let childNode of this.subNodes) childNode.Delete();
-        for (let currentArrow of this.nodeConnections) currentArrow.Delete();
+        for (let currentArrow of this.subArrows) currentArrow.Delete();
     }
 
     protected AddShape(position: Utils.Vec2) {
@@ -75,29 +78,46 @@ export class ProgramNode {
         if (!this.sizeCache.isCached) {
             this.sizeCache = this.CalculateSizeCache();
             this.SetSubnodesCache(this.sizeCache);
-            console.log(`CONTENT: ${this.GetContent().ToString()}, 
+            /*console.log(`CONTENT: ${this.GetContent().ToString()}, 
                 SIZE LEFT HEAD: ${this.sizeCache.GetByCountType(SizeCountType.OnlyLeft).ToString()}, 
                 SIZE RIGHT HEAD: ${this.sizeCache.GetByCountType(SizeCountType.OnlyRight).ToString()},
                 SIZE LEFT SUBNODES: ${this.sizeCache.GetByCountType(SizeCountType.OnlyLeft, SubnodeCountType.SubnodeOnly).ToString()}, 
                 SIZE RIGHT SUBNODES: ${this.sizeCache.GetByCountType(SizeCountType.OnlyRight, SubnodeCountType.SubnodeOnly).ToString()},
             `);
-            console.log(this.sizeCache);
+            console.log(this.sizeCache);*/
         }
 
         return this.sizeCache.GetByCountType(countType, countSubnodesMode);
     }
 
     public RenderSubnodes(position: Utils.Vec2, renderFirstArrow: boolean = true): Utils.Vec2 {
+        let previousNode: ProgramNodeOpt = null; 
+        
         for (let i = 0; i < this.subNodes.length; i++) {
             let isFirstNode: boolean = i === 0;
-            if (!isFirstNode || renderFirstArrow) this.nodeConnections.push(this.RenderDefaultArrow(position));
+            if (!isFirstNode || renderFirstArrow) this.HandleArrowRender(position, previousNode);
             let currentNode: ProgramNode = this.subNodes[i];
 
             currentNode.Render(position);
             let currentNodeSize: Utils.Vec2 = currentNode.GetSize(SizeCountType.CountAll, SubnodeCountType.CountAll);
             position.y += currentNodeSize.y;
+            previousNode = currentNode;
         }
         return position.Copy();
+    }
+
+    private HandleArrowRender(position: Utils.Vec2, previousNode: ProgramNodeOpt) {
+        let extendRenderedArrow: boolean = previousNode === null ? false : previousNode.WillExtendArrow();
+        let subnodeSize: Utils.Vec2 = previousNode === null ? Utils.Vec2.Zero() : previousNode.GetSize(SizeCountType.CountAll, SubnodeCountType.SubnodeOnly);
+
+        let arrowLength: number = defaultArrowLength;
+        if (extendRenderedArrow) {
+            position.y -= subnodeSize.y;
+            arrowLength += subnodeSize.y;
+        }
+        
+        let renderedArrow: ArrowPath = this.RenderDefaultArrow(position, arrowLength);
+        this.subArrows.push(renderedArrow);
     }
 
     public CalculateSizeCache(): CachedSize {
@@ -115,7 +135,6 @@ export class ProgramNode {
         for (let currentSubnode of this.subNodes) {
             let leftHeadSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyLeft, SubnodeCountType.HeadOnly),
                 rightHeadSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyRight, SubnodeCountType.HeadOnly),
-                allSubnodeSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.CountAll, SubnodeCountType.SubnodeOnly),
                 leftAllSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyLeft, SubnodeCountType.CountAll),
                 rightAllSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyRight, SubnodeCountType.CountAll);
 
@@ -127,8 +146,8 @@ export class ProgramNode {
         }
     }
 
-    public RenderDefaultArrow(position: Utils.Vec2): ArrowPath {
-        let renderedArrow: ArrowPath = new ArrowPath(position, [defaultArrowLength], [defaultArrowAngle]);
+    public RenderDefaultArrow(position: Utils.Vec2, arrowLength: number = defaultArrowLength): ArrowPath {
+        let renderedArrow: ArrowPath = new ArrowPath(position, [arrowLength], [defaultArrowAngle]);
         let arrowTotalSize: Utils.Vec2 = renderedArrow.GetArrowSize();
         position.y += arrowTotalSize.y;
 
@@ -137,6 +156,7 @@ export class ProgramNode {
 }
 
 enum VariableType { Void, Integer, Real, String, Boolean }
+export const leftPointingRotation: number = 180, rightPointingRotation: number = 0, upwardPointingRotation: number = 270;
 
 export class VariableDeclaration {
     public type: VariableType = VariableType.Void;
@@ -319,48 +339,6 @@ export class CallInstruction extends ProgramNode {
 
     public override Render(position: Utils.Vec2) { this.AddShape(position); }
     public override GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Call; }
-}
-
-export class ForLoop extends ProgramNode {
-    public iteratorName: string = "";
-    public loopStart: Expression = new Expression();
-    public loopEnd: Expression = new Expression();
-    public iterationStep: Expression = new Expression();
-    public isIncreasing: boolean = true;
-
-    public override GetContent(): ShapeRenderer.ShapeContent {
-        let unboldedSection: string = "for ";
-        let shapeContent: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent(unboldedSection);
-
-        let boldedContent: string = `${this.iteratorName} = ${this.loopStart.expressionAsStr} to ${this.loopEnd.expressionAsStr}`;
-        shapeContent.Append(boldedContent, ShapeRenderer.TextType.Bolded);
-        let additionalInfo: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent();
-        if (!this.iterationStep.IsLiteralOne()) additionalInfo.Append(` with step size ${this.iterationStep.expressionAsStr}`);
-        if (!this.isIncreasing) additionalInfo.Append(" decreasing", ShapeRenderer.TextType.Italic);
-        shapeContent.AppendContent(additionalInfo);
-
-        return shapeContent;
-    }
-
-    public override Render(position: Utils.Vec2) { this.AddShape(position); }
-    public override GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.For; }
-}
-
-export class ConditionalCycle extends ProgramNode {
-    public expression: Expression = new Expression();
-    public isDoWhile: boolean = false;
-
-    public override GetContent(): ShapeRenderer.ShapeContent {
-        let unboldedSection: string = "while";
-        if (this.expression.expressionAsStr !== "") unboldedSection += ' ';
-        let shapeContent: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent(unboldedSection);
-
-        shapeContent.Append(this.expression.expressionAsStr, ShapeRenderer.TextType.Bolded);
-        return shapeContent;
-    }
-
-    public override Render(position: Utils.Vec2) { this.AddShape(position); }
-    public override GetType(): ShapeRenderer.ShapeType { return this.isDoWhile ? ShapeRenderer.ShapeType.Do : ShapeRenderer.ShapeType.While; }
 }
 
 export function StrToVarType(typeAsStr: string): VariableType {
