@@ -12,11 +12,13 @@ export class ArrowPath {
     private arrowConnections: HTMLDivElement[] = [];
     private arrowSize: Utils.Vec2 = Utils.Vec2.Zero();
     private currentPosition: Utils.Vec2 = Utils.Vec2.Zero();
+    private willRenderEnding: boolean = false;
 
-    public constructor(pos: Utils.Vec2, lengthsArr: number[], directions: number[]) {
+    public constructor(pos: Utils.Vec2, lengthsArr: number[], directions: number[], renderEnding: boolean = true) {
         this.position = pos;
         this.segmentLengths = lengthsArr;
         this.segmentAngles = directions;
+        this.willRenderEnding = renderEnding;
         this.ConstructArrow();
     }
 
@@ -57,6 +59,7 @@ export class ArrowPath {
 
     private RenderConnection(segmentIndex: number) {
         let isLastConnection: boolean = segmentIndex === this.segmentLengths.length - 1;
+        if (!this.willRenderEnding && isLastConnection) return;
         let connectionClass: string = isLastConnection ? "ShapeArrowEnding" : "ShapeArrowConnector"; 
         let segmentConnection: HTMLDivElement = Utils.CreateElement("div", connectionClass, ShapeRenderer.currentPlane) as HTMLDivElement;
 

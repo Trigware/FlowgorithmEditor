@@ -15,6 +15,7 @@ export function Setup(program: Flowgorithm.Program, scriptContents: string) {
     const xmlDocument: XMLDocument = xmlParser.parseFromString(scriptContents, "application/xml") as XMLDocument;
     let rootElement: Element = xmlDocument.documentElement;
     ParseElement(rootElement, program);
+    console.log(program);
 }
 
 function ParseElement(currentElement: Element, parentNode: Flowgorithm.ProgramNode) {
@@ -40,6 +41,7 @@ function ParseSpecificTag(currentElement: Element, currentTag: ProgramTag, paren
 
     let parsingFunction: (currentElement: Element) => Flowgorithm.ProgramNode = tagParsingFunctionMap.get(currentTag)!;
     let tagAsInstruction: Flowgorithm.ProgramNode = parsingFunction.call(undefined, currentElement);
+    tagAsInstruction.parentNode = parentNode;
     parentNode.subNodes.push(tagAsInstruction);
 }
 

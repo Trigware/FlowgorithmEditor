@@ -1,6 +1,6 @@
 :root {
     --arrow-layer: 0;
-    --label-layer: 6;
+    --label-layer: 1;
     --shape-shadow-layer: 2;
     --regular-shape-layer: 3;
     --arrow-connector-layer: 4;

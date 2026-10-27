@@ -56,13 +56,14 @@ export class CachedSize {
 export class ProgramNode {
     public subNodes: ProgramNode[] = [];
     public subArrows: ArrowPath[] = [];
+    public parentNode: ProgramNodeOpt = null;
     public linkedShape: ShapeRenderer.RenderedShape = new ShapeRenderer.RenderedShape();
     protected sizeCache: CachedSize = new CachedSize();
 
     public Clear() { this.subNodes = []; if (this.linkedShape !== null) this.linkedShape.Delete(); }
     public GetContent(): ShapeRenderer.ShapeContent { return GetEmptyContent(); }
     public GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Unknown; }
-    public WillExtendArrow(): boolean { return false; }
+    public DrawsAfterArrow(): boolean { return false; }
     public Render(position: Utils.Vec2) {}
     public Delete() {
         this.linkedShape.Delete();
@@ -103,19 +104,15 @@ export class ProgramNode {
             position.y += currentNodeSize.y;
             previousNode = currentNode;
         }
+
         return position.Copy();
     }
 
     private HandleArrowRender(position: Utils.Vec2, previousNode: ProgramNodeOpt) {
-        let extendRenderedArrow: boolean = previousNode === null ? false : previousNode.WillExtendArrow();
-        let subnodeSize: Utils.Vec2 = previousNode === null ? Utils.Vec2.Zero() : previousNode.GetSize(SizeCountType.CountAll, SubnodeCountType.SubnodeOnly);
+        let drawsAfterArrow: boolean = previousNode === null ? false : previousNode.DrawsAfterArrow();
+        if (drawsAfterArrow) { position.y += defaultArrowLength; return; }
 
-        let arrowLength: number = defaultArrowLength;
-        if (extendRenderedArrow) {
-            position.y -= subnodeSize.y;
-            arrowLength += subnodeSize.y;
-        }
-        
+        let arrowLength: number = defaultArrowLength;        
         let renderedArrow: ArrowPath = this.RenderDefaultArrow(position, arrowLength);
         this.subArrows.push(renderedArrow);
     }
@@ -253,7 +250,11 @@ export class FunctionSignature extends ProgramNode {
     }
 
     private RenderEndShape(position: Utils.Vec2) {
-        this.RenderDefaultArrow(position);
+        let lastNode: ProgramNodeOpt = this.subNodes.length === 0 ? null : this.subNodes[this.subNodes.length - 1];
+        let skippedArrowOffset: boolean = lastNode === null ? false : lastNode.DrawsAfterArrow();
+        if (skippedArrowOffset) position.y += defaultArrowLength;
+        else this.RenderDefaultArrow(position);
+
         let returnShapeContent: ShapeRenderer.ShapeContent = GetEmptyContent();
         let doesFunctionReturn: boolean = this.returnType !== VariableType.Void;
         let returnTypeAsStr: string = VariableType[this.returnType];
