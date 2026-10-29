@@ -15,7 +15,6 @@ export function Setup(program: Flowgorithm.Program, scriptContents: string) {
     const xmlDocument: XMLDocument = xmlParser.parseFromString(scriptContents, "application/xml") as XMLDocument;
     let rootElement: Element = xmlDocument.documentElement;
     ParseElement(rootElement, program);
-    console.log(program);
 }
 
 function ParseElement(currentElement: Element, parentNode: Flowgorithm.ProgramNode) {

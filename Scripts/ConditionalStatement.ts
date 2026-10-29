@@ -7,8 +7,6 @@ import { ArrowPath } from "./ArrowRendering.js"
 type ArrowPathOpt = ArrowPath | null;
 type OptionalDiv = HTMLDivElement | null;
 
-const mergePointSizeMultiplier: number = 1.65;
-
 export class ConditionalStatement extends Flowgorithm.ProgramNode {
     public conditional: Expression = new Expression();
     public thenNode: Flowgorithm.ProgramNode = new Flowgorithm.ProgramNode();
@@ -61,7 +59,7 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         this.elseBlockImportantSize = this.elseNode.GetSize(Flowgorithm.SizeCountType.OnlyLeft, Flowgorithm.SubnodeCountType.CountAll);
 
         this.mergePoint = Utils.CreateElement("div", "ShapeArrowConnector", ShapeRenderer.currentPlane) as HTMLDivElement;
-        let mergePointSize: number = Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size")) * mergePointSizeMultiplier;
+        let mergePointSize: number = Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size")) * Flowgorithm.mergePointSizeMultiplier;
         Utils.SetProperty(this.mergePoint, "--connector-size", mergePointSize.toString() + "px");
 
         let thenBranchEndPos: Utils.Vec2 = this.RenderBranch(true);
@@ -88,7 +86,7 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
 
     private RenderMergePoint() {
         if (this.mergePoint === null) return;
-        let mergePointColor: string = ShapeRenderer.GetColorInfo(ShapeRenderer.ShapeType.Conditional).mergePointColor;
+        let mergePointColor: string = ShapeRenderer.GetColorInfo(this.GetType()).mergePointColor;
         Utils.SetProperty(this.mergePoint, "background-color", mergePointColor);
 
         let mergePointPosition: Utils.Vec2 = this.currentPosition;

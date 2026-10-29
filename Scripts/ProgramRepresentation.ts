@@ -16,6 +16,8 @@ export enum SubnodeCountType {
 
 type ProgramNodeOpt = ProgramNode | null;
 
+export const mergePointSizeMultiplier: number = 1.65;
+
 let calculationsCount: number = 0;
 
 export class CachedSize {
