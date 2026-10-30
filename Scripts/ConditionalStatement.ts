@@ -28,9 +28,11 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
     }
 
     public override GetContent(): ShapeRenderer.ShapeContent {
-        let unboldedSection: string = "if";
-        if (this.conditional.expressionAsStr !== "") unboldedSection += ' ';
-        let resultContent: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent(unboldedSection);
+        let regularSectionStr: string = "If";
+        regularSectionStr += ' ';
+        let resultContent: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent(regularSectionStr);
+
+        resultContent.isIncomplete = this.conditional.IsEmpty();
         resultContent.Append(this.conditional.expressionAsStr, ShapeRenderer.TextType.Bolded);
         return resultContent;
     }
@@ -86,7 +88,9 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
 
     private RenderMergePoint() {
         if (this.mergePoint === null) return;
-        let mergePointColor: string = ShapeRenderer.GetColorInfo(this.GetType()).mergePointColor;
+        let mergePointColorInfo: ShapeRenderer.ShapeColorInfo = ShapeRenderer.GetColorInfo(this.GetType());
+        if (this.conditional.IsEmpty()) mergePointColorInfo = ShapeRenderer.incompleteShapeColors;
+        let mergePointColor: string = mergePointColorInfo.mergePointColor;
         Utils.SetProperty(this.mergePoint, "background-color", mergePointColor);
 
         let mergePointPosition: Utils.Vec2 = this.currentPosition;

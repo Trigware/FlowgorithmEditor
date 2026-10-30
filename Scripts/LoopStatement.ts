@@ -134,15 +134,24 @@ export class ForLoop extends CycleStatement {
     public isIncreasing: boolean = true;
 
     public override GetContent(): ShapeRenderer.ShapeContent {
-        let unboldedSection: string = "for ";
+        let unboldedSection: string = "For";
+        let isIncomplete: boolean = this.iteratorName.length === 0 || this.loopStart.IsEmpty() ||
+            this.loopEnd.IsEmpty() || this.iterationStep.IsEmpty();
+        if (!isIncomplete) unboldedSection += ' ';
+        
         let shapeContent: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent(unboldedSection);
+        shapeContent.isIncomplete = isIncomplete;
+        if (isIncomplete) return shapeContent;
 
-        let boldedContent: string = `${this.iteratorName} = ${this.loopStart.expressionAsStr} to ${this.loopEnd.expressionAsStr}`;
-        shapeContent.Append(boldedContent, ShapeRenderer.TextType.Bolded);
-        let additionalInfo: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent();
-        if (!this.iterationStep.IsLiteralOne()) additionalInfo.Append(` with step size ${this.iterationStep.expressionAsStr}`);
-        if (!this.isIncreasing) additionalInfo.Append(" decreasing", ShapeRenderer.TextType.Italic);
-        shapeContent.AppendContent(additionalInfo);
+        shapeContent.Append(`${this.iteratorName} = ${this.loopStart.expressionAsStr}`, ShapeRenderer.TextType.Bolded);
+        shapeContent.Append(" to ");
+        shapeContent.Append(this.loopEnd.expressionAsStr, ShapeRenderer.TextType.Bolded);
+        let showStepSize: boolean = !this.iterationStep.IsLiteralOne();
+        if (showStepSize) {
+            shapeContent.Append(` with step size `);
+            shapeContent.Append(this.iterationStep.expressionAsStr, ShapeRenderer.TextType.Bolded);
+        }
+        if (!this.isIncreasing) shapeContent.Append(" decreasing", ShapeRenderer.TextType.Italic);
 
         return shapeContent;
     }
@@ -167,11 +176,14 @@ export class ConditionalCycle extends CycleStatement {
     private arrowToPoint: ArrowPathOpt = null;
 
     public override GetContent(): ShapeRenderer.ShapeContent {
-        let unboldedSection: string = this.isDoWhile ? "do while" : "while";
-        if (this.expression.expressionAsStr !== "") unboldedSection += ' ';
-        let shapeContent: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent(unboldedSection);
+        let unboldedSection: string = this.isDoWhile ? "Do While" : "While";
+        let isIncomplete: boolean = this.expression.IsEmpty();
+        if (!isIncomplete) unboldedSection += ' ';
 
+        let shapeContent: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent(unboldedSection);
         shapeContent.Append(this.expression.expressionAsStr, ShapeRenderer.TextType.Bolded);
+        shapeContent.isIncomplete = isIncomplete;
+
         return shapeContent;
     }
 
@@ -205,7 +217,9 @@ export class ConditionalCycle extends CycleStatement {
 
         this.currentPosition.y += mergePointSize / 2;
         ShapeRenderer.SetShapePosition(this.mergePoint, this.currentPosition);
-        let mergePointColor: string = ShapeRenderer.GetColorInfo(this.GetType()).mergePointColor;
+        let mergePointColorInfo: ShapeRenderer.ShapeColorInfo = ShapeRenderer.GetColorInfo(this.GetType());
+        if (this.expression.IsEmpty()) mergePointColorInfo = ShapeRenderer.incompleteShapeColors;
+        let mergePointColor: string = mergePointColorInfo.mergePointColor;
         Utils.SetProperty(this.mergePoint, "background-color", mergePointColor);
     }
 
@@ -231,11 +245,14 @@ export class ConditionalCycle extends CycleStatement {
         );
 
         this.currentPosition = this.currentPosition.Plus(firstSegmentLength, verticalSegmentLength);
-        this.headPosition = this.currentPosition.Plus(-mergeSegmentLength - headSize.x / 2, -headSize.y / 2);
+        let headPositionOffset: Utils.Vec2 = new Utils.Vec2(
+            -mergeSegmentLength - headSize.x / 2,
+            subnodeSize.y - Flowgorithm.defaultArrowLength - headSize.y / 2
+        );
+        this.headPosition = this.currentPosition.Plus(headPositionOffset.x, headPositionOffset.y);
+
         this.RenderSubnodes(this.currentPosition, false);
         if (!containsSubnodes) return;
-
-        this.headPosition.y += Flowgorithm.defaultArrowLength + headSize.y;
         this.mergeArrow = new ArrowPath(
             this.currentPosition, [Flowgorithm.defaultArrowLength, mergeSegmentLength],
             [Flowgorithm.defaultArrowAngle, Flowgorithm.leftPointingRotation]

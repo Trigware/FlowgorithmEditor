@@ -28,7 +28,7 @@ export enum LabelAlign {
 enum ShapeDisplayType { Unknown = -1, Parallelogram, Diamond, Hexagon, Elipse, Rectangle }
 enum ShapeColorType { Unknown = -1, Purple, Blue, Green, Yellow, Red, Orange, LightPurple }
 
-class ShapeColorInfo {
+export class ShapeColorInfo {
     public shapeColor: string = ""; public shadowColor: string = ""; public mergePointColor: string = "";
     public constructor(colorOfShape: string, colorOfShadow: string, colorOfMergePoint: string = "#000000") {
         this.shapeColor = colorOfShape; this.shadowColor = colorOfShadow; this.mergePointColor = colorOfMergePoint;
@@ -55,6 +55,8 @@ const shapeColorsArr: Map<ShapeColorType, ShapeColorInfo> = new Map([
     [ShapeColorType.Red, new ShapeColorInfo("#d13434", "#7d1e1e", "#992323")],
     [ShapeColorType.Orange, new ShapeColorInfo("#d67345", "#944c29", "#ba592d")]
 ]);
+
+export const incompleteShapeColors: ShapeColorInfo = new ShapeColorInfo("#858585", "#404040", "#707070");
 
 const shapeDisplayArr: Map<ShapeType, ShapeDisplayInfo> = new Map([
     [ShapeType.FunctionSignature, new ShapeDisplayInfo(ShapeDisplayType.Elipse, ShapeColorType.Purple)],
@@ -144,10 +146,14 @@ function GetElementInfoByTextType(appliedTypes: TextType[]): TextStylingElement[
 
 export class ShapeContent {
     public segments: TextSegment[] = [];
+    public isIncomplete: boolean = false;
 
-    public constructor(segmentContent: string = "", textTypes: TextType | TextType[] = []) { this.Append(segmentContent, textTypes); }
+    public constructor(segmentContent: string = "", textTypes: TextType | TextType[] = []) {
+        this.Append(segmentContent, textTypes);
+    }
 
     public Append(segmentContent: string, textTypes: TextType | TextType[] = []) {
+        if (segmentContent.length === 0) return;
         let appendedSegment: TextSegment = new TextSegment(segmentContent, textTypes);
         this.segments.push(appendedSegment);
     }
@@ -212,6 +218,8 @@ export function GetColorInfo(shapeType: ShapeType): ShapeColorInfo {
 function ConstructShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent: ShapeContent, offsetShape: boolean, isShadow: boolean): HTMLDivElement {
     let shapeDisplayInfo: ShapeDisplayInfo = shapeDisplayArr.get(shapeType)!;
     let shapeColorInfo: ShapeColorInfo = shapeColorsArr.get(shapeDisplayInfo.colorType)!;
+    if (shapeContent.isIncomplete) shapeColorInfo = incompleteShapeColors;
+
     let shapeClass: string = displayTypeToClassMap.get(shapeDisplayInfo.displayType)!;
     let constructedShape: HTMLDivElement = Utils.CreateElement("div", shapeClass, currentPlane) as HTMLDivElement;
     let usedShapeColor: string = isShadow ? shapeColorInfo.shadowColor : shapeColorInfo.shapeColor;

@@ -312,6 +312,10 @@ export class Expression {
             this.AddToken(TokenType.UnaryOperator, chAsOperator.operatorType);
         }
     }
+
+    public IsEmpty(): boolean {
+        return this.tokens.length === 0;
+    }
 }
 
 export enum ParenthesisType {

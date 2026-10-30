@@ -110,9 +110,6 @@ function ParseDeclarationTag(currentElement: Element): Flowgorithm.ProgramNode {
             case "name":
                 let declarationListOrErr: string[] | Identifier.IdentifierError = Identifier.ParseDeclarationList(attribute.value);
                 if (typeof declarationListOrErr !== "number") { variableNames = declarationListOrErr; break; }
-                let errorDeclaration: Flowgorithm.VariableDeclaration = new Flowgorithm.VariableDeclaration();
-                errorDeclaration.error = declarationListOrErr;
-                declarationTag.declaredVariables.push(errorDeclaration);
                 break;
             case "type": declarationInfo.type = Flowgorithm.StrToVarType(attribute.value); break;
             case "array": declarationInfo.isArray = Flowgorithm.StrToBoolean(attribute.value); break;
