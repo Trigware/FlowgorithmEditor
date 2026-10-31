@@ -55,10 +55,12 @@ function OnFileSelected() {
 
 const scrollingMultiplier: number = 3.5;
 const maximumZoomLevel: number = 5;
+const allowZooming: boolean = true;
 
 function GetZoomLevel(): number { return Number(Utils.GetProperty(shapePlane, "--zoom-level")); }
 
 function OnWheelScrolled(event: WheelEvent) {
+    if (!allowZooming) return;
     let scrollDirection: number = Math.sign(event.deltaY);
     let currentZoomLevel: number = GetZoomLevel();
     let usedScrollMultiplier: number = 1 + (scrollingMultiplier - 1) * deltaTime;

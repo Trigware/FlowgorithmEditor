@@ -14,6 +14,15 @@ const doWhileDoneLabelVerticalMultiplier: number = 2.4;
 class CycleStatement extends Flowgorithm.ProgramNode {
     protected branchArrow: ArrowPathOpt = null; protected mergeArrow: ArrowPathOpt = null; private doneArrow: ArrowPathOpt = null;
     protected nextLabel: OptionalDiv = null; protected doneLabel: OptionalDiv = null;
+    public subnodeParent: Flowgorithm.ProgramNode = new Flowgorithm.ProgramNode();
+
+    public MoveToSubnodeParent() {
+        this.subnodeParent.subNodes = this.subNodes.slice();
+        for (let currentSubnode of this.subnodeParent.subNodes) {
+            currentSubnode.parentNode = this.subnodeParent;
+        }
+        this.subNodes = [];
+    }
 
     public override Render(position: Utils.Vec2) {
         this.AddShape(position);
@@ -33,7 +42,7 @@ class CycleStatement extends Flowgorithm.ProgramNode {
         let branchArrowPos: Utils.Vec2 = position.Plus(0, headSize.y / 2 + arrowYOffset);
         let verticalSegmentLength: number = headSize.y / 2 + Flowgorithm.defaultArrowLength;
 
-        let hasSubnodes: boolean = this.subNodes.length > 0;
+        let hasSubnodes: boolean = this.subnodeParent.subNodes.length > 0;
         let mergeArrowData: MergeArrowData = this.GetMergeArrowData();
         let mergeLengthArr: number[] = hasSubnodes ? [] : mergeArrowData[0],
             mergeRotationArr: number[] = hasSubnodes ? [] : mergeArrowData[1];
@@ -43,13 +52,13 @@ class CycleStatement extends Flowgorithm.ProgramNode {
             [horizontalSegmentLength, verticalSegmentLength, ...mergeLengthArr],
             [Flowgorithm.rightPointingRotation, Flowgorithm.defaultArrowAngle, ...mergeRotationArr]
         );
-        this.RenderSubnodes(this.branchArrow.GetArrowEndPos(), false);
+        this.subnodeParent.RenderSubnodes(this.branchArrow.GetArrowEndPos(), false);
     }
 
     private RenderMergingArrow() {
-        if (this.branchArrow === null || this.subNodes.length === 0) return;
+        if (this.branchArrow === null || this.subnodeParent.subNodes.length === 0) return;
 
-        let lastNode: Flowgorithm.ProgramNode = this.subNodes[this.subNodes.length - 1];
+        let lastNode: Flowgorithm.ProgramNode = this.subnodeParent.subNodes[this.subnodeParent.subNodes.length - 1];
         let isExtendingMergeArrow: boolean = lastNode.DrawsAfterArrow();
         let extensionLength: number = 0;
         if (isExtendingMergeArrow) {
@@ -102,10 +111,10 @@ class CycleStatement extends Flowgorithm.ProgramNode {
     }
 
     private GetHorizontalSegmentLength(): number {
-        let subNodeSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.OnlyLeft, Flowgorithm.SubnodeCountType.SubnodeOnly);
-        let headSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.HeadOnly);
+        let subNodeSize: Utils.Vec2 = this.subnodeParent.GetSize(Flowgorithm.SizeCountType.OnlyLeft, Flowgorithm.SubnodeCountType.CountAll);
+        let headSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.OnlyRight, Flowgorithm.SubnodeCountType.HeadOnly);
         let actualSubnodesWidth: number = Math.max(subNodeSize.x, Flowgorithm.defaultArrowLength);
-        let horizontalSegmentLength: number = headSize.x / 2 + actualSubnodesWidth;
+        let horizontalSegmentLength: number = headSize.x + actualSubnodesWidth;
 
         return horizontalSegmentLength;
     }
@@ -123,6 +132,15 @@ class CycleStatement extends Flowgorithm.ProgramNode {
 
         this.nextLabel = ShapeRenderer.ConstructLabel(nextLabelPos, "Next", ShapeRenderer.LabelAlign.Right);
         this.doneLabel = ShapeRenderer.ConstructLabel(doneLabelPos, "Done", doneLabelAlignment, doneAlignMultiplier);
+    }
+
+    public override SetSubnodeCache(currentSizeCache: Flowgorithm.CachedSize) {
+        let totalSubnodeSize: Utils.Vec2 = this.subnodeParent.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.CountAll);
+        let arrowConnectorSize: number = Utils.GetNumericPixels(Utils.GetProperty(document.documentElement, "--arrow-connector-size"));
+        let actualSubnodeWidth: number = Math.max(Flowgorithm.defaultArrowLength + arrowConnectorSize / 2, totalSubnodeSize.x);
+
+        currentSizeCache.subRightPortion.x = currentSizeCache.rightPortion.x + actualSubnodeWidth;
+        currentSizeCache.subRightPortion.y += totalSubnodeSize.y + Flowgorithm.defaultArrowLength;
     }
 }
 
@@ -158,12 +176,6 @@ export class ForLoop extends CycleStatement {
 
     public override GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.For; }
     public override DrawsAfterArrow(): boolean { return true; }
-
-    public override CalculateSizeCache(): Flowgorithm.CachedSize {
-        let sizeCache: Flowgorithm.CachedSize = super.CalculateSizeCache();
-        sizeCache.subRightPortion.y += Flowgorithm.defaultArrowLength;
-        return sizeCache;
-    }
 }
 
 export class ConditionalCycle extends CycleStatement {
@@ -189,12 +201,6 @@ export class ConditionalCycle extends CycleStatement {
 
     public override GetType(): ShapeRenderer.ShapeType { return this.isDoWhile ? ShapeRenderer.ShapeType.Do : ShapeRenderer.ShapeType.While; }
     public override DrawsAfterArrow(): boolean { return !this.isDoWhile; }
-
-    public override CalculateSizeCache(): Flowgorithm.CachedSize {
-        let sizeCache: Flowgorithm.CachedSize = super.CalculateSizeCache();
-        sizeCache.subRightPortion.y += Flowgorithm.defaultArrowLength;
-        return sizeCache;
-    }
 
     public override Render(position: Utils.Vec2) {
         this.renderPosition = position.Copy(); this.currentPosition = position.Copy();
@@ -234,7 +240,7 @@ export class ConditionalCycle extends CycleStatement {
             firstSegmentLength: number = mergeSegmentLength + headSize.x / 2,
             verticalSegmentLength: number = Flowgorithm.defaultArrowLength + mergePointSize / 2;
 
-        let containsSubnodes: boolean = this.subNodes.length > 0;
+        let containsSubnodes: boolean = this.subnodeParent.subNodes.length > 0;
         let mergeLengthArr: number[] = containsSubnodes ? [] : [mergeSegmentLength],
             mergeAnglesArr: number[] = containsSubnodes ? [] : [Flowgorithm.leftPointingRotation];
 

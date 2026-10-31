@@ -11,6 +11,7 @@
     --default-shape-width: 120px;
     --shape-horizontal-padding: 20px;
     --diamond-horizonal-padding: 30px;
+    --arrow-connector-size: 15px;
 }
 
 body {
@@ -41,7 +42,7 @@ img {
     
     background: conic-gradient(#b0b0b0 25%, #b5b5b5 0 50%, #b0b0b0 0 75%, #b5b5b5 0);
     background-size: var(--zoomed-tile-size) var(--zoomed-tile-size);
-    background-position: calc(var(--camera-x)) calc(var(--camera-y));
+    background-position: calc(50% - var(--camera-x)) calc(50% - var(--camera-y));
 
     position: absolute;
     user-select: none;
@@ -121,10 +122,8 @@ img {
 }
 
 .ShapeArrowConnector {
-    --connector-size: 15px;
-
-    width: var(--connector-size); height: var(--connector-size);
-    border-radius: var(--connector-size);
+    width: var(--arrow-connector-size); height: var(--arrow-connector-size);
+    border-radius: var(--arrow-connector-size);
     z-index: var(--arrow-connector-layer);
 }
 

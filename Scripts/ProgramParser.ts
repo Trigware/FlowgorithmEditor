@@ -208,6 +208,8 @@ function ParseForTag(currentElement: Element): Flowgorithm.ProgramNode {
     for (let elementChild of currentElement.children) {
         ParseElement(elementChild, forLoop);
     }
+    forLoop.MoveToSubnodeParent();
+
     return forLoop;
 }
 
@@ -224,6 +226,7 @@ function ParseConditionalCycleTag(currentElement: Element, isDoWhile: boolean): 
     for (let elementChild of currentElement.children) {
         ParseElement(elementChild, conditionalCycle);
     }
+    conditionalCycle.MoveToSubnodeParent();
 
     return conditionalCycle;
 }

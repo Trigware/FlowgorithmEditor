@@ -26,6 +26,7 @@ export class CachedSize {
     public GetByCountType(countType: SizeCountType = SizeCountType.CountAll, countSubnodesMode: SubnodeCountType = SubnodeCountType.HeadOnly): Utils.Vec2 {
         let usedLeftPortion: Utils.Vec2 = this.leftPortion;
         let usedRightPortion: Utils.Vec2 = this.rightPortion;
+        
         switch (countSubnodesMode) {
             case SubnodeCountType.SubnodeOnly: usedLeftPortion = this.subLeftPortion; usedRightPortion = this.subRightPortion; break;
             case SubnodeCountType.CountAll:
@@ -78,14 +79,7 @@ export class ProgramNode {
     public GetSize(countType: SizeCountType = SizeCountType.CountAll, countSubnodesMode: SubnodeCountType = SubnodeCountType.HeadOnly): Utils.Vec2 {
         if (!this.sizeCache.isCached) {
             this.sizeCache = this.CalculateSizeCache();
-            this.SetSubnodesCache(this.sizeCache);
-            /*console.log(`CONTENT: ${this.GetContent().ToString()}, 
-                SIZE LEFT HEAD: ${this.sizeCache.GetByCountType(SizeCountType.OnlyLeft).ToString()}, 
-                SIZE RIGHT HEAD: ${this.sizeCache.GetByCountType(SizeCountType.OnlyRight).ToString()},
-                SIZE LEFT SUBNODES: ${this.sizeCache.GetByCountType(SizeCountType.OnlyLeft, SubnodeCountType.SubnodeOnly).ToString()}, 
-                SIZE RIGHT SUBNODES: ${this.sizeCache.GetByCountType(SizeCountType.OnlyRight, SubnodeCountType.SubnodeOnly).ToString()},
-            `);
-            console.log(this.sizeCache);*/
+            this.SetSubnodeCache(this.sizeCache);
         }
 
         return this.sizeCache.GetByCountType(countType, countSubnodesMode);
@@ -117,6 +111,13 @@ export class ProgramNode {
         this.subArrows.push(renderedArrow);
     }
 
+    public RenderDefaultArrow(position: Utils.Vec2, arrowLength: number = defaultArrowLength): ArrowPath {
+        let renderedArrow: ArrowPath = new ArrowPath(position, [arrowLength], [defaultArrowAngle]);
+        let arrowTotalSize: Utils.Vec2 = renderedArrow.GetArrowSize();
+        position.y += arrowTotalSize.y;
+        return renderedArrow;
+    }
+
     public CalculateSizeCache(): CachedSize {
         let sizeCache: CachedSize = new CachedSize();
         sizeCache.isCached = true;
@@ -124,29 +125,21 @@ export class ProgramNode {
         let headSize: Utils.Vec2 = this.linkedShape.GetSize(this.GetContent(), this.GetType());
         let headPortionHalfSize: Utils.Vec2 = new Utils.Vec2(headSize.x / 2, headSize.y);
         sizeCache.leftPortion = headPortionHalfSize; sizeCache.rightPortion = headPortionHalfSize;
+        sizeCache.subLeftPortion = Utils.Vec2.Zero(); sizeCache.subRightPortion = Utils.Vec2.Zero();
+
         return sizeCache;
     }
 
-    public SetSubnodesCache(currentSizeCache: CachedSize) {
+    public SetSubnodeCache(currentSizeCache: CachedSize) {
         for (let currentSubnode of this.subNodes) {
-            let leftHeadSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyLeft, SubnodeCountType.HeadOnly),
-                rightHeadSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyRight, SubnodeCountType.HeadOnly),
-                leftAllSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyLeft, SubnodeCountType.CountAll),
-                rightAllSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyRight, SubnodeCountType.CountAll);
+            let totalLeftSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyLeft, SubnodeCountType.CountAll),
+                totalRightSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyRight, SubnodeCountType.CountAll);
+            let subnodeHeight: number = Math.max(totalLeftSize.y, totalRightSize.y);
 
-            let currentLeftWidth: number = rightHeadSize.x, currentRightWidth: number = leftHeadSize.x;
-            currentSizeCache.subLeftPortion.x = Math.max(currentSizeCache.subLeftPortion.x, currentLeftWidth);
-            currentSizeCache.subRightPortion.x = Math.max(currentSizeCache.subRightPortion.x, currentRightWidth);
-            currentSizeCache.subLeftPortion.y += defaultArrowLength + leftAllSize.y;
-            currentSizeCache.subRightPortion.y += defaultArrowLength + rightAllSize.y;
+            currentSizeCache.subLeftPortion.x = Math.max(currentSizeCache.subLeftPortion.x, totalLeftSize.x);
+            currentSizeCache.subRightPortion.x = Math.max(currentSizeCache.subRightPortion.x, totalRightSize.x);
+            currentSizeCache.ApplyToSub(0, subnodeHeight + defaultArrowLength);
         }
-    }
-
-    public RenderDefaultArrow(position: Utils.Vec2, arrowLength: number = defaultArrowLength): ArrowPath {
-        let renderedArrow: ArrowPath = new ArrowPath(position, [arrowLength], [defaultArrowAngle]);
-        let arrowTotalSize: Utils.Vec2 = renderedArrow.GetArrowSize();
-        position.y += arrowTotalSize.y;
-        return renderedArrow;
     }
 }
 
@@ -199,17 +192,18 @@ export class Program extends ProgramNode {
             if (!isFunction) continue;
 
             let currentFunction: FunctionSignature = this.subNodes[i] as FunctionSignature;
-            let leftFunctionSize: Utils.Vec2 = currentFunction.GetSize(SizeCountType.OnlyLeft, SubnodeCountType.CountAll);
-            if (renderedFunctionCount > 0) currentPosition.x += leftFunctionSize.x;
+            let functionLeftSize: Utils.Vec2 = currentFunction.GetSize(SizeCountType.OnlyLeft, SubnodeCountType.CountAll);
+            if (renderedFunctionCount > 0) currentPosition.x += functionLeftSize.x;
             let previousPosition: Utils.Vec2 = currentPosition.Copy();
 
             currentFunction.Render(currentPosition);
             currentPosition = previousPosition;
-            let functionSize: Utils.Vec2 = currentFunction.GetSize(SizeCountType.CountAll, SubnodeCountType.CountAll);
-            console.log(`NAME: ${currentFunction.name}, SIZE: ${functionSize.ToString()}, LEFT SIZE: ${leftFunctionSize.ToString()}`);
-            currentPosition.x += functionSize.x / 2;
+            let functionRightSize: Utils.Vec2 = currentFunction.GetSize(SizeCountType.OnlyRight, SubnodeCountType.CountAll);
+            currentPosition.x += functionRightSize.x;
             renderedFunctionCount++;
         }
+
+        console.log(this);
     }
 }
 
@@ -266,6 +260,17 @@ export class FunctionSignature extends ProgramNode {
         sizeCache.ApplyToSub(0, defaultArrowLength + endShapeSize.y);
         sizeCache.subLeftPortion.x = Math.max(sizeCache.subLeftPortion.x, endShapeSize.x / 2);
         sizeCache.subRightPortion.x = Math.max(sizeCache.subRightPortion.x, endShapeSize.x / 2);
+
+        for (let currentSubnode of this.subNodes) {
+            let leftAllSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyLeft, SubnodeCountType.CountAll),
+                rightAllSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyRight, SubnodeCountType.CountAll);
+            
+            sizeCache.subLeftPortion.x = Math.max(sizeCache.subLeftPortion.x, leftAllSize.x);
+            sizeCache.subRightPortion.x = Math.max(sizeCache.subRightPortion.x, rightAllSize.x);
+            let currentNodeHeight: number = Math.max(leftAllSize.y, rightAllSize.y);
+            sizeCache.ApplyToSub(0, defaultArrowLength + currentNodeHeight);
+        }
+
         return sizeCache;
     }
 

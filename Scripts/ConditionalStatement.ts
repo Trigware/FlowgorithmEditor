@@ -23,6 +23,9 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
 
     public MoveSubnodes(moveToThen: boolean) {
         let selectedNode: Flowgorithm.ProgramNode = moveToThen ? this.thenNode : this.elseNode;
+        for (let currentSubnode of this.subNodes) {
+            currentSubnode.parentNode = selectedNode;
+        }
         selectedNode.subNodes = this.subNodes.slice();
         this.subNodes = [];
     }
