@@ -6,7 +6,7 @@ import { ConditionalStatement } from "./ConditionalStatement.js"
 import { ForLoop, ConditionalCycle } from "./LoopStatement.js"
 
 enum ProgramTag {
-    Unknown, Function, Declare, Assign, Input, Output, If, Call, For, While, Do
+    Unknown, Function, Declare, Assign, Input, Output, If, Call, For, While, Do, Comment, Breakpoint
 }
 
 export function Setup(program: Flowgorithm.Program, scriptContents: string) {
@@ -54,7 +54,9 @@ const tagParsingFunctionMap: Map<ProgramTag, (currentElement: Element) => Flowgo
     [ProgramTag.Call, ParseCallTag],
     [ProgramTag.For, ParseForTag],
     [ProgramTag.While, ParseWhileTag],
-    [ProgramTag.Do, ParseDoWhileTag]
+    [ProgramTag.Do, ParseDoWhileTag],
+    [ProgramTag.Comment, ParseCommentTag],
+    [ProgramTag.Breakpoint, ParseBreakpointTag]
 ]);
 
 function ParseFunctionTag(currentElement: Element): Flowgorithm.ProgramNode {
@@ -229,4 +231,21 @@ function ParseConditionalCycleTag(currentElement: Element, isDoWhile: boolean): 
     conditionalCycle.MoveToSubnodeParent();
 
     return conditionalCycle;
+}
+
+function ParseCommentTag(currentElement: Element): Flowgorithm.ProgramNode {
+    let commentNode: Flowgorithm.InlineComment = new Flowgorithm.InlineComment();
+    for (let attribute of currentElement.attributes) { if (attribute.name === "text") commentNode.commentContent = attribute.value; }
+    return commentNode;
+}
+
+function ParseBreakpointTag(currentElement: Element): Flowgorithm.ProgramNode {
+    let breakpointNode: Flowgorithm.Breakpoint = new Flowgorithm.Breakpoint();
+    for (let attribute of currentElement.attributes) {
+        switch (attribute.value) {
+            case "expression": breakpointNode.conditionalExpression = Expression.FromString(attribute.value); break;
+            case "always": breakpointNode.isConditional = Flowgorithm.StrToBoolean(attribute.value); break;
+        }
+    }
+    return breakpointNode;
 }

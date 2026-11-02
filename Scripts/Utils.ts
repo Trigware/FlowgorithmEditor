@@ -264,6 +264,11 @@ export function GetProperty(element: HTMLElement, propertyStr: string): string {
     return propertyValue;
 }
 
+export function GetPropertyPX(element: HTMLElement, propertyStr: string): number {
+    let propertyValueStr: string = GetProperty(element, propertyStr);
+    return GetNumericPixels(propertyValueStr);
+}
+
 export function SetProperty(element: HTMLElement, propertyStr: string, propertyValue: string) {
     element.style.setProperty(propertyStr, propertyValue);
 }

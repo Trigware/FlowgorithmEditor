@@ -11,7 +11,7 @@
     --default-shape-width: 120px;
     --shape-horizontal-padding: 20px;
     --diamond-horizonal-padding: 30px;
-    --arrow-connector-size: 15px;
+    --default-connector-size: 15px;
 }
 
 body {
@@ -122,8 +122,11 @@ img {
 }
 
 .ShapeArrowConnector {
-    width: var(--arrow-connector-size); height: var(--arrow-connector-size);
-    border-radius: var(--arrow-connector-size);
+    --connector-size-multiplier: 1;
+
+    width: calc(var(--default-connector-size) * var(--connector-size-multiplier));
+    height: calc(var(--default-connector-size) * var(--connector-size-multiplier));
+    border-radius: calc(var(--default-connector-size) * var(--connector-size-multiplier));
     z-index: var(--arrow-connector-layer);
 }
 

@@ -96,6 +96,7 @@ export class ProgramNode {
             currentNode.Render(position);
             let currentNodeSize: Utils.Vec2 = currentNode.GetSize(SizeCountType.CountAll, SubnodeCountType.CountAll);
             position.y += currentNodeSize.y;
+            console.log(`TEXT: ${currentNode.GetContent().ToString()}, SIZE: ${currentNodeSize.ToString()}`);
             previousNode = currentNode;
         }
 
@@ -400,6 +401,15 @@ export class CallInstruction extends ProgramNode {
 
     public override Render(position: Utils.Vec2) { this.AddShape(position); }
     public override GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Call; }
+}
+
+export class InlineComment extends ProgramNode {
+    public commentContent: string = "";
+}
+
+export class Breakpoint extends ProgramNode {
+    public isConditional: boolean = false;
+    public conditionalExpression: Expression = new Expression();
 }
 
 export function StrToVarType(typeAsStr: string): VariableType {

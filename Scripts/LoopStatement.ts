@@ -218,8 +218,8 @@ export class ConditionalCycle extends CycleStatement {
 
     private RenderDoWhileMergePoint() {
         this.mergePoint = Utils.CreateElement("div", "ShapeArrowConnector", ShapeRenderer.currentPlane) as HTMLDivElement;
-        let mergePointSize = Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size")) * Flowgorithm.mergePointSizeMultiplier;
-        Utils.SetProperty(this.mergePoint, "--connector-size", mergePointSize.toString() + "px");
+        Utils.SetProperty(this.mergePoint, "--connector-size-multiplier", Flowgorithm.mergePointSizeMultiplier.toString());
+        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * Flowgorithm.mergePointSizeMultiplier;
 
         this.currentPosition.y += mergePointSize / 2;
         ShapeRenderer.SetShapePosition(this.mergePoint, this.currentPosition);
@@ -234,7 +234,7 @@ export class ConditionalCycle extends CycleStatement {
 
         let subnodeSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.SubnodeOnly),
             headSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.HeadOnly);
-        let mergePointSize: number = Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size"));
+        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * Flowgorithm.mergePointSizeMultiplier;
         
         let mergeSegmentLength: number = Math.max(subnodeSize.x / 2, Flowgorithm.defaultArrowLength),
             firstSegmentLength: number = mergeSegmentLength + headSize.x / 2,
@@ -257,7 +257,7 @@ export class ConditionalCycle extends CycleStatement {
         );
         this.headPosition = this.currentPosition.Plus(headPositionOffset.x, headPositionOffset.y);
 
-        this.RenderSubnodes(this.currentPosition, false);
+        this.subnodeParent.RenderSubnodes(this.currentPosition, false);
         if (!containsSubnodes) return;
         this.mergeArrow = new ArrowPath(
             this.currentPosition, [Flowgorithm.defaultArrowLength, mergeSegmentLength],
@@ -268,7 +268,7 @@ export class ConditionalCycle extends CycleStatement {
     private RenderDoWhileArrowToMergePoint() {
         if (this.mergePoint === null) return;
         
-        let mergePointSize: number = Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size"));
+        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * Flowgorithm.mergePointSizeMultiplier;
         let arrowLength: number = this.headPosition.y - this.renderPosition.y - mergePointSize;
         this.arrowToPoint = new ArrowPath(
             this.headPosition, [arrowLength], [Flowgorithm.upwardPointingRotation]

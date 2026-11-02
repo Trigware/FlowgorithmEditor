@@ -64,8 +64,7 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         this.elseBlockImportantSize = this.elseNode.GetSize(Flowgorithm.SizeCountType.OnlyLeft, Flowgorithm.SubnodeCountType.CountAll);
 
         this.mergePoint = Utils.CreateElement("div", "ShapeArrowConnector", ShapeRenderer.currentPlane) as HTMLDivElement;
-        let mergePointSize: number = Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size")) * Flowgorithm.mergePointSizeMultiplier;
-        Utils.SetProperty(this.mergePoint, "--connector-size", mergePointSize.toString() + "px");
+        Utils.SetProperty(this.mergePoint, "--connector-size-multiplier", Flowgorithm.mergePointSizeMultiplier.toString());
 
         let thenBranchEndPos: Utils.Vec2 = this.RenderBranch(true);
         let elseBranchEndPos: Utils.Vec2 = this.RenderBranch(false);
@@ -134,7 +133,7 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         let currentBlockImportantSize: Utils.Vec2 = isThen ? this.thenBlockImportantSize : this.elseBlockImportantSize;
         let greaterBlockHeight: number = Math.max(this.thenBlockImportantSize.y, this.elseBlockImportantSize.y);
         let emptyBlockArrowExtension: number = greaterBlockHeight - currentBlockImportantSize.y;
-        let mergePointSize: number = this.mergePoint === null ? 0 : Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size"));
+        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * Flowgorithm.mergePointSizeMultiplier;
 
         let arrowRotation: number = isThen ? Flowgorithm.rightPointingRotation : Flowgorithm.leftPointingRotation;
         let horizontalArrowLength: number = Math.max(Flowgorithm.defaultArrowLength, currentBlockImportantSize.x);
@@ -172,7 +171,7 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
 
         let greaterBlockHeight: number = Math.max(this.thenBlockImportantSize.y, this.elseBlockImportantSize.y);
         let currentBlockSize: Utils.Vec2 = isThen ? this.thenBlockImportantSize : this.elseBlockImportantSize;
-        let mergePointSize: number = Utils.GetNumericPixels(Utils.GetProperty(this.mergePoint, "--connector-size"));
+        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * Flowgorithm.mergePointSizeMultiplier;
 
         let mergingArrowDownwardLength: number = greaterBlockHeight - currentBlockSize.y + Flowgorithm.defaultArrowLength;
         let mergePointXOffset: number = currentBranchingArrow.GetSegmentLengths()[0];
