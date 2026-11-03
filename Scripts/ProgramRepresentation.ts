@@ -65,7 +65,9 @@ export class ProgramNode {
     public GetContent(): ShapeRenderer.ShapeContent { return GetEmptyContent(); }
     public GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Unknown; }
     public DrawsAfterArrow(): boolean { return false; }
+    public BeforeArrowHasEnding(): boolean { return true; }
     public Render(position: Utils.Vec2) {}
+
     public Delete() {
         this.linkedShape.Delete();
         for (let childNode of this.subNodes) childNode.Delete();
@@ -79,6 +81,7 @@ export class ProgramNode {
     public GetSize(countType: SizeCountType = SizeCountType.CountAll, countSubnodesMode: SubnodeCountType = SubnodeCountType.HeadOnly): Utils.Vec2 {
         if (!this.sizeCache.isCached) {
             this.sizeCache = this.CalculateSizeCache();
+            this.sizeCache.isCached = true;
             this.SetSubnodeCache(this.sizeCache);
         }
 
@@ -86,43 +89,46 @@ export class ProgramNode {
     }
 
     public RenderSubnodes(position: Utils.Vec2, renderFirstArrow: boolean = true): Utils.Vec2 {
-        let previousNode: ProgramNodeOpt = null; 
-        
         for (let i = 0; i < this.subNodes.length; i++) {
             let isFirstNode: boolean = i === 0;
-            if (!isFirstNode || renderFirstArrow) this.HandleArrowRender(position, previousNode);
+            if (!isFirstNode || renderFirstArrow) this.HandleArrowRender(position, i);
             let currentNode: ProgramNode = this.subNodes[i];
 
             currentNode.Render(position);
             let currentNodeSize: Utils.Vec2 = currentNode.GetSize(SizeCountType.CountAll, SubnodeCountType.CountAll);
             position.y += currentNodeSize.y;
-            console.log(`TEXT: ${currentNode.GetContent().ToString()}, SIZE: ${currentNodeSize.ToString()}`);
-            previousNode = currentNode;
         }
 
         return position.Copy();
     }
 
-    private HandleArrowRender(position: Utils.Vec2, previousNode: ProgramNodeOpt) {
+    private HandleArrowRender(position: Utils.Vec2, nodeIndex: number) {
+        let previousNode: ProgramNodeOpt = this.GetSubnode(nodeIndex - 1), currentNode: ProgramNodeOpt = this.GetSubnode(nodeIndex);
         let drawsAfterArrow: boolean = previousNode === null ? false : previousNode.DrawsAfterArrow();
         if (drawsAfterArrow) { position.y += defaultArrowLength; return; }
 
+        let renderArrowEnding: boolean = currentNode === null ? true : currentNode.BeforeArrowHasEnding();
         let arrowLength: number = defaultArrowLength;        
-        let renderedArrow: ArrowPath = this.RenderDefaultArrow(position, arrowLength);
+        let renderedArrow: ArrowPath = this.RenderDefaultArrow(position, arrowLength, renderArrowEnding);
         this.subArrows.push(renderedArrow);
     }
 
-    public RenderDefaultArrow(position: Utils.Vec2, arrowLength: number = defaultArrowLength): ArrowPath {
-        let renderedArrow: ArrowPath = new ArrowPath(position, [arrowLength], [defaultArrowAngle]);
+    public RenderDefaultArrow(position: Utils.Vec2, arrowLength: number = defaultArrowLength, drawEnding: boolean = true): ArrowPath {
+        let renderedArrow: ArrowPath = new ArrowPath(position, [arrowLength], [defaultArrowAngle], drawEnding);
         let arrowTotalSize: Utils.Vec2 = renderedArrow.GetArrowSize();
         position.y += arrowTotalSize.y;
         return renderedArrow;
     }
 
+    private GetSubnode(nodeIndex: number): ProgramNodeOpt {
+        let isIndexInvalid: boolean = nodeIndex < 0 || nodeIndex >= this.subNodes.length;
+        if (isIndexInvalid) return null;
+        return this.subNodes[nodeIndex];
+    }
+
     public CalculateSizeCache(): CachedSize {
         let sizeCache: CachedSize = new CachedSize();
-        sizeCache.isCached = true;
-        
+       
         let headSize: Utils.Vec2 = this.linkedShape.GetSize(this.GetContent(), this.GetType());
         let headPortionHalfSize: Utils.Vec2 = new Utils.Vec2(headSize.x / 2, headSize.y);
         sizeCache.leftPortion = headPortionHalfSize; sizeCache.rightPortion = headPortionHalfSize;
@@ -203,8 +209,6 @@ export class Program extends ProgramNode {
             currentPosition.x += functionRightSize.x;
             renderedFunctionCount++;
         }
-
-        console.log(this);
     }
 }
 
@@ -401,15 +405,6 @@ export class CallInstruction extends ProgramNode {
 
     public override Render(position: Utils.Vec2) { this.AddShape(position); }
     public override GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Call; }
-}
-
-export class InlineComment extends ProgramNode {
-    public commentContent: string = "";
-}
-
-export class Breakpoint extends ProgramNode {
-    public isConditional: boolean = false;
-    public conditionalExpression: Expression = new Expression();
 }
 
 export function StrToVarType(typeAsStr: string): VariableType {

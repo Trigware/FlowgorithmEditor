@@ -4,6 +4,7 @@ import * as Utils from "./Utils.js";
 import * as Identifier from "./Identifier.js";
 import { ConditionalStatement } from "./ConditionalStatement.js";
 import { ForLoop, ConditionalCycle } from "./LoopStatement.js";
+import { Breakpoint, InlineComment } from "./AnnotationElements.js";
 var ProgramTag;
 (function (ProgramTag) {
     ProgramTag[ProgramTag["Unknown"] = 0] = "Unknown";
@@ -248,7 +249,7 @@ function ParseConditionalCycleTag(currentElement, isDoWhile) {
     return conditionalCycle;
 }
 function ParseCommentTag(currentElement) {
-    let commentNode = new Flowgorithm.InlineComment();
+    let commentNode = new InlineComment();
     for (let attribute of currentElement.attributes) {
         if (attribute.name === "text")
             commentNode.commentContent = attribute.value;
@@ -256,14 +257,14 @@ function ParseCommentTag(currentElement) {
     return commentNode;
 }
 function ParseBreakpointTag(currentElement) {
-    let breakpointNode = new Flowgorithm.Breakpoint();
+    let breakpointNode = new Breakpoint();
     for (let attribute of currentElement.attributes) {
-        switch (attribute.value) {
+        switch (attribute.name) {
             case "expression":
                 breakpointNode.conditionalExpression = Expression.FromString(attribute.value);
                 break;
             case "always":
-                breakpointNode.isConditional = Flowgorithm.StrToBoolean(attribute.value);
+                breakpointNode.isConditional = !Flowgorithm.StrToBoolean(attribute.value);
                 break;
         }
     }

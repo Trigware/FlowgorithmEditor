@@ -58,6 +58,7 @@ export class ProgramNode {
     GetContent() { return GetEmptyContent(); }
     GetType() { return ShapeRenderer.ShapeType.Unknown; }
     DrawsAfterArrow() { return false; }
+    BeforeArrowHasEnding() { return true; }
     Render(position) { }
     Delete() {
         this.linkedShape.Delete();
@@ -72,44 +73,49 @@ export class ProgramNode {
     GetSize(countType = SizeCountType.CountAll, countSubnodesMode = SubnodeCountType.HeadOnly) {
         if (!this.sizeCache.isCached) {
             this.sizeCache = this.CalculateSizeCache();
+            this.sizeCache.isCached = true;
             this.SetSubnodeCache(this.sizeCache);
         }
         return this.sizeCache.GetByCountType(countType, countSubnodesMode);
     }
     RenderSubnodes(position, renderFirstArrow = true) {
-        let previousNode = null;
         for (let i = 0; i < this.subNodes.length; i++) {
             let isFirstNode = i === 0;
             if (!isFirstNode || renderFirstArrow)
-                this.HandleArrowRender(position, previousNode);
+                this.HandleArrowRender(position, i);
             let currentNode = this.subNodes[i];
             currentNode.Render(position);
             let currentNodeSize = currentNode.GetSize(SizeCountType.CountAll, SubnodeCountType.CountAll);
             position.y += currentNodeSize.y;
-            console.log(`TEXT: ${currentNode.GetContent().ToString()}, SIZE: ${currentNodeSize.ToString()}`);
-            previousNode = currentNode;
         }
         return position.Copy();
     }
-    HandleArrowRender(position, previousNode) {
+    HandleArrowRender(position, nodeIndex) {
+        let previousNode = this.GetSubnode(nodeIndex - 1), currentNode = this.GetSubnode(nodeIndex);
         let drawsAfterArrow = previousNode === null ? false : previousNode.DrawsAfterArrow();
         if (drawsAfterArrow) {
             position.y += defaultArrowLength;
             return;
         }
+        let renderArrowEnding = currentNode === null ? true : currentNode.BeforeArrowHasEnding();
         let arrowLength = defaultArrowLength;
-        let renderedArrow = this.RenderDefaultArrow(position, arrowLength);
+        let renderedArrow = this.RenderDefaultArrow(position, arrowLength, renderArrowEnding);
         this.subArrows.push(renderedArrow);
     }
-    RenderDefaultArrow(position, arrowLength = defaultArrowLength) {
-        let renderedArrow = new ArrowPath(position, [arrowLength], [defaultArrowAngle]);
+    RenderDefaultArrow(position, arrowLength = defaultArrowLength, drawEnding = true) {
+        let renderedArrow = new ArrowPath(position, [arrowLength], [defaultArrowAngle], drawEnding);
         let arrowTotalSize = renderedArrow.GetArrowSize();
         position.y += arrowTotalSize.y;
         return renderedArrow;
     }
+    GetSubnode(nodeIndex) {
+        let isIndexInvalid = nodeIndex < 0 || nodeIndex >= this.subNodes.length;
+        if (isIndexInvalid)
+            return null;
+        return this.subNodes[nodeIndex];
+    }
     CalculateSizeCache() {
         let sizeCache = new CachedSize();
-        sizeCache.isCached = true;
         let headSize = this.linkedShape.GetSize(this.GetContent(), this.GetType());
         let headPortionHalfSize = new Utils.Vec2(headSize.x / 2, headSize.y);
         sizeCache.leftPortion = headPortionHalfSize;
@@ -190,7 +196,6 @@ export class Program extends ProgramNode {
             currentPosition.x += functionRightSize.x;
             renderedFunctionCount++;
         }
-        console.log(this);
     }
 }
 export const defaultArrowLength = 60;
@@ -357,13 +362,6 @@ export class CallInstruction extends ProgramNode {
     }
     Render(position) { this.AddShape(position); }
     GetType() { return ShapeRenderer.ShapeType.Call; }
-}
-export class InlineComment extends ProgramNode {
-    commentContent = "";
-}
-export class Breakpoint extends ProgramNode {
-    isConditional = false;
-    conditionalExpression = new Expression();
 }
 export function StrToVarType(typeAsStr) {
     let varType = Utils.GetEnumValueFromName(VariableType, typeAsStr);

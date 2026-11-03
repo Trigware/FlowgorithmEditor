@@ -18,6 +18,7 @@ export var ShapeType;
     ShapeType[ShapeType["While"] = 8] = "While";
     ShapeType[ShapeType["For"] = 9] = "For";
     ShapeType[ShapeType["Do"] = 10] = "Do";
+    ShapeType[ShapeType["Breakpoint"] = 11] = "Breakpoint";
 })(ShapeType || (ShapeType = {}));
 export var LabelAlign;
 (function (LabelAlign) {
@@ -37,6 +38,7 @@ var ShapeDisplayType;
     ShapeDisplayType[ShapeDisplayType["Hexagon"] = 2] = "Hexagon";
     ShapeDisplayType[ShapeDisplayType["Elipse"] = 3] = "Elipse";
     ShapeDisplayType[ShapeDisplayType["Rectangle"] = 4] = "Rectangle";
+    ShapeDisplayType[ShapeDisplayType["Octagon"] = 5] = "Octagon";
 })(ShapeDisplayType || (ShapeDisplayType = {}));
 var ShapeColorType;
 (function (ShapeColorType) {
@@ -48,6 +50,7 @@ var ShapeColorType;
     ShapeColorType[ShapeColorType["Red"] = 4] = "Red";
     ShapeColorType[ShapeColorType["Orange"] = 5] = "Orange";
     ShapeColorType[ShapeColorType["LightPurple"] = 6] = "LightPurple";
+    ShapeColorType[ShapeColorType["LightRed"] = 7] = "LightRed";
 })(ShapeColorType || (ShapeColorType = {}));
 export class ShapeColorInfo {
     shapeColor = "";
@@ -77,7 +80,8 @@ const shapeColorsArr = new Map([
     [ShapeColorType.Green, new ShapeColorInfo("#4fc26a", "#2f8a5b")],
     [ShapeColorType.Yellow, new ShapeColorInfo("#edd040", "#a08d30")],
     [ShapeColorType.Red, new ShapeColorInfo("#d13434", "#7d1e1e", "#992323")],
-    [ShapeColorType.Orange, new ShapeColorInfo("#d67345", "#944c29", "#ba592d")]
+    [ShapeColorType.Orange, new ShapeColorInfo("#d67345", "#944c29", "#ba592d")],
+    [ShapeColorType.LightRed, new ShapeColorInfo("#ed5c5c", "#c24444")]
 ]);
 export const incompleteShapeColors = new ShapeColorInfo("#858585", "#404040", "#707070");
 const shapeDisplayArr = new Map([
@@ -91,12 +95,13 @@ const shapeDisplayArr = new Map([
     [ShapeType.Conditional, new ShapeDisplayInfo(ShapeDisplayType.Diamond, ShapeColorType.Red)],
     [ShapeType.While, new ShapeDisplayInfo(ShapeDisplayType.Hexagon, ShapeColorType.Orange)],
     [ShapeType.For, new ShapeDisplayInfo(ShapeDisplayType.Hexagon, ShapeColorType.Orange)],
-    [ShapeType.Do, new ShapeDisplayInfo(ShapeDisplayType.Hexagon, ShapeColorType.Orange)]
+    [ShapeType.Do, new ShapeDisplayInfo(ShapeDisplayType.Hexagon, ShapeColorType.Orange)],
+    [ShapeType.Breakpoint, new ShapeDisplayInfo(ShapeDisplayType.Octagon, ShapeColorType.LightRed)]
 ]);
 const displayTypeToClassMap = new Map([
     [ShapeDisplayType.Parallelogram, "ParallelogramShape"], [ShapeDisplayType.Diamond, "DiamondShape"],
     [ShapeDisplayType.Hexagon, "HexagonShape"], [ShapeDisplayType.Elipse, "ElipticShape"],
-    [ShapeDisplayType.Rectangle, "RectangleShape"]
+    [ShapeDisplayType.Rectangle, "RectangleShape"], [ShapeDisplayType.Octagon, "OctagonShape"]
 ]);
 export function SetShapePosition(currentShape, shapePosition) {
     Utils.SetProperty(currentShape, "--shape-x", shapePosition.x.toString() + "px");
@@ -273,7 +278,6 @@ export function AddShape(shapeType, position, shapeContent, offsetShape = true) 
     return renderedShape;
 }
 export function ClearPlane() { currentPlane.replaceChildren(); }
-const labelYOffsetMultiplier = 0.2;
 export function ConstructLabel(labelPosition, labelText, labelAlign = LabelAlign.Center, alignMultiplier = new Utils.Vec2(1, 1)) {
     let constructedLabel = Utils.CreateElement("div", "LabelObject", currentPlane);
     let labelContent = new ShapeContent(labelText, TextType.Bolded);
@@ -303,6 +307,12 @@ export class RenderedShape {
         this.shapeContent = content;
         this.shapeType = type;
     }
+    SetProperty(propertyName, propertyValue) {
+        if (this.mainShape !== null)
+            Utils.SetProperty(this.mainShape, propertyName, propertyValue);
+        if (this.shadowShape !== null)
+            Utils.SetProperty(this.shadowShape, propertyName, propertyValue);
+    }
     GetSize(content = null, type = null) {
         if (type === ShapeType.Unknown)
             return Utils.Vec2.Zero();
@@ -316,7 +326,7 @@ export class RenderedShape {
         if (type !== null)
             this.shapeType = type;
         let isConditional = this.shapeType === ShapeType.Conditional;
-        let textSize = this.MeasureTextSize();
+        let textSize = MeasureTextSize(this.shapeContent);
         let defaultShapeWidth = Utils.GetNumericPixels(Utils.GetProperty(document.documentElement, "--default-shape-width"));
         let defaultAspectRatio = Number(Utils.GetProperty(document.documentElement, "--shape-aspect-ratio"));
         let paddingPropertyName = isConditional ? "--diamond-horizonal-padding" : "--shape-horizontal-padding";
@@ -331,40 +341,6 @@ export class RenderedShape {
         this.cachedSize = shapeSize;
         return shapeSize;
     }
-    MeasureTextSize() {
-        let shapeSize = Utils.Vec2.Zero();
-        for (let currentSegment of this.shapeContent.segments) {
-            let fontValue = this.GetFontValue(currentSegment);
-            measuringContext.font = fontValue;
-            let segmentMeasurement = measuringContext.measureText(currentSegment.segmentContent);
-            shapeSize.x += segmentMeasurement.width;
-            let segmentHeight = segmentMeasurement.actualBoundingBoxAscent + segmentMeasurement.actualBoundingBoxDescent;
-            shapeSize.y = Math.max(shapeSize.y, segmentHeight);
-        }
-        return shapeSize;
-    }
-    GetFontValue(currentSegment) {
-        let fontStylesStr = "";
-        let pageFontFamily = Utils.GetProperty(bodyElement, "font-family");
-        let shapeFontSize = Utils.GetProperty(document.documentElement, "--shape-font-size");
-        for (let appliedStyle of currentSegment.appliedTypes) {
-            if (!textStylingMap.has(appliedStyle))
-                continue;
-            let styleAsStr = textStylingMap.get(appliedStyle);
-            if (fontStylesStr !== "")
-                fontStylesStr += ' ';
-            fontStylesStr += styleAsStr;
-        }
-        let fontValue = "";
-        fontValue += fontStylesStr;
-        if (fontValue !== "")
-            fontValue += ' ';
-        fontValue += shapeFontSize;
-        if (fontValue !== "")
-            fontValue += ' ';
-        fontValue += pageFontFamily;
-        return fontValue;
-    }
     Delete() {
         if (this.mainShape !== null)
             this.mainShape.remove();
@@ -373,4 +349,38 @@ export class RenderedShape {
         this.mainShape = null;
         this.shadowShape = null;
     }
+}
+export function MeasureTextSize(shapeContent) {
+    let shapeSize = Utils.Vec2.Zero();
+    for (let currentSegment of shapeContent.segments) {
+        let fontValue = GetFontValue(currentSegment);
+        measuringContext.font = fontValue;
+        let segmentMeasurement = measuringContext.measureText(currentSegment.segmentContent);
+        shapeSize.x += segmentMeasurement.width;
+        let segmentHeight = segmentMeasurement.actualBoundingBoxAscent + segmentMeasurement.actualBoundingBoxDescent;
+        shapeSize.y = Math.max(shapeSize.y, segmentHeight);
+    }
+    return shapeSize;
+}
+function GetFontValue(currentSegment) {
+    let fontStylesStr = "";
+    let pageFontFamily = Utils.GetProperty(bodyElement, "font-family");
+    let shapeFontSize = Utils.GetProperty(document.documentElement, "--shape-font-size");
+    for (let appliedStyle of currentSegment.appliedTypes) {
+        if (!textStylingMap.has(appliedStyle))
+            continue;
+        let styleAsStr = textStylingMap.get(appliedStyle);
+        if (fontStylesStr !== "")
+            fontStylesStr += ' ';
+        fontStylesStr += styleAsStr;
+    }
+    let fontValue = "";
+    fontValue += fontStylesStr;
+    if (fontValue !== "")
+        fontValue += ' ';
+    fontValue += shapeFontSize;
+    if (fontValue !== "")
+        fontValue += ' ';
+    fontValue += pageFontFamily;
+    return fontValue;
 }

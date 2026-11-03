@@ -100,6 +100,21 @@ img {
     );
 }
 
+.OctagonShape {
+    --segment-portion: 30%;
+
+    min-width: 0;
+    padding: 0;
+    width: calc(var(--default-shape-width) / var(--shape-aspect-ratio));
+
+    clip-path: polygon(
+        var(--segment-portion) 0%, calc(100% - var(--segment-portion)) 0%,
+        100% var(--segment-portion), 100% calc(100% - var(--segment-portion)), 
+        calc(100% - var(--segment-portion)) 100%, var(--segment-portion) 100%,
+        0% calc(100% - var(--segment-portion)), 0% var(--segment-portion)
+    );
+}
+
 .ElipticShape { border-radius: 32px; }
 
 .ShapeShadow { color: transparent; z-index: var(--shape-shadow-layer); }
@@ -108,6 +123,7 @@ img {
 .ShapeShadow.HexagonShape { --shadow-offset-x: 0px; --shadow-offset-y: 5px; }
 .ShapeShadow.ElipticShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; }
 .ShapeShadow.RectangleShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; }
+.ShapeShadow.OctagonShape { --shadow-offset-x: 0px; --shadow-offset-y: 5px; }
 
 .ShapeArrowSegment, .ShapeArrowConnector, .ShapeArrowEnding {
     --default-shape-width: 0px;

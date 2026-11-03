@@ -35,7 +35,7 @@ export class ArrowPath {
         let segmentAngle = this.segmentAngles[segmentIndex];
         let isLastSegment = segmentIndex === this.segmentLengths.length - 1;
         let arrowEndingSize = ArrowPath.GetArrowEndSize();
-        if (isLastSegment)
+        if (isLastSegment && this.willRenderEnding)
             segmentLength -= arrowEndingSize / 2;
         let currentSegment = Utils.CreateElement("div", "ShapeArrowSegment", ShapeRenderer.currentPlane);
         let angleAsVec = Utils.Vec2.FromAngleDeg(segmentAngle);
@@ -64,7 +64,8 @@ export class ArrowPath {
         let arrowEndingSize = ArrowPath.GetArrowEndSize();
         let lastRotationVec = Utils.Vec2.FromAngleDeg(lastSegmentRotation);
         let endingOffset = lastRotationVec.Times(arrowEndingSize / 2);
-        this.currentPosition = this.currentPosition.Plus(endingOffset.x, endingOffset.y);
+        if (this.willRenderEnding)
+            this.currentPosition = this.currentPosition.Plus(endingOffset.x, endingOffset.y);
         this.arrowSize = this.currentPosition.Minus(this.position.x, this.position.y);
     }
     Delete() {

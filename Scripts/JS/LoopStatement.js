@@ -101,7 +101,7 @@ class CycleStatement extends Flowgorithm.ProgramNode {
     }
     SetSubnodeCache(currentSizeCache) {
         let totalSubnodeSize = this.subnodeParent.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.CountAll);
-        let arrowConnectorSize = Utils.GetNumericPixels(Utils.GetProperty(document.documentElement, "--arrow-connector-size"));
+        let arrowConnectorSize = Utils.GetPropertyPX(document.documentElement, "--default-connector-size");
         let actualSubnodeWidth = Math.max(Flowgorithm.defaultArrowLength + arrowConnectorSize / 2, totalSubnodeSize.x);
         currentSizeCache.subRightPortion.x = currentSizeCache.rightPortion.x + actualSubnodeWidth;
         currentSizeCache.subRightPortion.y += totalSubnodeSize.y + Flowgorithm.defaultArrowLength;
@@ -189,19 +189,32 @@ export class ConditionalCycle extends CycleStatement {
     RenderDoWhileBody() {
         if (this.mergePoint === null)
             return;
-        let subnodeSize = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.SubnodeOnly), headSize = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.HeadOnly);
+        let subnodeSize = this.subnodeParent.GetSize(Flowgorithm.SizeCountType.OnlyLeft, Flowgorithm.SubnodeCountType.CountAll), headSize = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.HeadOnly);
         let mergePointSize = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * Flowgorithm.mergePointSizeMultiplier;
-        let mergeSegmentLength = Math.max(subnodeSize.x / 2, Flowgorithm.defaultArrowLength), firstSegmentLength = mergeSegmentLength + headSize.x / 2, verticalSegmentLength = Flowgorithm.defaultArrowLength + mergePointSize / 2;
+        let mergeSegmentLength = Math.max(subnodeSize.x, Flowgorithm.defaultArrowLength), firstSegmentLength = mergeSegmentLength + headSize.x / 2, verticalSegmentLength = Flowgorithm.defaultArrowLength + mergePointSize / 2, connectorSize = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * Flowgorithm.mergePointSizeMultiplier;
         let containsSubnodes = this.subnodeParent.subNodes.length > 0;
         let mergeLengthArr = containsSubnodes ? [] : [mergeSegmentLength], mergeAnglesArr = containsSubnodes ? [] : [Flowgorithm.leftPointingRotation];
         this.branchArrow = new ArrowPath(this.currentPosition, [firstSegmentLength, verticalSegmentLength, ...mergeLengthArr], [Flowgorithm.rightPointingRotation, Flowgorithm.defaultArrowAngle, ...mergeAnglesArr]);
         this.currentPosition = this.currentPosition.Plus(firstSegmentLength, verticalSegmentLength);
-        let headPositionOffset = new Utils.Vec2(-mergeSegmentLength - headSize.x / 2, subnodeSize.y - Flowgorithm.defaultArrowLength - headSize.y / 2);
-        this.headPosition = this.currentPosition.Plus(headPositionOffset.x, headPositionOffset.y);
+        this.headPosition = this.renderPosition.Plus(0, connectorSize / 2 + verticalSegmentLength - headSize.y / 2);
         this.subnodeParent.RenderSubnodes(this.currentPosition, false);
+        this.RenderDoWhileMergeArrow(subnodeSize, mergeSegmentLength);
+    }
+    RenderDoWhileMergeArrow(subnodeSize, mergeSegmentLength) {
+        let containsSubnodes = this.subnodeParent.subNodes.length > 0;
         if (!containsSubnodes)
             return;
-        this.mergeArrow = new ArrowPath(this.currentPosition, [Flowgorithm.defaultArrowLength, mergeSegmentLength], [Flowgorithm.defaultArrowAngle, Flowgorithm.leftPointingRotation]);
+        let lastSubnode = this.subnodeParent.subNodes[this.subnodeParent.subNodes.length - 1];
+        let willDrawAfterArrow = lastSubnode.DrawsAfterArrow();
+        let mergeArrowPos = this.currentPosition.Copy();
+        let mergeArrowVerticalLength = Flowgorithm.defaultArrowLength;
+        if (willDrawAfterArrow) {
+            let lastSubnodeSize = lastSubnode.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.SubnodeOnly);
+            mergeArrowPos.y -= lastSubnodeSize.y;
+            mergeArrowVerticalLength += lastSubnodeSize.y;
+        }
+        this.mergeArrow = new ArrowPath(mergeArrowPos, [mergeArrowVerticalLength, mergeSegmentLength], [Flowgorithm.defaultArrowAngle, Flowgorithm.leftPointingRotation]);
+        this.headPosition.y += subnodeSize.y;
     }
     RenderDoWhileArrowToMergePoint() {
         if (this.mergePoint === null)
