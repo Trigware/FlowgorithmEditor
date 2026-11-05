@@ -314,7 +314,7 @@ export class Expression {
     }
 
     public IsEmpty(): boolean {
-        return this.tokens.length === 0;
+        return this.expressionAsStr.length === 0;
     }
 }
 

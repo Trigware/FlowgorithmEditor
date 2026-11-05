@@ -330,7 +330,7 @@ export class Expression {
         }
     }
     IsEmpty() {
-        return this.tokens.length === 0;
+        return this.expressionAsStr.length === 0;
     }
 }
 export var ParenthesisType;

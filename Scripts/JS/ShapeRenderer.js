@@ -20,16 +20,6 @@ export var ShapeType;
     ShapeType[ShapeType["Do"] = 10] = "Do";
     ShapeType[ShapeType["Breakpoint"] = 11] = "Breakpoint";
 })(ShapeType || (ShapeType = {}));
-export var LabelAlign;
-(function (LabelAlign) {
-    LabelAlign[LabelAlign["Left"] = 1] = "Left";
-    LabelAlign[LabelAlign["HorizontalCenter"] = 2] = "HorizontalCenter";
-    LabelAlign[LabelAlign["Right"] = 4] = "Right";
-    LabelAlign[LabelAlign["Up"] = 8] = "Up";
-    LabelAlign[LabelAlign["VerticalCenter"] = 16] = "VerticalCenter";
-    LabelAlign[LabelAlign["Down"] = 32] = "Down";
-    LabelAlign[LabelAlign["Center"] = 18] = "Center";
-})(LabelAlign || (LabelAlign = {}));
 var ShapeDisplayType;
 (function (ShapeDisplayType) {
     ShapeDisplayType[ShapeDisplayType["Unknown"] = -1] = "Unknown";
@@ -278,22 +268,45 @@ export function AddShape(shapeType, position, shapeContent, offsetShape = true) 
     return renderedShape;
 }
 export function ClearPlane() { currentPlane.replaceChildren(); }
-export function ConstructLabel(labelPosition, labelText, labelAlign = LabelAlign.Center, alignMultiplier = new Utils.Vec2(1, 1)) {
+export var HAlign;
+(function (HAlign) {
+    HAlign[HAlign["Left"] = -1] = "Left";
+    HAlign[HAlign["Center"] = 0] = "Center";
+    HAlign[HAlign["Right"] = 1] = "Right";
+})(HAlign || (HAlign = {}));
+export var VAlign;
+(function (VAlign) {
+    VAlign[VAlign["Up"] = -1] = "Up";
+    VAlign[VAlign["Center"] = 0] = "Center";
+    VAlign[VAlign["Down"] = 1] = "Down";
+})(VAlign || (VAlign = {}));
+export class LabelRenderInfo {
+    originalPosition = Utils.Vec2.Zero();
+    contents = "";
+    horizontalAlignment = HAlign.Center;
+    verticalOffset = VAlign.Up;
+    containerHeight = 0;
+    constructor(pos, text, horizontalAlign = HAlign.Center, verticalOffset = VAlign.Up) {
+        this.originalPosition = pos;
+        this.contents = text;
+        this.horizontalAlignment = horizontalAlign;
+        this.verticalOffset = verticalOffset;
+    }
+    CreateLabel() {
+        return ConstructLabel(this.originalPosition, this.contents, this.horizontalAlignment, this.verticalOffset, this.containerHeight);
+    }
+}
+export function ConstructLabel(originalPosition, labelContents, horizontalAlignment = HAlign.Center, verticalOffset = VAlign.Up, containerHeight = 0) {
     let constructedLabel = Utils.CreateElement("div", "LabelObject", currentPlane);
-    let labelContent = new ShapeContent(labelText, TextType.Bolded);
+    let labelContent = new ShapeContent(labelContents, TextType.Bolded);
     labelContent.SetContent(constructedLabel);
-    let labelSize = new Utils.Vec2(Utils.GetNumericPixels(Utils.GetProperty(constructedLabel, "width")), Utils.GetNumericPixels(Utils.GetProperty(constructedLabel, "height")));
-    let offsetMultiplier = Utils.Vec2.Zero();
-    let hasHorizontalAlign = (labelAlign & (LabelAlign.Left | LabelAlign.Right)) !== 0, hasVerticalAlign = (labelAlign & (LabelAlign.Up | LabelAlign.Down)) !== 0;
-    if (hasHorizontalAlign)
-        offsetMultiplier.x += (labelAlign & LabelAlign.Right) !== 0 ? 1 : -1;
-    if (hasVerticalAlign)
-        offsetMultiplier.y += (labelAlign & LabelAlign.Down) !== 0 ? 1 : -1;
-    offsetMultiplier = offsetMultiplier.Times(alignMultiplier.x, alignMultiplier.y);
-    offsetMultiplier.y--;
-    let labelOffset = new Utils.Vec2(offsetMultiplier.x * labelSize.x / 2, offsetMultiplier.y * labelSize.y / 2);
-    let offsetLabelPos = labelPosition.Plus(labelOffset.x, labelOffset.y);
-    SetShapePosition(constructedLabel, offsetLabelPos);
+    let labelSize = new Utils.Vec2(Utils.GetPropertyPX(constructedLabel, "width"), Utils.GetPropertyPX(constructedLabel, "height"));
+    let verticalOffsetSpace = Math.max(containerHeight - labelSize.y, 0);
+    let offsetX = horizontalAlignment;
+    let labelOffset = new Utils.Vec2(labelSize.x * offsetX / 2, verticalOffsetSpace / 2);
+    labelOffset.y += labelSize.y / 2 * verticalOffset;
+    let renderPosition = originalPosition.Plus(labelOffset.x, labelOffset.y);
+    SetShapePosition(constructedLabel, renderPosition);
     return constructedLabel;
 }
 export class RenderedShape {

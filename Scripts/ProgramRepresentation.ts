@@ -181,10 +181,7 @@ export class VariableDeclaration {
 export class Program extends ProgramNode {
     public static Create(): Program {
         let createdProgram: Program = new Program();
-        let mainFunction: FunctionSignature = new FunctionSignature();
-        mainFunction.name = "Main";
-
-        createdProgram.subNodes.push(mainFunction);
+        createdProgram.AddMain();
         return createdProgram;
     }
 
@@ -198,7 +195,7 @@ export class Program extends ProgramNode {
             let isFunction: boolean = currentSubnode instanceof FunctionSignature;
             if (!isFunction) continue;
 
-            let currentFunction: FunctionSignature = this.subNodes[i] as FunctionSignature;
+            let currentFunction: FunctionSignature = currentSubnode as FunctionSignature;
             let functionLeftSize: Utils.Vec2 = currentFunction.GetSize(SizeCountType.OnlyLeft, SubnodeCountType.CountAll);
             if (renderedFunctionCount > 0) currentPosition.x += functionLeftSize.x;
             let previousPosition: Utils.Vec2 = currentPosition.Copy();
@@ -209,6 +206,24 @@ export class Program extends ProgramNode {
             currentPosition.x += functionRightSize.x;
             renderedFunctionCount++;
         }
+    }
+
+    public HasMain(): boolean {
+        for (let currentSubnode of this.subNodes) {
+            let isFunction: boolean = currentSubnode instanceof FunctionSignature;
+            if (!isFunction) continue;
+
+            let currentFunction: FunctionSignature = currentSubnode as FunctionSignature;
+            let isCurrentMain: boolean = currentFunction.name.toLowerCase() === "main";
+            if (isCurrentMain) return true;
+        }
+        return false;
+    }
+
+    public AddMain() {
+        let mainFunction: FunctionSignature = new FunctionSignature();
+        mainFunction.name = "Main";
+        this.subNodes.push(mainFunction);
     }
 }
 

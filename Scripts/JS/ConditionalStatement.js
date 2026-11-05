@@ -100,8 +100,9 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         if (!isThen)
             labelOffset.x *= -1;
         let labelPosition = diamondCenter.Plus(labelOffset.x, labelOffset.y);
-        let labelAlign = isThen ? ShapeRenderer.LabelAlign.Right : ShapeRenderer.LabelAlign.Left;
-        let currentLabel = ShapeRenderer.ConstructLabel(labelPosition, labelText, labelAlign);
+        let labelHorizontalAlignment = isThen ? ShapeRenderer.HAlign.Right : ShapeRenderer.HAlign.Left;
+        let branchLabelInfo = new ShapeRenderer.LabelRenderInfo(labelPosition, labelText, labelHorizontalAlignment);
+        let currentLabel = branchLabelInfo.CreateLabel();
         if (isThen)
             this.thenLabel = currentLabel;
         else

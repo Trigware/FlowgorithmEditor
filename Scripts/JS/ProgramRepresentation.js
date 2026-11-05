@@ -171,9 +171,7 @@ export class VariableDeclaration {
 export class Program extends ProgramNode {
     static Create() {
         let createdProgram = new Program();
-        let mainFunction = new FunctionSignature();
-        mainFunction.name = "Main";
-        createdProgram.subNodes.push(mainFunction);
+        createdProgram.AddMain();
         return createdProgram;
     }
     Render(renderPosition) {
@@ -185,7 +183,7 @@ export class Program extends ProgramNode {
             let isFunction = currentSubnode instanceof FunctionSignature;
             if (!isFunction)
                 continue;
-            let currentFunction = this.subNodes[i];
+            let currentFunction = currentSubnode;
             let functionLeftSize = currentFunction.GetSize(SizeCountType.OnlyLeft, SubnodeCountType.CountAll);
             if (renderedFunctionCount > 0)
                 currentPosition.x += functionLeftSize.x;
@@ -196,6 +194,23 @@ export class Program extends ProgramNode {
             currentPosition.x += functionRightSize.x;
             renderedFunctionCount++;
         }
+    }
+    HasMain() {
+        for (let currentSubnode of this.subNodes) {
+            let isFunction = currentSubnode instanceof FunctionSignature;
+            if (!isFunction)
+                continue;
+            let currentFunction = currentSubnode;
+            let isCurrentMain = currentFunction.name.toLowerCase() === "main";
+            if (isCurrentMain)
+                return true;
+        }
+        return false;
+    }
+    AddMain() {
+        let mainFunction = new FunctionSignature();
+        mainFunction.name = "Main";
+        this.subNodes.push(mainFunction);
     }
 }
 export const defaultArrowLength = 60;

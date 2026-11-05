@@ -3,8 +3,7 @@ import { Expression } from "./Expression.js";
 import * as Flowgorithm from "./ProgramRepresentation.js";
 import * as ShapeRenderer from "./ShapeRenderer.js";
 import { ArrowPath } from "./ArrowRendering.js";
-const cycleDoneLabelVerticalMultiplier = 1.4;
-const doWhileDoneLabelVerticalMultiplier = 2.4;
+const cycleDoneYOffset = 0.5, doWhileDoneYOffset = 1.5;
 class CycleStatement extends Flowgorithm.ProgramNode {
     branchArrow = null;
     mergeArrow = null;
@@ -56,8 +55,10 @@ class CycleStatement extends Flowgorithm.ProgramNode {
         this.mergeArrow = new ArrowPath(mergeArrowPos, [firstSegmentLength, ...mergeArrowData[0]], [Flowgorithm.defaultArrowAngle, ...mergeArrowData[1]]);
     }
     RenderDoneArrow(position) {
-        let nodeIndex = this.parentNode === null ? -1 : this.parentNode.subNodes.indexOf(this);
-        let isLastNode = this.parentNode === null ? false : nodeIndex === this.parentNode.subNodes.length - 1;
+        if (this.parentNode === null)
+            return;
+        let nodeIndex = this.parentNode.subNodes.indexOf(this);
+        let isLastNode = nodeIndex === this.parentNode.subNodes.length - 1;
         let drawDoneArrow = !isLastNode || this.parentNode instanceof Flowgorithm.FunctionSignature;
         if (!drawDoneArrow)
             return;
@@ -65,7 +66,12 @@ class CycleStatement extends Flowgorithm.ProgramNode {
         let arrowEndingSize = ArrowPath.GetArrowEndSize();
         let doneArrowPos = position.Plus(0, headSize.y);
         let arrowLength = subnodeSize.y + headSize.y + arrowEndingSize / 2;
-        this.doneArrow = new ArrowPath(doneArrowPos, [arrowLength], [Flowgorithm.defaultArrowAngle]);
+        let willRenderArrowEnd = true;
+        if (!isLastNode) {
+            let nextNode = this.parentNode.subNodes[nodeIndex + 1];
+            willRenderArrowEnd = nextNode.BeforeArrowHasEnding();
+        }
+        this.doneArrow = new ArrowPath(doneArrowPos, [arrowLength], [Flowgorithm.defaultArrowAngle], willRenderArrowEnd);
     }
     GetMergeArrowData() {
         let arrowEndSize = ArrowPath.GetArrowEndSize();
@@ -90,14 +96,13 @@ class CycleStatement extends Flowgorithm.ProgramNode {
     RenderLabels(position) {
         let headSize = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.HeadOnly);
         let arrowEndSize = ArrowPath.GetArrowEndSize();
-        let nextLabelPos = position.Plus(headSize.x / 2, headSize.y / 2);
-        let doneLabelPos = position.Plus(-arrowEndSize / 2, headSize.y);
+        let nextLabelPos = position.Plus(headSize.x / 2, headSize.y / 2), doneLabelPos = position.Plus(-arrowEndSize / 2, headSize.y);
         doneLabelPos.y += this.linkedShape.shadowShape === null ? 0 :
             Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y")) * 2;
-        let doneLabelAlignment = ShapeRenderer.LabelAlign.Left | ShapeRenderer.LabelAlign.Down;
-        let doneAlignMultiplier = new Utils.Vec2(1, cycleDoneLabelVerticalMultiplier);
-        this.nextLabel = ShapeRenderer.ConstructLabel(nextLabelPos, "Next", ShapeRenderer.LabelAlign.Right);
-        this.doneLabel = ShapeRenderer.ConstructLabel(doneLabelPos, "Done", doneLabelAlignment, doneAlignMultiplier);
+        let isForLoop = this instanceof ForLoop;
+        let nextLabelInfo = new ShapeRenderer.LabelRenderInfo(nextLabelPos, isForLoop ? "Next" : "True", ShapeRenderer.HAlign.Right), doneLabelInfo = new ShapeRenderer.LabelRenderInfo(doneLabelPos, isForLoop ? "Done" : "False", ShapeRenderer.HAlign.Left, cycleDoneYOffset);
+        this.nextLabel = nextLabelInfo.CreateLabel();
+        this.doneLabel = doneLabelInfo.CreateLabel();
     }
     SetSubnodeCache(currentSizeCache) {
         let totalSubnodeSize = this.subnodeParent.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.CountAll);
@@ -106,6 +111,7 @@ class CycleStatement extends Flowgorithm.ProgramNode {
         currentSizeCache.subRightPortion.x = currentSizeCache.rightPortion.x + actualSubnodeWidth;
         currentSizeCache.subRightPortion.y += totalSubnodeSize.y + Flowgorithm.defaultArrowLength;
     }
+    IsForLoop() { return false; }
 }
 export class ForLoop extends CycleStatement {
     iteratorName = "";
@@ -226,12 +232,12 @@ export class ConditionalCycle extends CycleStatement {
     RenderDoWhileLabels() {
         let arrowEndPos = ArrowPath.GetArrowEndSize();
         let nextLabelPos = this.headPosition.Minus(arrowEndPos / 2, 0);
-        this.nextLabel = ShapeRenderer.ConstructLabel(nextLabelPos, "True", ShapeRenderer.LabelAlign.Left);
         let headSize = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.HeadOnly);
         let shadowYOffset = this.linkedShape.shadowShape === null ? 0 :
             Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y"));
         let doneLabelPos = nextLabelPos.Plus(0, headSize.y + shadowYOffset);
-        let doneAlignMultiplier = new Utils.Vec2(1, doWhileDoneLabelVerticalMultiplier);
-        this.doneLabel = ShapeRenderer.ConstructLabel(doneLabelPos, "False", ShapeRenderer.LabelAlign.Left | ShapeRenderer.LabelAlign.Down, doneAlignMultiplier);
+        let nextLabelInfo = new ShapeRenderer.LabelRenderInfo(nextLabelPos, "True", ShapeRenderer.HAlign.Left), doneLabelInfo = new ShapeRenderer.LabelRenderInfo(doneLabelPos, "False", ShapeRenderer.HAlign.Left, doWhileDoneYOffset);
+        this.nextLabel = nextLabelInfo.CreateLabel();
+        this.doneLabel = doneLabelInfo.CreateLabel();
     }
 }

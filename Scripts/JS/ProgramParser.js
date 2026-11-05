@@ -27,6 +27,9 @@ export function Setup(program, scriptContents) {
     const xmlDocument = xmlParser.parseFromString(scriptContents, "application/xml");
     let rootElement = xmlDocument.documentElement;
     ParseElement(rootElement, program);
+    if (program.HasMain())
+        return;
+    program.AddMain();
 }
 function ParseElement(currentElement, parentNode) {
     let currentTagName = currentElement.tagName;
@@ -75,7 +78,11 @@ function ParseFunctionTag(currentElement) {
         switch (attribute.name) {
             case "name":
                 functionSignature.nameError = identifierValidity;
-                functionSignature.name = attribute.value;
+                let functionName = attribute.value;
+                let isMainFunction = functionName.toLowerCase() === "main";
+                if (isMainFunction)
+                    functionName = "Main";
+                functionSignature.name = functionName;
                 break;
             case "type":
                 functionSignature.returnType = Flowgorithm.StrToVarType(attribute.value);

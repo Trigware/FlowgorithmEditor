@@ -17,11 +17,13 @@ export class Breakpoint extends Flowgorithm.ProgramNode {
     }
     Render(position) {
         let renderPosition = position.Plus(0, breakpointVericalPadding / 2);
-        let shapeSize = this.GetOctagonShapeSize();
-        let labelPosition = renderPosition.Plus(shapeSize.x / 2, shapeSize.y / 2);
-        labelPosition.x += shapeSize.x * labelXOffset;
+        let shapeSize = this.GetOctagonShapeSize(false);
+        let labelPosition = renderPosition.Copy();
+        labelPosition.x += shapeSize.x / 2 + shapeSize.x * labelXOffset;
         let labelContents = this.GetLabelContents();
-        this.expressionLabel = ShapeRenderer.ConstructLabel(labelPosition, labelContents, ShapeRenderer.LabelAlign.Right | ShapeRenderer.LabelAlign.Down, new Utils.Vec2(1, -0.5));
+        let labelInfo = new ShapeRenderer.LabelRenderInfo(labelPosition, labelContents, ShapeRenderer.HAlign.Right, ShapeRenderer.VAlign.Down);
+        labelInfo.containerHeight = shapeSize.y;
+        this.expressionLabel = labelInfo.CreateLabel();
         this.AddShape(renderPosition);
         let conditionalSegmentPortion = (conditionalBreakpointSegmentPortion * 100).toString() + "%";
         if (this.isConditional)
@@ -37,17 +39,21 @@ export class Breakpoint extends Flowgorithm.ProgramNode {
     CalculateSizeCache() {
         let resultCache = new Flowgorithm.CachedSize();
         let octagonShapeSize = this.GetOctagonShapeSize();
-        resultCache.leftPortion.y = resultCache.rightPortion.y = octagonShapeSize.y;
+        let entireShapeHeight = octagonShapeSize.y + breakpointVericalPadding;
+        resultCache.leftPortion.y = resultCache.rightPortion.y = entireShapeHeight;
         let labelContents = new ShapeRenderer.ShapeContent(this.GetLabelContents(), ShapeRenderer.TextType.Bolded);
-        let contentsSize = ShapeRenderer.MeasureTextSize(labelContents), shapeSize = this.GetOctagonShapeSize();
-        let contentsXOffset = shapeSize.x * labelXOffset;
-        resultCache.leftPortion.x = resultCache.rightPortion.x = shapeSize.x / 2;
+        let contentsSize = ShapeRenderer.MeasureTextSize(labelContents);
+        let contentsXOffset = octagonShapeSize.x * labelXOffset;
+        resultCache.leftPortion.x = resultCache.rightPortion.x = octagonShapeSize.x / 2;
         resultCache.rightPortion.x += contentsSize.x + contentsXOffset;
         return resultCache;
     }
-    GetOctagonShapeSize() {
-        let defaultShapeWidth = Utils.GetPropertyPX(document.documentElement, "--default-shape-width"), shapeAspectRatio = Number(Utils.GetProperty(document.documentElement, "--shape-aspect-ratio")), shapeMainSize = defaultShapeWidth / shapeAspectRatio, shapeTotalHeight = shapeMainSize + octagonShadowYOffset + breakpointVericalPadding;
-        return new Utils.Vec2(shapeMainSize, shapeTotalHeight);
+    GetOctagonShapeSize(includeShadow = true) {
+        let defaultShapeWidth = Utils.GetPropertyPX(document.documentElement, "--default-shape-width"), shapeAspectRatio = Number(Utils.GetProperty(document.documentElement, "--shape-aspect-ratio")), octagonWidth = defaultShapeWidth / shapeAspectRatio;
+        let shapeSize = new Utils.Vec2(octagonWidth, octagonWidth);
+        if (includeShadow)
+            shapeSize.y += octagonShadowYOffset;
+        return shapeSize;
     }
 }
 export class InlineComment extends Flowgorithm.ProgramNode {

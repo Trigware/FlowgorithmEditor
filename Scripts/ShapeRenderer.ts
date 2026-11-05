@@ -15,16 +15,6 @@ export enum ShapeType {
     While, For, Do, Breakpoint
 }
 
-export enum LabelAlign {
-    Left = 2**0,
-    HorizontalCenter = 2**1,
-    Right = 2**2,
-    Up = 2**3,
-    VerticalCenter = 2**4,
-    Down = 2**5,
-    Center = HorizontalCenter | VerticalCenter
-}
-
 enum ShapeDisplayType { Unknown = -1, Parallelogram, Diamond, Hexagon, Elipse, Rectangle, Octagon }
 enum ShapeColorType { Unknown = -1, Purple, Blue, Green, Yellow, Red, Orange, LightPurple, LightRed }
 
@@ -265,28 +255,49 @@ export function AddShape(shapeType: ShapeType, position: Utils.Vec2, shapeConten
 
 export function ClearPlane() { currentPlane.replaceChildren(); }
 
-export function ConstructLabel(labelPosition: Utils.Vec2, labelText: string, labelAlign: LabelAlign = LabelAlign.Center,
-    alignMultiplier: Utils.Vec2 = new Utils.Vec2(1, 1)): HTMLDivElement
-{
+export enum HAlign { Left = -1, Center, Right }
+export enum VAlign { Up = -1, Center, Down }
+
+export class LabelRenderInfo {
+    public originalPosition: Utils.Vec2 = Utils.Vec2.Zero();
+    public contents: string = "";
+    public horizontalAlignment: HAlign = HAlign.Center; public verticalOffset: number = VAlign.Up;
+    public containerHeight: number = 0;
+
+    public constructor(pos: Utils.Vec2, text: string, horizontalAlign: HAlign = HAlign.Center, verticalOffset: number = VAlign.Up) {
+        this.originalPosition = pos; this.contents = text;
+        this.horizontalAlignment = horizontalAlign; this.verticalOffset = verticalOffset;
+    }
+
+    public CreateLabel(): HTMLDivElement {
+        return ConstructLabel(
+            this.originalPosition, this.contents,
+            this.horizontalAlignment, this.verticalOffset,
+            this.containerHeight
+        );
+    }
+}
+
+export function ConstructLabel(originalPosition: Utils.Vec2, labelContents: string,
+    horizontalAlignment: HAlign = HAlign.Center, verticalOffset: number = VAlign.Up,
+    containerHeight: number = 0
+) {
     let constructedLabel: HTMLDivElement = Utils.CreateElement("div", "LabelObject", currentPlane) as HTMLDivElement;
-    let labelContent: ShapeContent = new ShapeContent(labelText, TextType.Bolded);
+    let labelContent: ShapeContent = new ShapeContent(labelContents, TextType.Bolded);
     labelContent.SetContent(constructedLabel);
+
     let labelSize: Utils.Vec2 = new Utils.Vec2(
-        Utils.GetNumericPixels(Utils.GetProperty(constructedLabel, "width")),
-        Utils.GetNumericPixels(Utils.GetProperty(constructedLabel, "height"))
+        Utils.GetPropertyPX(constructedLabel, "width"), Utils.GetPropertyPX(constructedLabel, "height")
     );
+    let verticalOffsetSpace: number = Math.max(containerHeight - labelSize.y, 0);
 
-    let offsetMultiplier: Utils.Vec2 = Utils.Vec2.Zero();
-    let hasHorizontalAlign: boolean = (labelAlign & (LabelAlign.Left | LabelAlign.Right)) !== 0,
-        hasVerticalAlign: boolean = (labelAlign & (LabelAlign.Up | LabelAlign.Down)) !== 0;
-    if (hasHorizontalAlign) offsetMultiplier.x += (labelAlign & LabelAlign.Right) !== 0 ? 1 : -1;
-    if (hasVerticalAlign) offsetMultiplier.y += (labelAlign & LabelAlign.Down) !== 0 ? 1 : -1;
-    offsetMultiplier = offsetMultiplier.Times(alignMultiplier.x, alignMultiplier.y);
-    offsetMultiplier.y--;
-    let labelOffset: Utils.Vec2 = new Utils.Vec2(offsetMultiplier.x * labelSize.x / 2, offsetMultiplier.y * labelSize.y / 2);
+    let offsetX: number = horizontalAlignment;
+    let labelOffset: Utils.Vec2 = new Utils.Vec2(labelSize.x * offsetX / 2, verticalOffsetSpace / 2);
 
-    let offsetLabelPos: Utils.Vec2 = labelPosition.Plus(labelOffset.x, labelOffset.y);
-    SetShapePosition(constructedLabel, offsetLabelPos);
+    labelOffset.y += labelSize.y / 2 * verticalOffset;
+    let renderPosition: Utils.Vec2 = originalPosition.Plus(labelOffset.x, labelOffset.y);
+    SetShapePosition(constructedLabel, renderPosition);
+
     return constructedLabel;
 }
 
