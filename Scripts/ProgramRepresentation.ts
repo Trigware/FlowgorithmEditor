@@ -83,6 +83,7 @@ export class ProgramNode {
             this.sizeCache = this.CalculateSizeCache();
             this.sizeCache.isCached = true;
             this.SetSubnodeCache(this.sizeCache);
+            //console.log(`TEXT: ${this.GetContent().ToString()}, WIDTH: ${this.sizeCache.rightPortion.x}`);
         }
 
         return this.sizeCache.GetByCountType(countType, countSubnodesMode);
@@ -147,6 +148,16 @@ export class ProgramNode {
             currentSizeCache.subRightPortion.x = Math.max(currentSizeCache.subRightPortion.x, totalRightSize.x);
             currentSizeCache.ApplyToSub(0, subnodeHeight + defaultArrowLength);
         }
+    }
+
+    public WillSpecialArrowsHaveArrowEnd(checkedIndex: number = 0): boolean {
+        let renderBranchArrowEnd: boolean = true;
+        if (this.subNodes.length > checkedIndex) {
+            let firstSubnode: ProgramNode = this.subNodes[checkedIndex];
+            renderBranchArrowEnd = firstSubnode.BeforeArrowHasEnding();
+        }
+
+        return renderBranchArrowEnd;
     }
 }
 
@@ -322,7 +333,7 @@ export class FunctionSignature extends ProgramNode {
         position.y += functionEndSize.y * 1.5;
 
         if (this.functionEndShape.shadowShape === null) return;
-        let endShadowYOffset: number = Utils.GetNumericPixels(Utils.GetProperty(this.functionEndShape.shadowShape, "--shadow-offset-y"));
+        let endShadowYOffset: number = Utils.GetNumericPixels(Utils.GetProperty(this.functionEndShape.shadowShape, "--additional-offset-y"));
         position.y += endShadowYOffset;
     }
 

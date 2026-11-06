@@ -80,9 +80,7 @@ export function InverseLerp(a: number, b: number, v: number): number {
     return (v - a) / b;
 }
 
-let mousePos: Vec2 = Vec2.Zero();
-
-export function GetMousePos(): Vec2 { return mousePos; }
+export function GetMousePos(): Vec2 { return activeMouse.GetPosition(); }
 
 export function IsMouseInBox(box: HTMLElement, offset: Vec2 = Vec2.Zero()) {
     let boxRect: DOMRect = box.getBoundingClientRect();
@@ -171,25 +169,64 @@ class Directory {
 
 let projectRootDirectory: Directory = new Directory();
 const doesContainFSJson: boolean = false;
-let isMouseButtonHeld: boolean = false;
+
+export enum MouseButton { Any, Left = 2**0, Right = 2**1, Middle = 2**2 }
+const actualMouseButtons: MouseButton[] = [MouseButton.Left, MouseButton.Middle, MouseButton.Right];
+
+export class MouseState {
+    private currentHeldButtons: Map<MouseButton, boolean> = new Map();
+
+    private mousePos: Vec2 = Vec2.Zero();
+
+    public constructor() {
+        document.addEventListener("mousemove", (event: MouseEvent) => {
+            this.mousePos.x = event.clientX;
+            this.mousePos.y = event.clientY;
+        });
+
+        document.addEventListener("mousedown", (event: MouseEvent) => { this.OnMouseDown(event); });
+        document.addEventListener("mouseup", (event: MouseEvent) => { this.OnMouseUp(event); });
+        document.addEventListener("contextmenu", (event: Event) => { event.preventDefault(); })
+    }
+
+    public IsHeld(checkedMouseButton: MouseButton = MouseButton.Any): boolean {
+        if (checkedMouseButton === MouseButton.Any) return this.IsAnyButtonHeld();
+        if (!this.currentHeldButtons.has(checkedMouseButton)) return false;
+        return this.currentHeldButtons.get(checkedMouseButton)!;
+    }
+
+    private IsAnyButtonHeld(): boolean {
+        for (let currentMouseButton of actualMouseButtons) {
+            let isCurrentButtonHeld: boolean = this.IsHeld(currentMouseButton);
+            if (isCurrentButtonHeld) return true;
+        }
+        return false;
+    }
+
+    private OnMouseDown(mouseEvent: MouseEvent) {
+        for (let currentMouseButton of actualMouseButtons) {
+            let currentButtonAffected: boolean = (mouseEvent.buttons & currentMouseButton) !== 0;
+            if (currentButtonAffected) this.currentHeldButtons.set(currentMouseButton, true);
+        }
+    }
+
+    private OnMouseUp(mouseEvent: MouseEvent) {
+        let releasedMouseButton: MouseButton = actualMouseButtons[mouseEvent.button];
+        if (releasedMouseButton === undefined) return;
+        this.currentHeldButtons.set(releasedMouseButton, false);
+    }
+
+    public GetPosition(): Vec2 { return this.mousePos.Copy(); }
+}
+
+export let activeMouse: MouseState = new MouseState();
 
 function OnStart() {
-    document.addEventListener("mousemove", (event) => {
-        mousePos.x = event.clientX;
-        mousePos.y = event.clientY;
-    });
-    document.addEventListener("mousedown", () => {isMouseButtonHeld = true;});
-    document.addEventListener("mouseup", () => {isMouseButtonHeld = false;});
-
     if (!doesContainFSJson) return;
     UseFileContents(fsJSONFileName, (jsonContents: string) => {
         let projectObject: any = JSON.parse(jsonContents);
         projectRootDirectory = new Directory(projectObject);
     });
-}
-
-export function IsMouseButtonHeld() {
-    return isMouseButtonHeld;
 }
 
 export function GetFilesInDir(directoryPath: string): ItemPath[] {
@@ -268,6 +305,9 @@ export function GetPropertyPX(element: HTMLElement, propertyStr: string): number
     let propertyValueStr: string = GetProperty(element, propertyStr);
     return GetNumericPixels(propertyValueStr);
 }
+
+export function GetFromRoot(propertyStr: string): string { return GetProperty(document.documentElement, propertyStr); }
+export function GetFromRootPX(propertyStr: string): number { return GetNumericPixels(GetFromRoot(propertyStr)); }
 
 export function SetProperty(element: HTMLElement, propertyStr: string, propertyValue: string) {
     element.style.setProperty(propertyStr, propertyValue);

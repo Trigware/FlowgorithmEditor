@@ -30,13 +30,14 @@ class CycleStatement extends Flowgorithm.ProgramNode {
         let horizontalSegmentLength = this.GetHorizontalSegmentLength();
         let arrowYOffset = 0;
         if (this.linkedShape.shadowShape !== null)
-            arrowYOffset = Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y")) / 2;
+            arrowYOffset = Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--additional-offset-y")) / 2;
         let branchArrowPos = position.Plus(0, headSize.y / 2 + arrowYOffset);
         let verticalSegmentLength = headSize.y / 2 + Flowgorithm.defaultArrowLength;
         let hasSubnodes = this.subnodeParent.subNodes.length > 0;
         let mergeArrowData = this.GetMergeArrowData();
         let mergeLengthArr = hasSubnodes ? [] : mergeArrowData[0], mergeRotationArr = hasSubnodes ? [] : mergeArrowData[1];
-        this.branchArrow = new ArrowPath(branchArrowPos, [horizontalSegmentLength, verticalSegmentLength, ...mergeLengthArr], [Flowgorithm.rightPointingRotation, Flowgorithm.defaultArrowAngle, ...mergeRotationArr]);
+        let renderBranchArrowEnd = this.subnodeParent.WillSpecialArrowsHaveArrowEnd();
+        this.branchArrow = new ArrowPath(branchArrowPos, [horizontalSegmentLength, verticalSegmentLength, ...mergeLengthArr], [Flowgorithm.rightPointingRotation, Flowgorithm.defaultArrowAngle, ...mergeRotationArr], renderBranchArrowEnd);
         this.subnodeParent.RenderSubnodes(this.branchArrow.GetArrowEndPos(), false);
     }
     RenderMergingArrow() {
@@ -66,11 +67,7 @@ class CycleStatement extends Flowgorithm.ProgramNode {
         let arrowEndingSize = ArrowPath.GetArrowEndSize();
         let doneArrowPos = position.Plus(0, headSize.y);
         let arrowLength = subnodeSize.y + headSize.y + arrowEndingSize / 2;
-        let willRenderArrowEnd = true;
-        if (!isLastNode) {
-            let nextNode = this.parentNode.subNodes[nodeIndex + 1];
-            willRenderArrowEnd = nextNode.BeforeArrowHasEnding();
-        }
+        let willRenderArrowEnd = this.parentNode.WillSpecialArrowsHaveArrowEnd(nodeIndex + 1);
         this.doneArrow = new ArrowPath(doneArrowPos, [arrowLength], [Flowgorithm.defaultArrowAngle], willRenderArrowEnd);
     }
     GetMergeArrowData() {
@@ -78,7 +75,7 @@ class CycleStatement extends Flowgorithm.ProgramNode {
         let mergeHorizontalLength = this.GetHorizontalSegmentLength() - arrowEndSize;
         let subNodeSize = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.SubnodeOnly);
         let shadowYOffset = this.linkedShape.shadowShape === null ? 0 :
-            Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y"));
+            Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--additional-offset-y"));
         let mergeVericalLength = subNodeSize.y - shadowYOffset / 2;
         let resultData = [
             [mergeHorizontalLength, mergeVericalLength],
@@ -98,7 +95,7 @@ class CycleStatement extends Flowgorithm.ProgramNode {
         let arrowEndSize = ArrowPath.GetArrowEndSize();
         let nextLabelPos = position.Plus(headSize.x / 2, headSize.y / 2), doneLabelPos = position.Plus(-arrowEndSize / 2, headSize.y);
         doneLabelPos.y += this.linkedShape.shadowShape === null ? 0 :
-            Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y")) * 2;
+            Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--additional-offset-y")) * 2;
         let isForLoop = this instanceof ForLoop;
         let nextLabelInfo = new ShapeRenderer.LabelRenderInfo(nextLabelPos, isForLoop ? "Next" : "True", ShapeRenderer.HAlign.Right), doneLabelInfo = new ShapeRenderer.LabelRenderInfo(doneLabelPos, isForLoop ? "Done" : "False", ShapeRenderer.HAlign.Left, cycleDoneYOffset);
         this.nextLabel = nextLabelInfo.CreateLabel();
@@ -200,7 +197,8 @@ export class ConditionalCycle extends CycleStatement {
         let mergeSegmentLength = Math.max(subnodeSize.x, Flowgorithm.defaultArrowLength), firstSegmentLength = mergeSegmentLength + headSize.x / 2, verticalSegmentLength = Flowgorithm.defaultArrowLength + mergePointSize / 2, connectorSize = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * Flowgorithm.mergePointSizeMultiplier;
         let containsSubnodes = this.subnodeParent.subNodes.length > 0;
         let mergeLengthArr = containsSubnodes ? [] : [mergeSegmentLength], mergeAnglesArr = containsSubnodes ? [] : [Flowgorithm.leftPointingRotation];
-        this.branchArrow = new ArrowPath(this.currentPosition, [firstSegmentLength, verticalSegmentLength, ...mergeLengthArr], [Flowgorithm.rightPointingRotation, Flowgorithm.defaultArrowAngle, ...mergeAnglesArr]);
+        let willRenderArrowEnd = this.subnodeParent.WillSpecialArrowsHaveArrowEnd();
+        this.branchArrow = new ArrowPath(this.currentPosition, [firstSegmentLength, verticalSegmentLength, ...mergeLengthArr], [Flowgorithm.rightPointingRotation, Flowgorithm.defaultArrowAngle, ...mergeAnglesArr], willRenderArrowEnd);
         this.currentPosition = this.currentPosition.Plus(firstSegmentLength, verticalSegmentLength);
         this.headPosition = this.renderPosition.Plus(0, connectorSize / 2 + verticalSegmentLength - headSize.y / 2);
         this.subnodeParent.RenderSubnodes(this.currentPosition, false);
@@ -234,7 +232,7 @@ export class ConditionalCycle extends CycleStatement {
         let nextLabelPos = this.headPosition.Minus(arrowEndPos / 2, 0);
         let headSize = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.HeadOnly);
         let shadowYOffset = this.linkedShape.shadowShape === null ? 0 :
-            Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y"));
+            Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--additional-offset-y"));
         let doneLabelPos = nextLabelPos.Plus(0, headSize.y + shadowYOffset);
         let nextLabelInfo = new ShapeRenderer.LabelRenderInfo(nextLabelPos, "True", ShapeRenderer.HAlign.Left), doneLabelInfo = new ShapeRenderer.LabelRenderInfo(doneLabelPos, "False", ShapeRenderer.HAlign.Left, doWhileDoneYOffset);
         this.nextLabel = nextLabelInfo.CreateLabel();

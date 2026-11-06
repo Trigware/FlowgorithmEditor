@@ -58,4 +58,39 @@ export class Breakpoint extends Flowgorithm.ProgramNode {
 }
 export class InlineComment extends Flowgorithm.ProgramNode {
     commentContent = "";
+    connectingDots = null;
+    BeforeArrowHasEnding() { return false; }
+    GetType() { return ShapeRenderer.ShapeType.Comment; }
+    GetContent() {
+        let actualText = this.commentContent.length === 0 ? "Comment" : this.commentContent;
+        let shapeContent = new ShapeRenderer.ShapeContent(actualText, ShapeRenderer.TextType.Italic);
+        return shapeContent;
+    }
+    Render(position) {
+        let arrowLesserSize = Utils.GetFromRootPX("--arrow-lesser-size");
+        this.connectingDots = Utils.CreateElement("div", "CommentDots", ShapeRenderer.currentPlane);
+        let dotGapSize = Utils.GetFromRootPX("--default-comment-dot-gap"), totalXOffset = arrowLesserSize / 2 + dotGapSize;
+        let connectingDotsPos = position.Plus(totalXOffset, 0);
+        ShapeRenderer.SetShapePosition(this.connectingDots, connectingDotsPos);
+        let shapeContent = this.GetContent();
+        let connectingDotsWidth = this.GetConnectingDotsWidth();
+        let commentShapeSize = this.linkedShape.GetSize(shapeContent, this.GetType());
+        let commentXOffset = commentShapeSize.x / 2 + connectingDotsWidth;
+        commentXOffset += totalXOffset;
+        let commentShapePos = position.Plus(commentXOffset, -commentShapeSize.y / 2);
+        this.linkedShape = ShapeRenderer.AddShape(this.GetType(), commentShapePos, shapeContent);
+    }
+    GetConnectingDotsWidth() {
+        let dotRadius = Utils.GetFromRootPX("--default-comment-dot-radius"), dotGap = Utils.GetFromRootPX("--default-comment-dot-gap"), dotCount = Number(Utils.GetFromRoot("--default-comment-dot-count")), connectingDotsWidth = (dotRadius * 2 + dotGap) * dotCount;
+        return connectingDotsWidth;
+    }
+    CalculateSizeCache() {
+        let sizeCache = new Flowgorithm.CachedSize();
+        let connectingDotsWidth = this.GetConnectingDotsWidth(), dotGapSize = Utils.GetFromRootPX("--default-comment-dot-gap");
+        let commentShapeSize = this.linkedShape.GetSize(this.GetContent(), this.GetType());
+        let arrowLesserSize = Utils.GetFromRootPX("--arrow-lesser-size");
+        let dotsXOffset = arrowLesserSize / 2 + dotGapSize + 1;
+        sizeCache.rightPortion.x = connectingDotsWidth + commentShapeSize.x + dotsXOffset;
+        return sizeCache;
+    }
 }

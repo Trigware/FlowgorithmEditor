@@ -1,10 +1,11 @@
 :root {
-    --arrow-layer: 0;
-    --label-layer: 1;
-    --shape-shadow-layer: 2;
-    --regular-shape-layer: 3;
-    --arrow-connector-layer: 4;
-    --website-header-layer: 5;
+    --comment-dots-layer: 0;
+    --arrow-layer: 1;
+    --label-layer: 2;
+    --shape-shadow-layer: 3;
+    --regular-shape-layer: 4;
+    --arrow-connector-layer: 5;
+    --website-header-layer: 6;
 
     --shape-aspect-ratio: 2.5;
     --shape-font-size: 1.25rem;
@@ -12,6 +13,14 @@
     --shape-horizontal-padding: 20px;
     --diamond-horizonal-padding: 30px;
     --default-connector-size: 15px;
+    --arrow-lesser-size: 6px;
+    --header-border-size: 3px;
+
+    --comment-decoration-color: #666666;
+    --default-comment-dot-radius: 2px;
+    --default-comment-dot-gap: 5px;
+    --default-comment-dot-count: 6;
+    --comment-border-size: 2px;
 }
 
 body {
@@ -29,7 +38,7 @@ img {
     height: fit-content;
     width: 100vw;
     background-color: #6b6b6b;
-    border-bottom: 3px solid #4b4b4b;
+    border-bottom: var(--header-border-size) solid #4b4b4b;
     user-select: none;
     z-index: var(--website-header-layer);
 }
@@ -40,9 +49,9 @@ img {
     --tile-size: 60px;
     --zoomed-tile-size: calc(var(--tile-size) * var(--zoom-level));
     
-    background: conic-gradient(#b0b0b0 25%, #b5b5b5 0 50%, #b0b0b0 0 75%, #b5b5b5 0);
+    background-image: conic-gradient(#b0b0b0 25%, #b5b5b5 0 50%, #b0b0b0 0 75%, #b5b5b5 0);
     background-size: var(--zoomed-tile-size) var(--zoomed-tile-size);
-    background-position: calc(50% - var(--camera-x)) calc(50% - var(--camera-y));
+    background-position: calc(50% + var(--camera-x)) calc(50% + var(--camera-y));
 
     position: absolute;
     user-select: none;
@@ -53,7 +62,7 @@ img {
     --aspect-ratio: var(--shape-aspect-ratio);
     --shape-x: 0px; --shape-y: 0px;
     --offset-x: 0px; --offset-y: 0px;
-    --shadow-offset-x: 0px; --shadow-offset-y: 0px;
+    --additional-offset-x: 0px; --additional-offset-y: 0px;
     --width-size-increase: 1;
     --rotation: 0deg;
 
@@ -65,8 +74,8 @@ img {
     position: absolute;
     height: calc(var(--default-shape-width) / var(--aspect-ratio));
     transform:
-        translateX(calc(var(--camera-x) + var(--shape-x) * var(--zoom-level) + var(--offset-x) + var(--shadow-offset-x) * var(--zoom-level)))
-        translateY(calc(var(--camera-y) + var(--shape-y) * var(--zoom-level) + var(--offset-y) + var(--shadow-offset-y) * var(--zoom-level)))
+        translateX(calc(var(--camera-x) + var(--shape-x) * var(--zoom-level) + var(--offset-x) + var(--additional-offset-x) * var(--zoom-level)))
+        translateY(calc(var(--camera-y) + var(--shape-y) * var(--zoom-level) + var(--offset-y) + var(--additional-offset-y) * var(--zoom-level)))
         rotate(var(--rotation))
         scale(var(--zoom-level));
     
@@ -115,26 +124,31 @@ img {
     );
 }
 
+.CommentShape {
+    border: var(--comment-border-size) dashed var(--comment-decoration-color);
+    color: #444444;
+}
+
 .ElipticShape { border-radius: 32px; }
 
 .ShapeShadow { color: transparent; z-index: var(--shape-shadow-layer); }
-.ShapeShadow.ParallelogramShape { --shadow-offset-x: 2.5px; --shadow-offset-y: 5px; }
-.ShapeShadow.DiamondShape { --shadow-offset-x: 0px; --shadow-offset-y: 6px; }
-.ShapeShadow.HexagonShape { --shadow-offset-x: 0px; --shadow-offset-y: 5px; }
-.ShapeShadow.ElipticShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; }
-.ShapeShadow.RectangleShape { --shadow-offset-x: 5px; --shadow-offset-y: 5px; }
-.ShapeShadow.OctagonShape { --shadow-offset-x: 0px; --shadow-offset-y: 5px; }
+.ShapeShadow.ParallelogramShape { --additional-offset-x: 2.5px; --additional-offset-y: 5px; }
+.ShapeShadow.DiamondShape { --additional-offset-x: 0px; --additional-offset-y: 6px; }
+.ShapeShadow.HexagonShape { --additional-offset-x: 0px; --additional-offset-y: 5px; }
+.ShapeShadow.ElipticShape { --additional-offset-x: 5px; --additional-offset-y: 5px; }
+.ShapeShadow.RectangleShape { --additional-offset-x: 5px; --additional-offset-y: 5px; }
+.ShapeShadow.OctagonShape { --additional-offset-x: 0px; --additional-offset-y: 5px; }
 
 .ShapeArrowSegment, .ShapeArrowConnector, .ShapeArrowEnding {
     --default-shape-width: 0px;
     background-color: #404040;
-    padding: 0 0;
+    padding: 0;
     z-index: var(--arrow-layer);
 }
 
 .ShapeArrowSegment {
     --arrow-length: 100px;
-    width: var(--arrow-length); height: 6px;
+    width: var(--arrow-length); height: var(--arrow-lesser-size);
 }
 
 .ShapeArrowConnector {
@@ -164,4 +178,26 @@ img {
     width: fit-content; height: fit-content;
     padding: 0;
     min-width: 0;
+}
+
+.CommentDots {
+    --dot-color: var(--comment-decoration-color);
+    --dot-radius: var(--default-comment-dot-radius);
+    --dot-gap: var(--default-comment-dot-gap);
+    --dot-count: var(--default-comment-dot-count);
+
+    --group-width: calc((var(--dot-radius) * 2 + var(--dot-gap)) * var(--dot-count) - var(--dot-gap));
+    --additional-offset-x: calc(var(--group-width) / 2);
+
+    background-image: radial-gradient(circle, var(--dot-color) var(--dot-radius), transparent var(--dot-radius));
+    background-size: calc(var(--dot-gap) + var(--dot-radius) * 2);
+    background-position-x: calc(var(--dot-gap) / -2);
+    background-repeat: repeat-x;
+    
+    width: var(--group-width);
+    height: calc(var(--dot-radius) * 2);
+
+    min-width: 0;
+    padding: 0;
+    z-index: var(--comment-dots-layer);
 }

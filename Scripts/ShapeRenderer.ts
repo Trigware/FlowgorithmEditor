@@ -12,15 +12,15 @@ export enum ShapeType {
     FunctionSignature, FunctionEnd, Call,
     VariableDeclaration, Assignment,
     Input, Output, Conditional,
-    While, For, Do, Breakpoint
+    While, For, Do, Breakpoint, Comment
 }
 
-enum ShapeDisplayType { Unknown = -1, Parallelogram, Diamond, Hexagon, Elipse, Rectangle, Octagon }
-enum ShapeColorType { Unknown = -1, Purple, Blue, Green, Yellow, Red, Orange, LightPurple, LightRed }
+enum ShapeDisplayType { Unknown = -1, Parallelogram, Diamond, Hexagon, Elipse, Rectangle, Octagon, Comment }
+enum ShapeColorType { Unknown = -1, Purple, Blue, Green, Yellow, Red, Orange, LightPurple, LightRed, LightGray }
 
 export class ShapeColorInfo {
     public shapeColor: string = ""; public shadowColor: string = ""; public mergePointColor: string = "";
-    public constructor(colorOfShape: string, colorOfShadow: string, colorOfMergePoint: string = "#000000") {
+    public constructor(colorOfShape: string, colorOfShadow: string = "#000000", colorOfMergePoint: string = "#000000") {
         this.shapeColor = colorOfShape; this.shadowColor = colorOfShadow; this.mergePointColor = colorOfMergePoint;
     }
     public static Default(): ShapeColorInfo {
@@ -44,7 +44,8 @@ const shapeColorsArr: Map<ShapeColorType, ShapeColorInfo> = new Map([
     [ShapeColorType.Yellow, new ShapeColorInfo("#edd040", "#a08d30")],
     [ShapeColorType.Red, new ShapeColorInfo("#d13434", "#7d1e1e", "#992323")],
     [ShapeColorType.Orange, new ShapeColorInfo("#d67345", "#944c29", "#ba592d")],
-    [ShapeColorType.LightRed, new ShapeColorInfo("#ed5c5c", "#c24444")]
+    [ShapeColorType.LightRed, new ShapeColorInfo("#ed5c5c", "#c24444")],
+    [ShapeColorType.LightGray, new ShapeColorInfo("#cccccc")]
 ]);
 
 export const incompleteShapeColors: ShapeColorInfo = new ShapeColorInfo("#858585", "#404040", "#707070");
@@ -61,13 +62,15 @@ const shapeDisplayArr: Map<ShapeType, ShapeDisplayInfo> = new Map([
     [ShapeType.While, new ShapeDisplayInfo(ShapeDisplayType.Hexagon, ShapeColorType.Orange)],
     [ShapeType.For, new ShapeDisplayInfo(ShapeDisplayType.Hexagon, ShapeColorType.Orange)],
     [ShapeType.Do, new ShapeDisplayInfo(ShapeDisplayType.Hexagon, ShapeColorType.Orange)],
-    [ShapeType.Breakpoint, new ShapeDisplayInfo(ShapeDisplayType.Octagon, ShapeColorType.LightRed)]
+    [ShapeType.Breakpoint, new ShapeDisplayInfo(ShapeDisplayType.Octagon, ShapeColorType.LightRed)],
+    [ShapeType.Comment, new ShapeDisplayInfo(ShapeDisplayType.Comment, ShapeColorType.LightGray)]
 ]);
 
 const displayTypeToClassMap: Map<ShapeDisplayType, string> = new Map([
     [ShapeDisplayType.Parallelogram, "ParallelogramShape"], [ShapeDisplayType.Diamond, "DiamondShape"],
     [ShapeDisplayType.Hexagon, "HexagonShape"], [ShapeDisplayType.Elipse, "ElipticShape"],
-    [ShapeDisplayType.Rectangle, "RectangleShape"], [ShapeDisplayType.Octagon, "OctagonShape"]
+    [ShapeDisplayType.Rectangle, "RectangleShape"], [ShapeDisplayType.Octagon, "OctagonShape"],
+    [ShapeDisplayType.Comment, "CommentShape"]
 ]);
 
 export function SetShapePosition(currentShape: HTMLDivElement, shapePosition: Utils.Vec2) {
@@ -230,7 +233,7 @@ function ConstructShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent
     return constructedShape;
 }
 
-const shapeOffsetMultiplier: Utils.Vec2 = new Utils.Vec2(0.5, 0.075);
+export const shapeOffsetMultiplier: Utils.Vec2 = new Utils.Vec2(0.5, 0.075);
 
 export function UpdateShapeProperties(currentShape: HTMLDivElement) {
     let planeSize: Utils.Vec2 = new Utils.Vec2(currentPlane.clientWidth, currentPlane.clientHeight);
@@ -246,10 +249,12 @@ export function UpdateShapeProperties(currentShape: HTMLDivElement) {
     Utils.SetProperty(currentShape, "--width-size-increase", widthSizeIncrease.toString());
 }
 
-export function AddShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent: ShapeContent, offsetShape: boolean = true): RenderedShape {
+export function AddShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent: ShapeContent,
+    offsetShape: boolean = true, renderShadow: boolean = true
+): RenderedShape {
     let renderedShape: RenderedShape = new RenderedShape(shapeContent, shapeType);
     renderedShape.mainShape = ConstructShape(shapeType, position, shapeContent, offsetShape, false);
-    renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
+    if (renderShadow) renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
     return renderedShape;
 }
 
@@ -329,15 +334,21 @@ export class RenderedShape {
         if (content !== null) this.shapeContent = content;
         if (type !== null) this.shapeType = type;
 
-        let isConditional: boolean = this.shapeType === ShapeType.Conditional;
+        let isConditional: boolean = this.shapeType === ShapeType.Conditional,
+            isCommentShape: boolean = this.shapeType === ShapeType.Comment;
         let textSize: Utils.Vec2 = MeasureTextSize(this.shapeContent);
         let defaultShapeWidth: number = Utils.GetNumericPixels(Utils.GetProperty(document.documentElement, "--default-shape-width"));
         let defaultAspectRatio: number = Number(Utils.GetProperty(document.documentElement, "--shape-aspect-ratio"));
 
-        let paddingPropertyName: string = isConditional ? "--diamond-horizonal-padding" : "--shape-horizontal-padding" ;
+        let paddingPropertyName: string = isConditional ? "--diamond-horizonal-padding" : "--shape-horizontal-padding";
         let horizontalPadding: number = Utils.GetNumericPixels(Utils.GetProperty(document.documentElement, paddingPropertyName));
         let shapeWidth: number = Math.max(textSize.x, defaultShapeWidth);
         shapeWidth += horizontalPadding * 2;
+
+        if (isCommentShape) {
+            let commentBorderSize: number = Utils.GetFromRootPX("--comment-border-size");
+            shapeWidth += commentBorderSize * 2;
+        }
 
         let widthSizeIncrease: number = shapeWidth / defaultShapeWidth;
         let actualAspectRatio: number = isConditional ? defaultAspectRatio / widthSizeIncrease : defaultAspectRatio;

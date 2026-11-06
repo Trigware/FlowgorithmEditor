@@ -19,6 +19,7 @@ export var ShapeType;
     ShapeType[ShapeType["For"] = 9] = "For";
     ShapeType[ShapeType["Do"] = 10] = "Do";
     ShapeType[ShapeType["Breakpoint"] = 11] = "Breakpoint";
+    ShapeType[ShapeType["Comment"] = 12] = "Comment";
 })(ShapeType || (ShapeType = {}));
 var ShapeDisplayType;
 (function (ShapeDisplayType) {
@@ -29,6 +30,7 @@ var ShapeDisplayType;
     ShapeDisplayType[ShapeDisplayType["Elipse"] = 3] = "Elipse";
     ShapeDisplayType[ShapeDisplayType["Rectangle"] = 4] = "Rectangle";
     ShapeDisplayType[ShapeDisplayType["Octagon"] = 5] = "Octagon";
+    ShapeDisplayType[ShapeDisplayType["Comment"] = 6] = "Comment";
 })(ShapeDisplayType || (ShapeDisplayType = {}));
 var ShapeColorType;
 (function (ShapeColorType) {
@@ -41,12 +43,13 @@ var ShapeColorType;
     ShapeColorType[ShapeColorType["Orange"] = 5] = "Orange";
     ShapeColorType[ShapeColorType["LightPurple"] = 6] = "LightPurple";
     ShapeColorType[ShapeColorType["LightRed"] = 7] = "LightRed";
+    ShapeColorType[ShapeColorType["LightGray"] = 8] = "LightGray";
 })(ShapeColorType || (ShapeColorType = {}));
 export class ShapeColorInfo {
     shapeColor = "";
     shadowColor = "";
     mergePointColor = "";
-    constructor(colorOfShape, colorOfShadow, colorOfMergePoint = "#000000") {
+    constructor(colorOfShape, colorOfShadow = "#000000", colorOfMergePoint = "#000000") {
         this.shapeColor = colorOfShape;
         this.shadowColor = colorOfShadow;
         this.mergePointColor = colorOfMergePoint;
@@ -71,7 +74,8 @@ const shapeColorsArr = new Map([
     [ShapeColorType.Yellow, new ShapeColorInfo("#edd040", "#a08d30")],
     [ShapeColorType.Red, new ShapeColorInfo("#d13434", "#7d1e1e", "#992323")],
     [ShapeColorType.Orange, new ShapeColorInfo("#d67345", "#944c29", "#ba592d")],
-    [ShapeColorType.LightRed, new ShapeColorInfo("#ed5c5c", "#c24444")]
+    [ShapeColorType.LightRed, new ShapeColorInfo("#ed5c5c", "#c24444")],
+    [ShapeColorType.LightGray, new ShapeColorInfo("#cccccc")]
 ]);
 export const incompleteShapeColors = new ShapeColorInfo("#858585", "#404040", "#707070");
 const shapeDisplayArr = new Map([
@@ -86,12 +90,14 @@ const shapeDisplayArr = new Map([
     [ShapeType.While, new ShapeDisplayInfo(ShapeDisplayType.Hexagon, ShapeColorType.Orange)],
     [ShapeType.For, new ShapeDisplayInfo(ShapeDisplayType.Hexagon, ShapeColorType.Orange)],
     [ShapeType.Do, new ShapeDisplayInfo(ShapeDisplayType.Hexagon, ShapeColorType.Orange)],
-    [ShapeType.Breakpoint, new ShapeDisplayInfo(ShapeDisplayType.Octagon, ShapeColorType.LightRed)]
+    [ShapeType.Breakpoint, new ShapeDisplayInfo(ShapeDisplayType.Octagon, ShapeColorType.LightRed)],
+    [ShapeType.Comment, new ShapeDisplayInfo(ShapeDisplayType.Comment, ShapeColorType.LightGray)]
 ]);
 const displayTypeToClassMap = new Map([
     [ShapeDisplayType.Parallelogram, "ParallelogramShape"], [ShapeDisplayType.Diamond, "DiamondShape"],
     [ShapeDisplayType.Hexagon, "HexagonShape"], [ShapeDisplayType.Elipse, "ElipticShape"],
-    [ShapeDisplayType.Rectangle, "RectangleShape"], [ShapeDisplayType.Octagon, "OctagonShape"]
+    [ShapeDisplayType.Rectangle, "RectangleShape"], [ShapeDisplayType.Octagon, "OctagonShape"],
+    [ShapeDisplayType.Comment, "CommentShape"]
 ]);
 export function SetShapePosition(currentShape, shapePosition) {
     Utils.SetProperty(currentShape, "--shape-x", shapePosition.x.toString() + "px");
@@ -249,7 +255,7 @@ function ConstructShape(shapeType, position, shapeContent, offsetShape, isShadow
     SetShapePosition(constructedShape, position);
     return constructedShape;
 }
-const shapeOffsetMultiplier = new Utils.Vec2(0.5, 0.075);
+export const shapeOffsetMultiplier = new Utils.Vec2(0.5, 0.075);
 export function UpdateShapeProperties(currentShape) {
     let planeSize = new Utils.Vec2(currentPlane.clientWidth, currentPlane.clientHeight);
     let shapeWidth = currentShape.clientWidth;
@@ -261,10 +267,11 @@ export function UpdateShapeProperties(currentShape) {
     let widthSizeIncrease = shapeWidth / defaultWidth;
     Utils.SetProperty(currentShape, "--width-size-increase", widthSizeIncrease.toString());
 }
-export function AddShape(shapeType, position, shapeContent, offsetShape = true) {
+export function AddShape(shapeType, position, shapeContent, offsetShape = true, renderShadow = true) {
     let renderedShape = new RenderedShape(shapeContent, shapeType);
     renderedShape.mainShape = ConstructShape(shapeType, position, shapeContent, offsetShape, false);
-    renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
+    if (renderShadow)
+        renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
     return renderedShape;
 }
 export function ClearPlane() { currentPlane.replaceChildren(); }
@@ -338,7 +345,7 @@ export class RenderedShape {
             this.shapeContent = content;
         if (type !== null)
             this.shapeType = type;
-        let isConditional = this.shapeType === ShapeType.Conditional;
+        let isConditional = this.shapeType === ShapeType.Conditional, isCommentShape = this.shapeType === ShapeType.Comment;
         let textSize = MeasureTextSize(this.shapeContent);
         let defaultShapeWidth = Utils.GetNumericPixels(Utils.GetProperty(document.documentElement, "--default-shape-width"));
         let defaultAspectRatio = Number(Utils.GetProperty(document.documentElement, "--shape-aspect-ratio"));
@@ -346,6 +353,10 @@ export class RenderedShape {
         let horizontalPadding = Utils.GetNumericPixels(Utils.GetProperty(document.documentElement, paddingPropertyName));
         let shapeWidth = Math.max(textSize.x, defaultShapeWidth);
         shapeWidth += horizontalPadding * 2;
+        if (isCommentShape) {
+            let commentBorderSize = Utils.GetFromRootPX("--comment-border-size");
+            shapeWidth += commentBorderSize * 2;
+        }
         let widthSizeIncrease = shapeWidth / defaultShapeWidth;
         let actualAspectRatio = isConditional ? defaultAspectRatio / widthSizeIncrease : defaultAspectRatio;
         let shapeHeight = defaultShapeWidth / actualAspectRatio;

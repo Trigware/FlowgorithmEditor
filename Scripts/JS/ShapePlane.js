@@ -6,6 +6,7 @@ let prevMousePos = Utils.Vec2.Zero();
 let planeCameraPos = Utils.Vec2.Zero();
 let shapePlane = document.getElementById("ShapePlane");
 let openFileInput = document.getElementById("OpenFileInput");
+let headerSection = document.getElementById("HeaderSection");
 let openedProgram = Flowgorithm.Program.Create();
 function OnStart() {
     prevMousePos = Utils.GetMousePos();
@@ -20,11 +21,12 @@ let deltaTime = 0;
 function OnDraw() {
     let currentTimeSinceStarted = Utils.GetTimeSinceStarted();
     let mousePos = Utils.GetMousePos();
-    let holdingMouse = Utils.IsMouseButtonHeld();
+    let isHoldingMiddleButton = Utils.activeMouse.IsHeld(Utils.MouseButton.Middle);
     let mouseDiff = mousePos.Minus(prevMousePos.x, prevMousePos.y);
     deltaTime = currentTimeSinceStarted - previousTimeSinceStarted;
+    console.log(GetMouseWorldPosition());
     prevMousePos = mousePos.Copy();
-    if (holdingMouse)
+    if (isHoldingMiddleButton)
         MoveShapePlane(mouseDiff);
     previousTimeSinceStarted = currentTimeSinceStarted;
     UpdateAllShapes();
@@ -32,8 +34,11 @@ function OnDraw() {
 }
 function MoveShapePlane(mouseDiff) {
     planeCameraPos = planeCameraPos.Plus(mouseDiff.x, mouseDiff.y);
-    shapePlane.style.setProperty("--camera-x", `${planeCameraPos.x.toString()}px`);
-    shapePlane.style.setProperty("--camera-y", `${planeCameraPos.y.toString()}px`);
+    SetCameraPos(planeCameraPos);
+}
+function SetCameraPos(cameraPos) {
+    Utils.SetProperty(shapePlane, "--camera-x", cameraPos.x.toString() + "px");
+    Utils.SetProperty(shapePlane, "--camera-y", cameraPos.y.toString() + "px");
 }
 function OnFileSelected() {
     if (openFileInput.files === null || openFileInput.files.length === 0)
@@ -51,16 +56,29 @@ function GetZoomLevel() { return Number(Utils.GetProperty(shapePlane, "--zoom-le
 function OnWheelScrolled(event) {
     if (!allowZooming)
         return;
-    let scrollDirection = Math.sign(event.deltaY);
+    let usedScrollingMultiplier = 1 + (scrollingMultiplier - 1) * deltaTime;
+    let scrollDirection = Math.sign(event.deltaY), currentZoomLevel = GetZoomLevel();
+    if (scrollDirection == +1)
+        currentZoomLevel /= usedScrollingMultiplier;
+    if (scrollDirection == -1)
+        currentZoomLevel *= usedScrollingMultiplier;
+    let minimumZoomingLevel = 1.0 / maximumZoomLevel;
+    currentZoomLevel = Utils.Clamp(currentZoomLevel, minimumZoomingLevel, maximumZoomLevel);
+    Utils.SetProperty(shapePlane, "--zoom-level", currentZoomLevel.toString());
+    let mouseWorldPos = GetMouseWorldPosition();
+    //SetCameraPos(mouseWorldPos);
+}
+function GetMouseWorldPosition() {
     let currentZoomLevel = GetZoomLevel();
-    let usedScrollMultiplier = 1 + (scrollingMultiplier - 1) * deltaTime;
-    if (scrollDirection === -1)
-        currentZoomLevel *= usedScrollMultiplier;
-    if (scrollDirection === +1)
-        currentZoomLevel /= usedScrollMultiplier;
-    let minimumZoomLevel = 1.0 / maximumZoomLevel;
-    currentZoomLevel = Utils.Clamp(currentZoomLevel, minimumZoomLevel, maximumZoomLevel);
-    shapePlane.style.setProperty("--zoom-level", currentZoomLevel.toString());
+    let cameraPosition = new Utils.Vec2(Utils.GetPropertyPX(shapePlane, "--camera-x"), Utils.GetPropertyPX(shapePlane, "--camera-y"));
+    let planeSize = new Utils.Vec2(shapePlane.clientWidth, shapePlane.clientHeight);
+    let headerHeight = headerSection.clientHeight + Utils.GetFromRootPX("--header-border-size");
+    let mousePosition = Utils.activeMouse.GetPosition();
+    mousePosition.y -= headerHeight;
+    let mouseWorldPos = mousePosition.Minus(planeSize.x * ShapeRenderer.shapeOffsetMultiplier.x, planeSize.y * ShapeRenderer.shapeOffsetMultiplier.y).Divide(currentZoomLevel);
+    let worldPosOffset = cameraPosition.Divide(currentZoomLevel);
+    mouseWorldPos = mouseWorldPos.Minus(worldPosOffset.x, worldPosOffset.y);
+    return mouseWorldPos;
 }
 function UpdateAllShapes() {
     for (let i = 0; i < shapePlane.children.length; i++) {

@@ -108,7 +108,7 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         let arrowYOffset: number = 0;
 
         if (this.linkedShape.shadowShape !== null)
-            arrowYOffset = Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y")) / 2;        
+            arrowYOffset = Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--additional-offset-y")) / 2;        
         let arrowPosition: Utils.Vec2 = diamondCenter.Plus(0, arrowYOffset);
         let branchArrow: ArrowPath = this.CreateBranchArrow(isThen, arrowPosition, new Utils.Vec2(0, arrowYOffset));
         
@@ -154,7 +154,8 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
             arrowLengthsArray.push(mergeArrowLength); arrowAnglesArray.push(mergeArrowAngle);
         }
 
-        let branchArrow: ArrowPath = new ArrowPath(arrowPosition, arrowLengthsArray, arrowAnglesArray);
+        let renderArrowEnd: boolean = currentNode.WillSpecialArrowsHaveArrowEnd();
+        let branchArrow: ArrowPath = new ArrowPath(arrowPosition, arrowLengthsArray, arrowAnglesArray, renderArrowEnd);
         return branchArrow;
     }
 

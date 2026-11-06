@@ -37,7 +37,7 @@ class CycleStatement extends Flowgorithm.ProgramNode {
 
         let arrowYOffset: number = 0;
         if (this.linkedShape.shadowShape !== null)
-            arrowYOffset = Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y")) / 2;
+            arrowYOffset = Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--additional-offset-y")) / 2;
         let branchArrowPos: Utils.Vec2 = position.Plus(0, headSize.y / 2 + arrowYOffset);
         let verticalSegmentLength: number = headSize.y / 2 + Flowgorithm.defaultArrowLength;
 
@@ -46,10 +46,11 @@ class CycleStatement extends Flowgorithm.ProgramNode {
         let mergeLengthArr: number[] = hasSubnodes ? [] : mergeArrowData[0],
             mergeRotationArr: number[] = hasSubnodes ? [] : mergeArrowData[1];
 
+        let renderBranchArrowEnd: boolean = this.subnodeParent.WillSpecialArrowsHaveArrowEnd();
         this.branchArrow = new ArrowPath(
             branchArrowPos,
             [horizontalSegmentLength, verticalSegmentLength, ...mergeLengthArr],
-            [Flowgorithm.rightPointingRotation, Flowgorithm.defaultArrowAngle, ...mergeRotationArr]
+            [Flowgorithm.rightPointingRotation, Flowgorithm.defaultArrowAngle, ...mergeRotationArr], renderBranchArrowEnd
         );
         this.subnodeParent.RenderSubnodes(this.branchArrow.GetArrowEndPos(), false);
     }
@@ -90,12 +91,7 @@ class CycleStatement extends Flowgorithm.ProgramNode {
         let doneArrowPos: Utils.Vec2 = position.Plus(0, headSize.y);
         let arrowLength: number = subnodeSize.y + headSize.y + arrowEndingSize / 2;
 
-        let willRenderArrowEnd: boolean = true;
-        if (!isLastNode) {
-            let nextNode: Flowgorithm.ProgramNode = this.parentNode.subNodes[nodeIndex + 1];
-            willRenderArrowEnd = nextNode.BeforeArrowHasEnding();
-        }
-
+        let willRenderArrowEnd: boolean = this.parentNode.WillSpecialArrowsHaveArrowEnd(nodeIndex + 1);
         this.doneArrow = new ArrowPath(
             doneArrowPos, [arrowLength], [Flowgorithm.defaultArrowAngle], willRenderArrowEnd
         );
@@ -106,7 +102,7 @@ class CycleStatement extends Flowgorithm.ProgramNode {
         let mergeHorizontalLength: number = this.GetHorizontalSegmentLength() - arrowEndSize;
         let subNodeSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.SubnodeOnly);
         let shadowYOffset: number = this.linkedShape.shadowShape === null ? 0 :
-            Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y"));
+            Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--additional-offset-y"));
         let mergeVericalLength: number = subNodeSize.y - shadowYOffset / 2;
 
         let resultData: MergeArrowData = [
@@ -133,7 +129,7 @@ class CycleStatement extends Flowgorithm.ProgramNode {
             doneLabelPos: Utils.Vec2 = position.Plus(-arrowEndSize / 2, headSize.y);
 
         doneLabelPos.y += this.linkedShape.shadowShape === null ? 0 :
-            Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y")) * 2;
+            Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--additional-offset-y")) * 2;
         
         let isForLoop: boolean = this instanceof ForLoop;
         let nextLabelInfo: ShapeRenderer.LabelRenderInfo = new ShapeRenderer.LabelRenderInfo(
@@ -259,11 +255,11 @@ export class ConditionalCycle extends CycleStatement {
         let mergeLengthArr: number[] = containsSubnodes ? [] : [mergeSegmentLength],
             mergeAnglesArr: number[] = containsSubnodes ? [] : [Flowgorithm.leftPointingRotation];
 
-
+        let willRenderArrowEnd: boolean = this.subnodeParent.WillSpecialArrowsHaveArrowEnd();
         this.branchArrow = new ArrowPath(
             this.currentPosition,
             [firstSegmentLength, verticalSegmentLength, ...mergeLengthArr],
-            [Flowgorithm.rightPointingRotation, Flowgorithm.defaultArrowAngle, ...mergeAnglesArr]
+            [Flowgorithm.rightPointingRotation, Flowgorithm.defaultArrowAngle, ...mergeAnglesArr], willRenderArrowEnd
         );
 
         this.currentPosition = this.currentPosition.Plus(firstSegmentLength, verticalSegmentLength);
@@ -311,7 +307,7 @@ export class ConditionalCycle extends CycleStatement {
 
         let headSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.HeadOnly);
         let shadowYOffset: number = this.linkedShape.shadowShape === null ? 0 :
-            Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--shadow-offset-y"));
+            Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--additional-offset-y"));
         let doneLabelPos: Utils.Vec2 = nextLabelPos.Plus(0, headSize.y + shadowYOffset);
 
         let nextLabelInfo: ShapeRenderer.LabelRenderInfo = new ShapeRenderer.LabelRenderInfo(

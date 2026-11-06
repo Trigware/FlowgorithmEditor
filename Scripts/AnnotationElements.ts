@@ -3,8 +3,9 @@ import * as ShapeRenderer from "./ShapeRenderer.js"
 import * as Flowgorithm from "./ProgramRepresentation.js"
 import * as Utils from "./Utils.js"
 
-const octagonShadowYOffset: number = 5, breakpointVericalPadding: number = 30, labelXOffset: number = 0.3;
 type OptionalDiv = HTMLDivElement | null;
+
+const octagonShadowYOffset: number = 5, breakpointVericalPadding: number = 30, labelXOffset: number = 0.3;
 const conditionalBreakpointSegmentPortion: number = 0.5;
 
 export class Breakpoint extends Flowgorithm.ProgramNode {
@@ -77,4 +78,56 @@ export class Breakpoint extends Flowgorithm.ProgramNode {
 
 export class InlineComment extends Flowgorithm.ProgramNode {
     public commentContent: string = "";
+    private connectingDots: OptionalDiv = null; 
+
+    public override BeforeArrowHasEnding(): boolean { return false; }
+    public override GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Comment; }
+
+    public override GetContent(): ShapeRenderer.ShapeContent {
+        let actualText: string = this.commentContent.length === 0 ? "Comment" : this.commentContent;
+        let shapeContent: ShapeRenderer.ShapeContent = new ShapeRenderer.ShapeContent(actualText, ShapeRenderer.TextType.Italic);
+        return shapeContent;
+    }
+
+    public override Render(position: Utils.Vec2) {
+        let arrowLesserSize: number = Utils.GetFromRootPX("--arrow-lesser-size");
+        this.connectingDots = Utils.CreateElement("div", "CommentDots", ShapeRenderer.currentPlane) as HTMLDivElement;
+        let dotGapSize: number = Utils.GetFromRootPX("--default-comment-dot-gap"), totalXOffset: number = arrowLesserSize / 2 + dotGapSize;
+        let connectingDotsPos: Utils.Vec2 = position.Plus(totalXOffset, 0);
+        ShapeRenderer.SetShapePosition(this.connectingDots, connectingDotsPos);
+
+        let shapeContent: ShapeRenderer.ShapeContent = this.GetContent();
+        let connectingDotsWidth: number = this.GetConnectingDotsWidth();
+
+        let commentShapeSize: Utils.Vec2 = this.linkedShape.GetSize(shapeContent, this.GetType());
+        let commentXOffset: number = commentShapeSize.x / 2 + connectingDotsWidth;
+        commentXOffset += totalXOffset;
+        let commentShapePos: Utils.Vec2 = position.Plus(
+            commentXOffset, -commentShapeSize.y / 2
+        );
+        
+        this.linkedShape = ShapeRenderer.AddShape(this.GetType(), commentShapePos, shapeContent);
+    }
+
+    private GetConnectingDotsWidth(): number {
+        let dotRadius: number = Utils.GetFromRootPX("--default-comment-dot-radius"),
+            dotGap: number = Utils.GetFromRootPX("--default-comment-dot-gap"),
+            dotCount: number = Number(Utils.GetFromRoot("--default-comment-dot-count")),
+            connectingDotsWidth: number = (dotRadius * 2 + dotGap) * dotCount;
+
+        return connectingDotsWidth;
+    }
+
+    public override CalculateSizeCache(): Flowgorithm.CachedSize {
+        let sizeCache: Flowgorithm.CachedSize = new Flowgorithm.CachedSize();
+        let connectingDotsWidth: number = this.GetConnectingDotsWidth(),
+            dotGapSize: number = Utils.GetFromRootPX("--default-comment-dot-gap");
+
+        let commentShapeSize: Utils.Vec2 = this.linkedShape.GetSize(this.GetContent(), this.GetType());
+        let arrowLesserSize: number = Utils.GetFromRootPX("--arrow-lesser-size");
+        let dotsXOffset: number = arrowLesserSize / 2 + dotGapSize + 1;
+        sizeCache.rightPortion.x = connectingDotsWidth + commentShapeSize.x + dotsXOffset;
+
+        return sizeCache;
+    }
 }
