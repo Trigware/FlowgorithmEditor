@@ -1,10 +1,11 @@
 import { Expression } from "./Expression.js";
 import * as ShapeRenderer from "./ShapeRenderer.js";
 import * as Flowgorithm from "./ProgramRepresentation.js";
+import * as BaseNode from "./ProgramNode.js";
 import * as Utils from "./Utils.js";
 const octagonShadowYOffset = 5, breakpointVericalPadding = 30, labelXOffset = 0.3;
 const conditionalBreakpointSegmentPortion = 0.5;
-export class Breakpoint extends Flowgorithm.ProgramNode {
+export class Breakpoint extends BaseNode.ProgramNode {
     isConditional = false;
     conditionalExpression = new Expression();
     expressionLabel = null;
@@ -37,7 +38,7 @@ export class Breakpoint extends Flowgorithm.ProgramNode {
         return labelContents;
     }
     CalculateSizeCache() {
-        let resultCache = new Flowgorithm.CachedSize();
+        let resultCache = new BaseNode.CachedSize();
         let octagonShapeSize = this.GetOctagonShapeSize();
         let entireShapeHeight = octagonShapeSize.y + breakpointVericalPadding;
         resultCache.leftPortion.y = resultCache.rightPortion.y = entireShapeHeight;
@@ -56,7 +57,7 @@ export class Breakpoint extends Flowgorithm.ProgramNode {
         return shapeSize;
     }
 }
-export class InlineComment extends Flowgorithm.ProgramNode {
+export class InlineComment extends BaseNode.ProgramNode {
     commentContent = "";
     connectingDots = null;
     BeforeArrowHasEnding() { return false; }
@@ -85,12 +86,18 @@ export class InlineComment extends Flowgorithm.ProgramNode {
         return connectingDotsWidth;
     }
     CalculateSizeCache() {
-        let sizeCache = new Flowgorithm.CachedSize();
+        let sizeCache = new BaseNode.CachedSize();
         let connectingDotsWidth = this.GetConnectingDotsWidth(), dotGapSize = Utils.GetFromRootPX("--default-comment-dot-gap");
         let commentShapeSize = this.linkedShape.GetSize(this.GetContent(), this.GetType());
         let arrowLesserSize = Utils.GetFromRootPX("--arrow-lesser-size");
         let dotsXOffset = arrowLesserSize / 2 + dotGapSize + 1;
         sizeCache.rightPortion.x = connectingDotsWidth + commentShapeSize.x + dotsXOffset;
         return sizeCache;
+    }
+    GetSideTotalWidth(checkedSide) {
+        if (checkedSide === BaseNode.SizeCountType.OnlyLeft)
+            return 0;
+        let commentSize = this.GetSize(checkedSide, BaseNode.SubnodeCountType.CountAll);
+        return commentSize.x;
     }
 }

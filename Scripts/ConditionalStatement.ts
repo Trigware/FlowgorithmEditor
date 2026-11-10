@@ -3,14 +3,15 @@ import * as Flowgorithm from "./ProgramRepresentation.js"
 import * as Utils from "./Utils.js"
 import * as ShapeRenderer from "./ShapeRenderer.js"
 import { ArrowPath } from "./ArrowRendering.js"
+import * as BaseNode from "./ProgramNode.js"
 
 type ArrowPathOpt = ArrowPath | null;
 type OptionalDiv = HTMLDivElement | null;
 
-export class ConditionalStatement extends Flowgorithm.ProgramNode {
+export class ConditionalStatement extends BaseNode.ProgramNode {
     public conditional: Expression = new Expression();
-    public thenNode: Flowgorithm.ProgramNode = new Flowgorithm.ProgramNode();
-    public elseNode: Flowgorithm.ProgramNode = new Flowgorithm.ProgramNode();
+    public thenNode: BaseNode.ProgramNode = new BaseNode.ProgramNode(this);
+    public elseNode: BaseNode.ProgramNode = new BaseNode.ProgramNode(this);
 
     private thenBranchArrow: ArrowPathOpt = null; private elseBranchArrow: ArrowPathOpt = null;
     private thenMergeArrow: ArrowPathOpt = null; private elseMergeArrow: ArrowPathOpt = null;
@@ -22,7 +23,7 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
     private currentPosition: Utils.Vec2 = Utils.Vec2.Zero();
 
     public MoveSubnodes(moveToThen: boolean) {
-        let selectedNode: Flowgorithm.ProgramNode = moveToThen ? this.thenNode : this.elseNode;
+        let selectedNode: BaseNode.ProgramNode = moveToThen ? this.thenNode : this.elseNode;
         for (let currentSubnode of this.subNodes) {
             currentSubnode.parentNode = selectedNode;
         }
@@ -42,10 +43,10 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
 
     public override GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Conditional; }
 
-    public override CalculateSizeCache(): Flowgorithm.CachedSize {
-        let sizeCache: Flowgorithm.CachedSize = super.CalculateSizeCache();
-        let thenNodeSize: Utils.Vec2 = this.thenNode.GetSize(Flowgorithm.SizeCountType.OnlyLeft, Flowgorithm.SubnodeCountType.CountAll);
-        let elseNodeSize: Utils.Vec2 = this.elseNode.GetSize(Flowgorithm.SizeCountType.OnlyRight, Flowgorithm.SubnodeCountType.CountAll);
+    public override CalculateSizeCache(): BaseNode.CachedSize {
+        let sizeCache: BaseNode.CachedSize = super.CalculateSizeCache();
+        let thenNodeSize: Utils.Vec2 = this.thenNode.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.CountAll);
+        let elseNodeSize: Utils.Vec2 = this.elseNode.GetSize(BaseNode.SizeCountType.OnlyRight, BaseNode.SubnodeCountType.CountAll);
 
         let subBlockHeight: number = Math.max(thenNodeSize.y, elseNodeSize.y);
         subBlockHeight += Flowgorithm.defaultArrowLength;
@@ -60,11 +61,11 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         this.currentPosition = position.Copy();
         this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Conditional, position.Copy(), this.GetContent());
 
-        this.thenBlockImportantSize = this.thenNode.GetSize(Flowgorithm.SizeCountType.OnlyRight, Flowgorithm.SubnodeCountType.CountAll);
-        this.elseBlockImportantSize = this.elseNode.GetSize(Flowgorithm.SizeCountType.OnlyLeft, Flowgorithm.SubnodeCountType.CountAll);
+        this.thenBlockImportantSize = this.thenNode.GetSize(BaseNode.SizeCountType.OnlyRight, BaseNode.SubnodeCountType.CountAll);
+        this.elseBlockImportantSize = this.elseNode.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.CountAll);
 
         this.mergePoint = Utils.CreateElement("div", "ShapeArrowConnector", ShapeRenderer.currentPlane) as HTMLDivElement;
-        Utils.SetProperty(this.mergePoint, "--connector-size-multiplier", Flowgorithm.mergePointSizeMultiplier.toString());
+        Utils.SetProperty(this.mergePoint, "--connector-size-multiplier", BaseNode.mergePointSizeMultiplier.toString());
 
         let thenBranchEndPos: Utils.Vec2 = this.RenderBranch(true);
         let elseBranchEndPos: Utils.Vec2 = this.RenderBranch(false);
@@ -131,15 +132,17 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
     }
 
     private CreateBranchArrow(isThen: boolean, arrowPosition: Utils.Vec2, arrowOffset: Utils.Vec2): ArrowPath {
-        let currentNode: Flowgorithm.ProgramNode = isThen ? this.thenNode : this.elseNode;
+        let currentNode: BaseNode.ProgramNode = isThen ? this.thenNode : this.elseNode;
         let bodySize: Utils.Vec2 = this.linkedShape.GetSize();
         let currentBlockImportantSize: Utils.Vec2 = isThen ? this.thenBlockImportantSize : this.elseBlockImportantSize;
         let greaterBlockHeight: number = Math.max(this.thenBlockImportantSize.y, this.elseBlockImportantSize.y);
         let emptyBlockArrowExtension: number = greaterBlockHeight - currentBlockImportantSize.y;
-        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * Flowgorithm.mergePointSizeMultiplier;
+        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * BaseNode.mergePointSizeMultiplier;
 
         let arrowRotation: number = isThen ? Flowgorithm.rightPointingRotation : Flowgorithm.leftPointingRotation;
-        let horizontalArrowLength: number = Math.max(Flowgorithm.defaultArrowLength, currentBlockImportantSize.x);
+        let wantedCountDir: BaseNode.SizeCountType = isThen ? BaseNode.SizeCountType.OnlyLeft : BaseNode.SizeCountType.OnlyRight;
+        let sectionActualWidth: number = currentNode.GetSize(wantedCountDir, BaseNode.SubnodeCountType.Entirety).x;
+        let horizontalArrowLength: number = Math.max(Flowgorithm.defaultArrowLength, sectionActualWidth);
         horizontalArrowLength += bodySize.x / 2;
         let downwardArrowLength: number = this.linkedShape.GetSize().y / 2 + Flowgorithm.defaultArrowLength - arrowOffset.y;
 
@@ -161,21 +164,21 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
 
     private RenderBranch(isThen: boolean): Utils.Vec2 {
         let branchArrow: ArrowPath = this.RenderBranchArrow(isThen);
-        let branchNode: Flowgorithm.ProgramNode = isThen ? this.thenNode : this.elseNode;
+        let branchNode: BaseNode.ProgramNode = isThen ? this.thenNode : this.elseNode;
         let arrowEndPos: Utils.Vec2 = branchArrow.GetArrowEndPos();
         return branchNode.RenderSubnodes(arrowEndPos, false);
     }
 
     private RenderMergeArrow(arrowPosition: Utils.Vec2, isThen: boolean) {
         let currentBranchingArrow: ArrowPathOpt = isThen ? this.thenBranchArrow : this.elseBranchArrow;
-        let currentBlock: Flowgorithm.ProgramNode = isThen ? this.thenNode : this.elseNode;
+        let currentBlock: BaseNode.ProgramNode = isThen ? this.thenNode : this.elseNode;
         let subNodeCount: number = currentBlock.subNodes.length;
         let containsSubnodes: boolean = subNodeCount > 0;
         if (currentBranchingArrow === null || this.mergePoint === null || !containsSubnodes) return;
 
         let greaterBlockHeight: number = Math.max(this.thenBlockImportantSize.y, this.elseBlockImportantSize.y);
         let currentBlockSize: Utils.Vec2 = isThen ? this.thenBlockImportantSize : this.elseBlockImportantSize;
-        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * Flowgorithm.mergePointSizeMultiplier;
+        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * BaseNode.mergePointSizeMultiplier;
 
         let mergingArrowDownwardLength: number = greaterBlockHeight - currentBlockSize.y + Flowgorithm.defaultArrowLength;
         let mergePointXOffset: number = currentBranchingArrow.GetSegmentLengths()[0];
@@ -187,5 +190,24 @@ export class ConditionalStatement extends Flowgorithm.ProgramNode {
         );
         if (isThen) this.thenMergeArrow = mergingArrow;
         else this.elseMergeArrow = mergingArrow;
+    }
+
+    public override GetSideTotalWidth(checkedSide: BaseNode.SizeCountType): number {
+        if (checkedSide === BaseNode.SizeCountType.CountAll)
+            return this.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.Entirety).x +
+                   this.GetSize(BaseNode.SizeCountType.OnlyRight, BaseNode.SubnodeCountType.Entirety).x;
+
+        let headWidth: number = this.GetSize(checkedSide, BaseNode.SubnodeCountType.HeadOnly).x,
+            minimumBranchWidth: number = Flowgorithm.defaultArrowLength + Utils.GetFromRootPX("--default-connector-size") / 2;
+        let totalWidth: number = headWidth;
+
+        let selectedBranchNode: BaseNode.ProgramNode = checkedSide === BaseNode.SizeCountType.OnlyLeft ? this.elseNode : this.thenNode;
+        let selectedBranchWidth: number = Math.max(
+            selectedBranchNode.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.Entirety).x,
+            minimumBranchWidth
+        );
+        totalWidth += selectedBranchWidth;
+
+        return totalWidth;
     }
 }

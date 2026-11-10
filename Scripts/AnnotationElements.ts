@@ -1,6 +1,7 @@
 import { Expression } from "./Expression.js"
 import * as ShapeRenderer from "./ShapeRenderer.js"
 import * as Flowgorithm from "./ProgramRepresentation.js"
+import * as BaseNode from "./ProgramNode.js"
 import * as Utils from "./Utils.js"
 
 type OptionalDiv = HTMLDivElement | null;
@@ -8,7 +9,7 @@ type OptionalDiv = HTMLDivElement | null;
 const octagonShadowYOffset: number = 5, breakpointVericalPadding: number = 30, labelXOffset: number = 0.3;
 const conditionalBreakpointSegmentPortion: number = 0.5;
 
-export class Breakpoint extends Flowgorithm.ProgramNode {
+export class Breakpoint extends BaseNode.ProgramNode {
     public isConditional: boolean = false;
     public conditionalExpression: Expression = new Expression();
     private expressionLabel: OptionalDiv = null;
@@ -48,8 +49,8 @@ export class Breakpoint extends Flowgorithm.ProgramNode {
         return labelContents;
     }
     
-    public override CalculateSizeCache(): Flowgorithm.CachedSize {
-        let resultCache: Flowgorithm.CachedSize = new Flowgorithm.CachedSize();
+    public override CalculateSizeCache(): BaseNode.CachedSize {
+        let resultCache: BaseNode.CachedSize = new BaseNode.CachedSize();
         let octagonShapeSize: Utils.Vec2 = this.GetOctagonShapeSize();
         let entireShapeHeight: number = octagonShapeSize.y + breakpointVericalPadding;
         resultCache.leftPortion.y = resultCache.rightPortion.y = entireShapeHeight;
@@ -76,7 +77,7 @@ export class Breakpoint extends Flowgorithm.ProgramNode {
     }
 }
 
-export class InlineComment extends Flowgorithm.ProgramNode {
+export class InlineComment extends BaseNode.ProgramNode {
     public commentContent: string = "";
     private connectingDots: OptionalDiv = null; 
 
@@ -118,8 +119,8 @@ export class InlineComment extends Flowgorithm.ProgramNode {
         return connectingDotsWidth;
     }
 
-    public override CalculateSizeCache(): Flowgorithm.CachedSize {
-        let sizeCache: Flowgorithm.CachedSize = new Flowgorithm.CachedSize();
+    public override CalculateSizeCache(): BaseNode.CachedSize {
+        let sizeCache: BaseNode.CachedSize = new BaseNode.CachedSize();
         let connectingDotsWidth: number = this.GetConnectingDotsWidth(),
             dotGapSize: number = Utils.GetFromRootPX("--default-comment-dot-gap");
 
@@ -129,5 +130,11 @@ export class InlineComment extends Flowgorithm.ProgramNode {
         sizeCache.rightPortion.x = connectingDotsWidth + commentShapeSize.x + dotsXOffset;
 
         return sizeCache;
+    }
+
+    public override GetSideTotalWidth(checkedSide: BaseNode.SizeCountType): number {
+        if (checkedSide === BaseNode.SizeCountType.OnlyLeft) return 0;
+        let commentSize: Utils.Vec2 = this.GetSize(checkedSide, BaseNode.SubnodeCountType.CountAll);
+        return commentSize.x;
     }
 }

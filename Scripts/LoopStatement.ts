@@ -3,6 +3,7 @@ import { Expression } from "./Expression.js"
 import * as Flowgorithm from "./ProgramRepresentation.js"
 import * as ShapeRenderer from "./ShapeRenderer.js"
 import { ArrowPath } from "./ArrowRendering.js"
+import * as BaseNode from "./ProgramNode.js"
 
 type ArrowPathOpt = ArrowPath | null;
 type OptionalDiv = HTMLDivElement | null;
@@ -10,10 +11,10 @@ type MergeArrowData = [number[], number[]];
 
 const cycleDoneYOffset: number = 0.5, doWhileDoneYOffset: number = 1.5;
 
-class CycleStatement extends Flowgorithm.ProgramNode {
+class CycleStatement extends BaseNode.ProgramNode {
     protected branchArrow: ArrowPathOpt = null; protected mergeArrow: ArrowPathOpt = null; private doneArrow: ArrowPathOpt = null;
     protected nextLabel: OptionalDiv = null; protected doneLabel: OptionalDiv = null;
-    public subnodeParent: Flowgorithm.ProgramNode = new Flowgorithm.ProgramNode();
+    public subnodeParent: BaseNode.ProgramNode = new BaseNode.ProgramNode();
 
     public MoveToSubnodeParent() {
         this.subnodeParent.subNodes = this.subNodes.slice();
@@ -32,7 +33,7 @@ class CycleStatement extends Flowgorithm.ProgramNode {
     }
 
     private RenderBranch(position: Utils.Vec2) {
-        let headSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.HeadOnly);
+        let headSize: Utils.Vec2 = this.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.HeadOnly);
         let horizontalSegmentLength: number = this.GetHorizontalSegmentLength();
 
         let arrowYOffset: number = 0;
@@ -58,12 +59,12 @@ class CycleStatement extends Flowgorithm.ProgramNode {
     private RenderMergingArrow() {
         if (this.branchArrow === null || this.subnodeParent.subNodes.length === 0) return;
 
-        let lastNode: Flowgorithm.ProgramNode = this.subnodeParent.subNodes[this.subnodeParent.subNodes.length - 1];
+        let lastNode: BaseNode.ProgramNode = this.subnodeParent.subNodes[this.subnodeParent.subNodes.length - 1];
         let isExtendingMergeArrow: boolean = lastNode.DrawsAfterArrow();
         let extensionLength: number = 0;
         if (isExtendingMergeArrow) {
-            let lastNodeSubnodeSize: Utils.Vec2 = lastNode.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.SubnodeOnly);
-            extensionLength = lastNodeSubnodeSize.y;
+            /*let lastNodeSubnodeSize: Utils.Vec2 = lastNode.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.SubnodeOnly);
+            extensionLength = lastNodeSubnodeSize.y;*/
         }
 
         let mergeArrowData: MergeArrowData = this.GetMergeArrowData();
@@ -85,8 +86,8 @@ class CycleStatement extends Flowgorithm.ProgramNode {
         let drawDoneArrow: boolean = !isLastNode || this.parentNode instanceof Flowgorithm.FunctionSignature;
         if (!drawDoneArrow) return;
 
-        let subnodeSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.SubnodeOnly),
-            headSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.HeadOnly);
+        let subnodeSize: Utils.Vec2 = this.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.SubnodeOnly),
+            headSize: Utils.Vec2 = this.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.HeadOnly);
         let arrowEndingSize: number = ArrowPath.GetArrowEndSize();
         let doneArrowPos: Utils.Vec2 = position.Plus(0, headSize.y);
         let arrowLength: number = subnodeSize.y + headSize.y + arrowEndingSize / 2;
@@ -100,7 +101,7 @@ class CycleStatement extends Flowgorithm.ProgramNode {
     private GetMergeArrowData(): MergeArrowData {
         let arrowEndSize: number = ArrowPath.GetArrowEndSize();
         let mergeHorizontalLength: number = this.GetHorizontalSegmentLength() - arrowEndSize;
-        let subNodeSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.SubnodeOnly);
+        let subNodeSize: Utils.Vec2 = this.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.SubnodeOnly);
         let shadowYOffset: number = this.linkedShape.shadowShape === null ? 0 :
             Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--additional-offset-y"));
         let mergeVericalLength: number = subNodeSize.y - shadowYOffset / 2;
@@ -114,8 +115,8 @@ class CycleStatement extends Flowgorithm.ProgramNode {
     }
 
     private GetHorizontalSegmentLength(): number {
-        let subNodeSize: Utils.Vec2 = this.subnodeParent.GetSize(Flowgorithm.SizeCountType.OnlyLeft, Flowgorithm.SubnodeCountType.CountAll);
-        let headSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.OnlyRight, Flowgorithm.SubnodeCountType.HeadOnly);
+        let subNodeSize: Utils.Vec2 = this.subnodeParent.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.CountAll);
+        let headSize: Utils.Vec2 = this.GetSize(BaseNode.SizeCountType.OnlyRight, BaseNode.SubnodeCountType.HeadOnly);
         let actualSubnodesWidth: number = Math.max(subNodeSize.x, Flowgorithm.defaultArrowLength);
         let horizontalSegmentLength: number = headSize.x + actualSubnodesWidth;
 
@@ -123,7 +124,7 @@ class CycleStatement extends Flowgorithm.ProgramNode {
     }
 
     private RenderLabels(position: Utils.Vec2) {
-        let headSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.HeadOnly);
+        let headSize: Utils.Vec2 = this.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.HeadOnly);
         let arrowEndSize: number = ArrowPath.GetArrowEndSize();
         let nextLabelPos: Utils.Vec2 = position.Plus(headSize.x / 2, headSize.y / 2), 
             doneLabelPos: Utils.Vec2 = position.Plus(-arrowEndSize / 2, headSize.y);
@@ -142,14 +143,34 @@ class CycleStatement extends Flowgorithm.ProgramNode {
         this.doneLabel = doneLabelInfo.CreateLabel();
     }
 
-    public override SetSubnodeCache(currentSizeCache: Flowgorithm.CachedSize) {
-        let totalSubnodeSize: Utils.Vec2 = this.subnodeParent.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.CountAll);
+    public override SetSubnodeCache(currentSizeCache: BaseNode.CachedSize) {
+        let totalSubnodeSize: Utils.Vec2 = this.subnodeParent.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.CountAll);
         let arrowConnectorSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size");
         let actualSubnodeWidth: number = Math.max(Flowgorithm.defaultArrowLength + arrowConnectorSize / 2, totalSubnodeSize.x);
 
         currentSizeCache.subRightPortion.x = currentSizeCache.rightPortion.x + actualSubnodeWidth;
         currentSizeCache.subRightPortion.y += totalSubnodeSize.y + Flowgorithm.defaultArrowLength;
     }
+
+    public override GetSideTotalWidth(checkedSide: BaseNode.SizeCountType): number {
+        if (checkedSide === BaseNode.SizeCountType.CountAll)
+            return this.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.Entirety).x +
+                   this.GetSize(BaseNode.SizeCountType.OnlyRight, BaseNode.SubnodeCountType.Entirety).x;
+
+        let headWidth: number = this.GetSize(checkedSide, BaseNode.SubnodeCountType.HeadOnly).x,
+            minimumBranchWidth: number = Flowgorithm.defaultArrowLength + Utils.GetFromRootPX("--default-connector-size") / 2;
+        let totalWidth: number = headWidth;
+
+        if (checkedSide === BaseNode.SizeCountType.OnlyRight) {
+            let branchWidth: number = Math.max(
+                this.subnodeParent.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.Entirety).x,
+                minimumBranchWidth
+            );
+            totalWidth += branchWidth;
+        }
+
+        return totalWidth;
+    } 
 
     protected IsForLoop(): boolean { return false; }
 }
@@ -228,8 +249,8 @@ export class ConditionalCycle extends CycleStatement {
 
     private RenderDoWhileMergePoint() {
         this.mergePoint = Utils.CreateElement("div", "ShapeArrowConnector", ShapeRenderer.currentPlane) as HTMLDivElement;
-        Utils.SetProperty(this.mergePoint, "--connector-size-multiplier", Flowgorithm.mergePointSizeMultiplier.toString());
-        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * Flowgorithm.mergePointSizeMultiplier;
+        Utils.SetProperty(this.mergePoint, "--connector-size-multiplier", BaseNode.mergePointSizeMultiplier.toString());
+        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * BaseNode.mergePointSizeMultiplier;
 
         this.currentPosition.y += mergePointSize / 2;
         ShapeRenderer.SetShapePosition(this.mergePoint, this.currentPosition);
@@ -242,14 +263,14 @@ export class ConditionalCycle extends CycleStatement {
     private RenderDoWhileBody() {
         if (this.mergePoint === null) return;
 
-        let subnodeSize: Utils.Vec2 = this.subnodeParent.GetSize(Flowgorithm.SizeCountType.OnlyLeft, Flowgorithm.SubnodeCountType.CountAll),
-            headSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.HeadOnly);
-        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * Flowgorithm.mergePointSizeMultiplier;
+        let subnodeSize: Utils.Vec2 = this.subnodeParent.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.CountAll),
+            headSize: Utils.Vec2 = this.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.HeadOnly);
+        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * BaseNode.mergePointSizeMultiplier;
         
         let mergeSegmentLength: number = Math.max(subnodeSize.x, Flowgorithm.defaultArrowLength),
             firstSegmentLength: number = mergeSegmentLength + headSize.x / 2,
             verticalSegmentLength: number = Flowgorithm.defaultArrowLength + mergePointSize / 2,
-            connectorSize = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * Flowgorithm.mergePointSizeMultiplier;
+            connectorSize = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * BaseNode.mergePointSizeMultiplier;
 
         let containsSubnodes: boolean = this.subnodeParent.subNodes.length > 0;
         let mergeLengthArr: number[] = containsSubnodes ? [] : [mergeSegmentLength],
@@ -273,13 +294,13 @@ export class ConditionalCycle extends CycleStatement {
         let containsSubnodes: boolean = this.subnodeParent.subNodes.length > 0;
         if (!containsSubnodes) return;
 
-        let lastSubnode: Flowgorithm.ProgramNode = this.subnodeParent.subNodes[this.subnodeParent.subNodes.length - 1];
+        let lastSubnode: BaseNode.ProgramNode = this.subnodeParent.subNodes[this.subnodeParent.subNodes.length - 1];
         let willDrawAfterArrow: boolean = lastSubnode.DrawsAfterArrow();
         let mergeArrowPos: Utils.Vec2 = this.currentPosition.Copy();
         let mergeArrowVerticalLength: number = Flowgorithm.defaultArrowLength;
 
         if (willDrawAfterArrow) {
-            let lastSubnodeSize: Utils.Vec2 = lastSubnode.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.SubnodeOnly);
+            let lastSubnodeSize: Utils.Vec2 = lastSubnode.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.SubnodeOnly);
             mergeArrowPos.y -= lastSubnodeSize.y;
             mergeArrowVerticalLength += lastSubnodeSize.y;
         }
@@ -294,7 +315,7 @@ export class ConditionalCycle extends CycleStatement {
     private RenderDoWhileArrowToMergePoint() {
         if (this.mergePoint === null) return;
         
-        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * Flowgorithm.mergePointSizeMultiplier;
+        let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * BaseNode.mergePointSizeMultiplier;
         let arrowLength: number = this.headPosition.y - this.renderPosition.y - mergePointSize;
         this.arrowToPoint = new ArrowPath(
             this.headPosition, [arrowLength], [Flowgorithm.upwardPointingRotation]
@@ -305,7 +326,7 @@ export class ConditionalCycle extends CycleStatement {
         let arrowEndPos: number = ArrowPath.GetArrowEndSize();
         let nextLabelPos: Utils.Vec2 = this.headPosition.Minus(arrowEndPos / 2, 0);
 
-        let headSize: Utils.Vec2 = this.GetSize(Flowgorithm.SizeCountType.CountAll, Flowgorithm.SubnodeCountType.HeadOnly);
+        let headSize: Utils.Vec2 = this.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.HeadOnly);
         let shadowYOffset: number = this.linkedShape.shadowShape === null ? 0 :
             Utils.GetNumericPixels(Utils.GetProperty(this.linkedShape.shadowShape, "--additional-offset-y"));
         let doneLabelPos: Utils.Vec2 = nextLabelPos.Plus(0, headSize.y + shadowYOffset);

@@ -3,164 +3,11 @@ import { Expression } from "./Expression.js"
 import * as Identifier from "./Identifier.js"
 import * as ShapeRenderer from "./ShapeRenderer.js"
 import { ArrowPath } from "./ArrowRendering.js"
+import * as BaseNode from "./ProgramNode.js"
 
 export function GetEmptyContent(): ShapeRenderer.ShapeContent { return new ShapeRenderer.ShapeContent(); }
 
-export enum SizeCountType {
-    CountAll, OnlyLeft, OnlyRight
-}
-
-export enum SubnodeCountType {
-    HeadOnly, SubnodeOnly, CountAll
-}
-
-type ProgramNodeOpt = ProgramNode | null;
-
-export const mergePointSizeMultiplier: number = 1.65;
-
-export class CachedSize {
-    public leftPortion: Utils.Vec2 = Utils.Vec2.Zero(); public rightPortion: Utils.Vec2 = Utils.Vec2.Zero();
-    public subLeftPortion: Utils.Vec2 = Utils.Vec2.Zero(); public subRightPortion: Utils.Vec2 = Utils.Vec2.Zero();
-    public isCached: boolean = false;
-
-    public GetByCountType(countType: SizeCountType = SizeCountType.CountAll, countSubnodesMode: SubnodeCountType = SubnodeCountType.HeadOnly): Utils.Vec2 {
-        let usedLeftPortion: Utils.Vec2 = this.leftPortion;
-        let usedRightPortion: Utils.Vec2 = this.rightPortion;
-        
-        switch (countSubnodesMode) {
-            case SubnodeCountType.SubnodeOnly: usedLeftPortion = this.subLeftPortion; usedRightPortion = this.subRightPortion; break;
-            case SubnodeCountType.CountAll:
-                usedLeftPortion = new Utils.Vec2(
-                    Math.max(this.leftPortion.x, this.subLeftPortion.x), this.leftPortion.y + this.subLeftPortion.y
-                );
-                usedRightPortion = new Utils.Vec2(
-                    Math.max(this.rightPortion.x, this.subRightPortion.x), this.rightPortion.y + this.subRightPortion.y
-                )
-                break;
-        }
-
-        switch (countType) {
-            case SizeCountType.CountAll: return new Utils.Vec2(
-                usedLeftPortion.x + usedRightPortion.x,
-                Math.max(usedLeftPortion.y, usedRightPortion.y)
-            );
-            case SizeCountType.OnlyLeft: return usedLeftPortion;
-            case SizeCountType.OnlyRight: return usedRightPortion;
-        }
-    }
-
-    public ApplyToSub(x: number, y: number) {
-        this.subLeftPortion = this.subLeftPortion.Plus(x, y); this.subRightPortion = this.subRightPortion.Plus(x, y);
-    }
-}
-
-export class ProgramNode {
-    public subNodes: ProgramNode[] = [];
-    public subArrows: ArrowPath[] = [];
-    public parentNode: ProgramNodeOpt = null;
-    public linkedShape: ShapeRenderer.RenderedShape = new ShapeRenderer.RenderedShape();
-    protected sizeCache: CachedSize = new CachedSize();
-
-    public Clear() { this.subNodes = []; if (this.linkedShape !== null) this.linkedShape.Delete(); }
-    public GetContent(): ShapeRenderer.ShapeContent { return GetEmptyContent(); }
-    public GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Unknown; }
-    public DrawsAfterArrow(): boolean { return false; }
-    public BeforeArrowHasEnding(): boolean { return true; }
-    public Render(position: Utils.Vec2) {}
-
-    public Delete() {
-        this.linkedShape.Delete();
-        for (let childNode of this.subNodes) childNode.Delete();
-        for (let currentArrow of this.subArrows) currentArrow.Delete();
-    }
-
-    protected AddShape(position: Utils.Vec2) {
-        this.linkedShape = ShapeRenderer.AddShape(this.GetType(), position, this.GetContent());
-    }
-
-    public GetSize(countType: SizeCountType = SizeCountType.CountAll, countSubnodesMode: SubnodeCountType = SubnodeCountType.HeadOnly): Utils.Vec2 {
-        if (!this.sizeCache.isCached) {
-            this.sizeCache = this.CalculateSizeCache();
-            this.sizeCache.isCached = true;
-            this.SetSubnodeCache(this.sizeCache);
-            //console.log(`TEXT: ${this.GetContent().ToString()}, WIDTH: ${this.sizeCache.rightPortion.x}`);
-        }
-
-        return this.sizeCache.GetByCountType(countType, countSubnodesMode);
-    }
-
-    public RenderSubnodes(position: Utils.Vec2, renderFirstArrow: boolean = true): Utils.Vec2 {
-        for (let i = 0; i < this.subNodes.length; i++) {
-            let isFirstNode: boolean = i === 0;
-            if (!isFirstNode || renderFirstArrow) this.HandleArrowRender(position, i);
-            let currentNode: ProgramNode = this.subNodes[i];
-
-            currentNode.Render(position);
-            let currentNodeSize: Utils.Vec2 = currentNode.GetSize(SizeCountType.CountAll, SubnodeCountType.CountAll);
-            position.y += currentNodeSize.y;
-        }
-
-        return position.Copy();
-    }
-
-    private HandleArrowRender(position: Utils.Vec2, nodeIndex: number) {
-        let previousNode: ProgramNodeOpt = this.GetSubnode(nodeIndex - 1), currentNode: ProgramNodeOpt = this.GetSubnode(nodeIndex);
-        let drawsAfterArrow: boolean = previousNode === null ? false : previousNode.DrawsAfterArrow();
-        if (drawsAfterArrow) { position.y += defaultArrowLength; return; }
-
-        let renderArrowEnding: boolean = currentNode === null ? true : currentNode.BeforeArrowHasEnding();
-        let arrowLength: number = defaultArrowLength;        
-        let renderedArrow: ArrowPath = this.RenderDefaultArrow(position, arrowLength, renderArrowEnding);
-        this.subArrows.push(renderedArrow);
-    }
-
-    public RenderDefaultArrow(position: Utils.Vec2, arrowLength: number = defaultArrowLength, drawEnding: boolean = true): ArrowPath {
-        let renderedArrow: ArrowPath = new ArrowPath(position, [arrowLength], [defaultArrowAngle], drawEnding);
-        let arrowTotalSize: Utils.Vec2 = renderedArrow.GetArrowSize();
-        position.y += arrowTotalSize.y;
-        return renderedArrow;
-    }
-
-    private GetSubnode(nodeIndex: number): ProgramNodeOpt {
-        let isIndexInvalid: boolean = nodeIndex < 0 || nodeIndex >= this.subNodes.length;
-        if (isIndexInvalid) return null;
-        return this.subNodes[nodeIndex];
-    }
-
-    public CalculateSizeCache(): CachedSize {
-        let sizeCache: CachedSize = new CachedSize();
-       
-        let headSize: Utils.Vec2 = this.linkedShape.GetSize(this.GetContent(), this.GetType());
-        let headPortionHalfSize: Utils.Vec2 = new Utils.Vec2(headSize.x / 2, headSize.y);
-        sizeCache.leftPortion = headPortionHalfSize; sizeCache.rightPortion = headPortionHalfSize;
-        sizeCache.subLeftPortion = Utils.Vec2.Zero(); sizeCache.subRightPortion = Utils.Vec2.Zero();
-
-        return sizeCache;
-    }
-
-    public SetSubnodeCache(currentSizeCache: CachedSize) {
-        for (let currentSubnode of this.subNodes) {
-            let totalLeftSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyLeft, SubnodeCountType.CountAll),
-                totalRightSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyRight, SubnodeCountType.CountAll);
-            let subnodeHeight: number = Math.max(totalLeftSize.y, totalRightSize.y);
-
-            currentSizeCache.subLeftPortion.x = Math.max(currentSizeCache.subLeftPortion.x, totalLeftSize.x);
-            currentSizeCache.subRightPortion.x = Math.max(currentSizeCache.subRightPortion.x, totalRightSize.x);
-            currentSizeCache.ApplyToSub(0, subnodeHeight + defaultArrowLength);
-        }
-    }
-
-    public WillSpecialArrowsHaveArrowEnd(checkedIndex: number = 0): boolean {
-        let renderBranchArrowEnd: boolean = true;
-        if (this.subNodes.length > checkedIndex) {
-            let firstSubnode: ProgramNode = this.subNodes[checkedIndex];
-            renderBranchArrowEnd = firstSubnode.BeforeArrowHasEnding();
-        }
-
-        return renderBranchArrowEnd;
-    }
-}
-
+type ProgramNodeOpt = BaseNode.ProgramNode | null;
 enum VariableType { Void, Integer, Real, String, Boolean }
 export const leftPointingRotation: number = 180, rightPointingRotation: number = 0, upwardPointingRotation: number = 270;
 
@@ -189,7 +36,7 @@ export class VariableDeclaration {
     }
 }
 
-export class Program extends ProgramNode {
+export class Program extends BaseNode.ProgramNode {
     public static Create(): Program {
         let createdProgram: Program = new Program();
         createdProgram.AddMain();
@@ -202,19 +49,24 @@ export class Program extends ProgramNode {
         let renderedFunctionCount: number = 0;
 
         for (let i = 0; i < this.subNodes.length; i++) {
-            let currentSubnode: ProgramNode = this.subNodes[i];
+            let currentSubnode: BaseNode.ProgramNode = this.subNodes[i];
             let isFunction: boolean = currentSubnode instanceof FunctionSignature;
             if (!isFunction) continue;
 
             let currentFunction: FunctionSignature = currentSubnode as FunctionSignature;
-            let functionLeftSize: Utils.Vec2 = currentFunction.GetSize(SizeCountType.OnlyLeft, SubnodeCountType.CountAll);
-            if (renderedFunctionCount > 0) currentPosition.x += functionLeftSize.x;
+            if (renderedFunctionCount > 0) {
+                let functionLeftWidth: number = currentFunction.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.Entirety).x;
+                currentPosition.x += functionLeftWidth;
+            }
             let previousPosition: Utils.Vec2 = currentPosition.Copy();
 
             currentFunction.Render(currentPosition);
             currentPosition = previousPosition;
-            let functionRightSize: Utils.Vec2 = currentFunction.GetSize(SizeCountType.OnlyRight, SubnodeCountType.CountAll);
-            currentPosition.x += functionRightSize.x;
+            let isLastFunction: boolean = i === this.subNodes.length - 1;
+            if (!isLastFunction) {
+                let functionRightWidth: number = currentFunction.GetSize(BaseNode.SizeCountType.OnlyRight, BaseNode.SubnodeCountType.Entirety).x;
+                currentPosition.x += functionRightWidth;
+            }
             renderedFunctionCount++;
         }
     }
@@ -241,7 +93,7 @@ export class Program extends ProgramNode {
 export const defaultArrowLength: number = 60;
 export const defaultArrowAngle: number = 90;
 
-export class FunctionSignature extends ProgramNode {
+export class FunctionSignature extends BaseNode.ProgramNode {
     public name: string = "";
     public parameters: VariableDeclaration[] = [];
     public returnType: VariableType = VariableType.Void;
@@ -285,22 +137,12 @@ export class FunctionSignature extends ProgramNode {
         return returnShapeContent;
     }
 
-    public override CalculateSizeCache(): CachedSize {
-        let sizeCache: CachedSize = super.CalculateSizeCache();
+    public override CalculateSizeCache(): BaseNode.CachedSize {
+        let sizeCache: BaseNode.CachedSize = super.CalculateSizeCache();
         let endShapeSize: Utils.Vec2 = this.functionEndShape.GetSize(this.GetEndShapeContent(), ShapeRenderer.ShapeType.FunctionEnd);
         sizeCache.ApplyToSub(0, defaultArrowLength + endShapeSize.y);
-        sizeCache.subLeftPortion.x = Math.max(sizeCache.subLeftPortion.x, endShapeSize.x / 2);
-        sizeCache.subRightPortion.x = Math.max(sizeCache.subRightPortion.x, endShapeSize.x / 2);
-
-        for (let currentSubnode of this.subNodes) {
-            let leftAllSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyLeft, SubnodeCountType.CountAll),
-                rightAllSize: Utils.Vec2 = currentSubnode.GetSize(SizeCountType.OnlyRight, SubnodeCountType.CountAll);
-            
-            sizeCache.subLeftPortion.x = Math.max(sizeCache.subLeftPortion.x, leftAllSize.x);
-            sizeCache.subRightPortion.x = Math.max(sizeCache.subRightPortion.x, rightAllSize.x);
-            let currentNodeHeight: number = Math.max(leftAllSize.y, rightAllSize.y);
-            sizeCache.ApplyToSub(0, defaultArrowLength + currentNodeHeight);
-        }
+        sizeCache.subLeftPortion.x += Math.max(sizeCache.subLeftPortion.x, endShapeSize.x / 2);
+        sizeCache.subRightPortion.x += Math.max(sizeCache.subRightPortion.x, endShapeSize.x / 2);
 
         return sizeCache;
     }
@@ -338,9 +180,20 @@ export class FunctionSignature extends ProgramNode {
     }
 
     public override Delete() { super.Delete(); this.functionEndShape.Delete(); }
+
+    public GetSideTotalWidth(checkedSide: BaseNode.SizeCountType): number {
+        if (checkedSide === BaseNode.SizeCountType.CountAll)
+            return this.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.Entirety).x +
+                   this.GetSize(BaseNode.SizeCountType.OnlyRight, BaseNode.SubnodeCountType.Entirety).x;
+
+        let totalWidth: number = super.GetSideTotalWidth(checkedSide);
+        let endShapeWidth: number = this.functionEndShape.GetSize(this.GetEndShapeContent(), ShapeRenderer.ShapeType.FunctionEnd).x;
+        totalWidth = Math.max(totalWidth, endShapeWidth / 2);
+        return totalWidth;
+    }
 }
 
-export class DeclarationInstruction extends ProgramNode {
+export class DeclarationInstruction extends BaseNode.ProgramNode {
     public declaredVariables: VariableDeclaration[] = [];
 
     public override GetContent(): ShapeRenderer.ShapeContent {
@@ -373,7 +226,7 @@ export class DeclarationInstruction extends ProgramNode {
     public override GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.VariableDeclaration; }
 }
 
-export class AssignmentInstruction extends ProgramNode {
+export class AssignmentInstruction extends BaseNode.ProgramNode {
     public lvalue: Expression = new Expression();
     public rvalue: Expression = new Expression();
     public isValidLValue: boolean = true;
@@ -394,7 +247,7 @@ export class AssignmentInstruction extends ProgramNode {
     }
 }
 
-export class IOInstruction extends ProgramNode {
+export class IOInstruction extends BaseNode.ProgramNode {
     public expression: Expression = new Expression();
     public isInput: boolean = false;
     public isValidLValue: boolean = true;
@@ -415,7 +268,7 @@ export class IOInstruction extends ProgramNode {
     public override Render(position: Utils.Vec2) { this.AddShape(position); }
 }
 
-export class CallInstruction extends ProgramNode {
+export class CallInstruction extends BaseNode.ProgramNode {
     public callExpression: Expression = new Expression();
     public isValidCall: boolean = false;
 

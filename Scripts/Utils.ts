@@ -186,7 +186,6 @@ export class MouseState {
 
         document.addEventListener("mousedown", (event: MouseEvent) => { this.OnMouseDown(event); });
         document.addEventListener("mouseup", (event: MouseEvent) => { this.OnMouseUp(event); });
-        document.addEventListener("contextmenu", (event: Event) => { event.preventDefault(); })
     }
 
     public IsHeld(checkedMouseButton: MouseButton = MouseButton.Any): boolean {

@@ -5,6 +5,7 @@ import * as Identifier from "./Identifier.js"
 import { ConditionalStatement } from "./ConditionalStatement.js"
 import { ForLoop, ConditionalCycle } from "./LoopStatement.js"
 import { Breakpoint, InlineComment } from "./AnnotationElements.js"
+import * as BaseNode from "./ProgramNode.js"
 
 enum ProgramTag {
     Unknown, Function, Declare, Assign, Input, Output, If, Call, For, While, Do, Comment, Breakpoint
@@ -21,7 +22,7 @@ export function Setup(program: Flowgorithm.Program, scriptContents: string) {
     program.AddMain();
 }
 
-function ParseElement(currentElement: Element, parentNode: Flowgorithm.ProgramNode) {
+function ParseElement(currentElement: Element, parentNode: BaseNode.ProgramNode) {
     let currentTagName: string = currentElement.tagName;
     let skipElement: boolean = currentTagName.length === 0;
     if (skipElement) return;
@@ -38,17 +39,17 @@ function ParseElement(currentElement: Element, parentNode: Flowgorithm.ProgramNo
     }
 }
 
-function ParseSpecificTag(currentElement: Element, currentTag: ProgramTag, parentNode: Flowgorithm.ProgramNode) {
+function ParseSpecificTag(currentElement: Element, currentTag: ProgramTag, parentNode: BaseNode.ProgramNode) {
     let hasParsingFunction: boolean = tagParsingFunctionMap.has(currentTag);
     if (!hasParsingFunction) return;
 
-    let parsingFunction: (currentElement: Element) => Flowgorithm.ProgramNode = tagParsingFunctionMap.get(currentTag)!;
-    let tagAsInstruction: Flowgorithm.ProgramNode = parsingFunction.call(undefined, currentElement);
+    let parsingFunction: (currentElement: Element) => BaseNode.ProgramNode = tagParsingFunctionMap.get(currentTag)!;
+    let tagAsInstruction: BaseNode.ProgramNode = parsingFunction.call(undefined, currentElement);
     tagAsInstruction.parentNode = parentNode;
     parentNode.subNodes.push(tagAsInstruction);
 }
 
-const tagParsingFunctionMap: Map<ProgramTag, (currentElement: Element) => Flowgorithm.ProgramNode> = new Map([
+const tagParsingFunctionMap: Map<ProgramTag, (currentElement: Element) => BaseNode.ProgramNode> = new Map([
     [ProgramTag.Function, ParseFunctionTag],
     [ProgramTag.Declare, ParseDeclarationTag],
     [ProgramTag.Assign, ParseAssignmentTag],
@@ -63,7 +64,7 @@ const tagParsingFunctionMap: Map<ProgramTag, (currentElement: Element) => Flowgo
     [ProgramTag.Breakpoint, ParseBreakpointTag]
 ]);
 
-function ParseFunctionTag(currentElement: Element): Flowgorithm.ProgramNode {
+function ParseFunctionTag(currentElement: Element): BaseNode.ProgramNode {
     let functionSignature: Flowgorithm.FunctionSignature = new Flowgorithm.FunctionSignature();
 
     for (let attribute of currentElement.attributes) {
@@ -109,7 +110,7 @@ function ParseParametersTag(currentElement: Element, ownerFunction: Flowgorithm.
     }
 }
 
-function ParseDeclarationTag(currentElement: Element): Flowgorithm.ProgramNode {
+function ParseDeclarationTag(currentElement: Element): BaseNode.ProgramNode {
     let declarationTag: Flowgorithm.DeclarationInstruction = new Flowgorithm.DeclarationInstruction();
     let declarationInfo: Flowgorithm.VariableDeclaration = new Flowgorithm.VariableDeclaration();
     let variableNames: string[] = [];
@@ -137,7 +138,7 @@ function ParseDeclarationTag(currentElement: Element): Flowgorithm.ProgramNode {
     return declarationTag;
 }
 
-function ParseAssignmentTag(currentElement: Element): Flowgorithm.ProgramNode {
+function ParseAssignmentTag(currentElement: Element): BaseNode.ProgramNode {
     let assignmentTag: Flowgorithm.AssignmentInstruction = new Flowgorithm.AssignmentInstruction();
     for (let attribute of currentElement.attributes) {
         switch (attribute.name) {
@@ -151,8 +152,8 @@ function ParseAssignmentTag(currentElement: Element): Flowgorithm.ProgramNode {
     return assignmentTag;
 }
 
-function ParseInputTag(currentElement: Element): Flowgorithm.ProgramNode { return ParseIOTag(currentElement, true); }
-function ParseOutputTag(currentElement: Element): Flowgorithm.ProgramNode { return ParseIOTag(currentElement, false); }
+function ParseInputTag(currentElement: Element): BaseNode.ProgramNode { return ParseIOTag(currentElement, true); }
+function ParseOutputTag(currentElement: Element): BaseNode.ProgramNode { return ParseIOTag(currentElement, false); }
 
 function ParseIOTag(currentElement: Element, isInput: boolean): Flowgorithm.IOInstruction {
     let resultInstruction: Flowgorithm.IOInstruction = new Flowgorithm.IOInstruction();
@@ -175,7 +176,7 @@ function ParseIOTag(currentElement: Element, isInput: boolean): Flowgorithm.IOIn
     return resultInstruction;
 }
 
-function ParseConditionalTag(currentElement: Element): Flowgorithm.ProgramNode {
+function ParseConditionalTag(currentElement: Element): BaseNode.ProgramNode {
     let conditionalTag: ConditionalStatement = new ConditionalStatement();
     let expressionValue: string | null = currentElement.getAttribute("expression");
     if (expressionValue !== null) conditionalTag.conditional = Expression.FromString(expressionValue);
@@ -188,7 +189,7 @@ function ParseConditionalTag(currentElement: Element): Flowgorithm.ProgramNode {
     return conditionalTag;
 }
 
-function ParseCallTag(currentElement: Element): Flowgorithm.ProgramNode {
+function ParseCallTag(currentElement: Element): BaseNode.ProgramNode {
     let callTag: Flowgorithm.CallInstruction = new Flowgorithm.CallInstruction();
     let expressionValue: string | null = currentElement.getAttribute("expression");
     if (expressionValue === null) expressionValue = "";
@@ -202,7 +203,7 @@ function ParseCallTag(currentElement: Element): Flowgorithm.ProgramNode {
     return callTag;
 }
 
-function ParseForTag(currentElement: Element): Flowgorithm.ProgramNode {
+function ParseForTag(currentElement: Element): BaseNode.ProgramNode {
     let forLoop: ForLoop = new ForLoop();
     for (let attribute of currentElement.attributes) {
         switch (attribute.name) {
@@ -222,10 +223,10 @@ function ParseForTag(currentElement: Element): Flowgorithm.ProgramNode {
     return forLoop;
 }
 
-function ParseWhileTag(currentElement: Element): Flowgorithm.ProgramNode { return ParseConditionalCycleTag(currentElement, false); }
-function ParseDoWhileTag(currentElement: Element): Flowgorithm.ProgramNode { return ParseConditionalCycleTag(currentElement, true); }
+function ParseWhileTag(currentElement: Element): BaseNode.ProgramNode { return ParseConditionalCycleTag(currentElement, false); }
+function ParseDoWhileTag(currentElement: Element): BaseNode.ProgramNode { return ParseConditionalCycleTag(currentElement, true); }
 
-function ParseConditionalCycleTag(currentElement: Element, isDoWhile: boolean): Flowgorithm.ProgramNode {
+function ParseConditionalCycleTag(currentElement: Element, isDoWhile: boolean): BaseNode.ProgramNode {
     let conditionalCycle: ConditionalCycle = new ConditionalCycle();
     conditionalCycle.isDoWhile = isDoWhile;
 
@@ -240,13 +241,13 @@ function ParseConditionalCycleTag(currentElement: Element, isDoWhile: boolean): 
     return conditionalCycle;
 }
 
-function ParseCommentTag(currentElement: Element): Flowgorithm.ProgramNode {
+function ParseCommentTag(currentElement: Element): BaseNode.ProgramNode {
     let commentNode: InlineComment = new InlineComment();
     for (let attribute of currentElement.attributes) { if (attribute.name === "text") commentNode.commentContent = attribute.value; }
     return commentNode;
 }
 
-function ParseBreakpointTag(currentElement: Element): Flowgorithm.ProgramNode {
+function ParseBreakpointTag(currentElement: Element): BaseNode.ProgramNode {
     let breakpointNode: Breakpoint = new Breakpoint();
     for (let attribute of currentElement.attributes) {
         switch (attribute.name) {
