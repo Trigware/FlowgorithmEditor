@@ -58,6 +58,7 @@ function OnFileSelected() {
     selectedFile.text().then((fileContent: string) => {
         Parser.Setup(openedProgram, fileContent);
         openedProgram.Render(Utils.Vec2.Zero());
+        UpdateAllShapes(true);
     });
 }
 
@@ -88,7 +89,7 @@ function UpdateAllShapes(forcedUpdate: boolean = false) {
 
     let hasCameraMoved: boolean = !currentCameraPos.Equals(previousCameraPos);
     let willUpdate: boolean = forcedUpdate || hasCameraMoved || hasZoomedSinceLastFrame;
-    
+
     previousCameraPos = currentCameraPos.Copy();
     hasZoomedSinceLastFrame = false;
     if (!willUpdate) return;

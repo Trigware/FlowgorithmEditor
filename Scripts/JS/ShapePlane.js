@@ -49,6 +49,7 @@ function OnFileSelected() {
     selectedFile.text().then((fileContent) => {
         Parser.Setup(openedProgram, fileContent);
         openedProgram.Render(Utils.Vec2.Zero());
+        UpdateAllShapes(true);
     });
 }
 const scrollingMultiplier = 3.5;
@@ -77,7 +78,6 @@ function UpdateAllShapes(forcedUpdate = false) {
     hasZoomedSinceLastFrame = false;
     if (!willUpdate)
         return;
-    console.log("UPDATE!");
     for (let i = 0; i < shapePlane.children.length; i++) {
         let currentShape = shapePlane.children[i];
         ShapeRenderer.UpdateShapeProperties(currentShape);

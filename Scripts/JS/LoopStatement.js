@@ -5,6 +5,7 @@ import * as ShapeRenderer from "./ShapeRenderer.js";
 import { ArrowPath } from "./ArrowRendering.js";
 import * as BaseNode from "./ProgramNode.js";
 const cycleDoneYOffset = 0.5, doWhileDoneYOffset = 1.5;
+const cycleDoneArrowAnnotationExtension = 1.5;
 class CycleStatement extends BaseNode.ProgramNode {
     branchArrow = null;
     mergeArrow = null;
@@ -48,8 +49,8 @@ class CycleStatement extends BaseNode.ProgramNode {
         let isExtendingMergeArrow = lastNode.DrawsAfterArrow();
         let extensionLength = 0;
         if (isExtendingMergeArrow) {
-            /*let lastNodeSubnodeSize: Utils.Vec2 = lastNode.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.SubnodeOnly);
-            extensionLength = lastNodeSubnodeSize.y;*/
+            let lastNodeSubnodeSize = lastNode.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.SubnodeOnly);
+            extensionLength = lastNodeSubnodeSize.y;
         }
         let mergeArrowData = this.GetMergeArrowData();
         let arrowEndPos = this.branchArrow.GetArrowEndPos(), mergeArrowPos = arrowEndPos.Minus(0, extensionLength);
@@ -68,6 +69,13 @@ class CycleStatement extends BaseNode.ProgramNode {
         let arrowEndingSize = ArrowPath.GetArrowEndSize();
         let doneArrowPos = position.Plus(0, headSize.y);
         let arrowLength = subnodeSize.y + headSize.y + arrowEndingSize / 2;
+        let hasNextNodeArrowEnd = true;
+        if (!isLastNode) {
+            let nextNode = this.parentNode.subNodes[nodeIndex + 1];
+            hasNextNodeArrowEnd = nextNode.BeforeArrowHasEnding();
+        }
+        if (!hasNextNodeArrowEnd)
+            arrowLength += cycleDoneArrowAnnotationExtension;
         let willRenderArrowEnd = this.parentNode.WillSpecialArrowsHaveArrowEnd(nodeIndex + 1);
         this.doneArrow = new ArrowPath(doneArrowPos, [arrowLength], [Flowgorithm.defaultArrowAngle], willRenderArrowEnd);
     }
@@ -85,7 +93,7 @@ class CycleStatement extends BaseNode.ProgramNode {
         return resultData;
     }
     GetHorizontalSegmentLength() {
-        let subNodeSize = this.subnodeParent.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.CountAll);
+        let subNodeSize = this.subnodeParent.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.Entirety);
         let headSize = this.GetSize(BaseNode.SizeCountType.OnlyRight, BaseNode.SubnodeCountType.HeadOnly);
         let actualSubnodesWidth = Math.max(subNodeSize.x, Flowgorithm.defaultArrowLength);
         let horizontalSegmentLength = headSize.x + actualSubnodesWidth;

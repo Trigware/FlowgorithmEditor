@@ -57,6 +57,7 @@ export class Breakpoint extends BaseNode.ProgramNode {
         return shapeSize;
     }
 }
+const inlineCommentArrowVerticalOffset = -0.4;
 export class InlineComment extends BaseNode.ProgramNode {
     commentContent = "";
     connectingDots = null;
@@ -92,6 +93,7 @@ export class InlineComment extends BaseNode.ProgramNode {
         let arrowLesserSize = Utils.GetFromRootPX("--arrow-lesser-size");
         let dotsXOffset = arrowLesserSize / 2 + dotGapSize + 1;
         sizeCache.rightPortion.x = connectingDotsWidth + commentShapeSize.x + dotsXOffset;
+        sizeCache.leftPortion.y = sizeCache.rightPortion.y = inlineCommentArrowVerticalOffset;
         return sizeCache;
     }
     GetSideTotalWidth(checkedSide) {
