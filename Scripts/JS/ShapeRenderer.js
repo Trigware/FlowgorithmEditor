@@ -255,12 +255,10 @@ function ConstructShape(shapeType, position, shapeContent, offsetShape, isShadow
     SetShapePosition(constructedShape, position);
     return constructedShape;
 }
-export const shapeOffsetMultiplier = new Utils.Vec2(0.5, 0.075);
 export function UpdateShapeProperties(currentShape) {
     let planeSize = new Utils.Vec2(currentPlane.clientWidth, currentPlane.clientHeight);
     let shapeWidth = currentShape.clientWidth;
-    let shapeOffset = planeSize.Times(shapeOffsetMultiplier.x, shapeOffsetMultiplier.y)
-        .Minus(shapeWidth / 2, currentShape.clientHeight / 2);
+    let shapeOffset = planeSize.Divide(2).Minus(shapeWidth / 2, currentShape.clientHeight / 2);
     Utils.SetProperty(currentShape, "--offset-x", shapeOffset.x.toString() + "px");
     Utils.SetProperty(currentShape, "--offset-y", shapeOffset.y.toString() + "px");
     let defaultWidth = Utils.GetNumericPixels(Utils.GetProperty(currentShape, "--default-shape-width"));

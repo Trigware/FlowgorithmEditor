@@ -4,7 +4,6 @@ import * as Parser from "./ProgramParser.js"
 import * as ShapeRenderer from "./ShapeRenderer.js"
 
 let prevMousePos: Utils.Vec2 = Utils.Vec2.Zero();
-let planeCameraPos: Utils.Vec2 = Utils.Vec2.Zero();
 let shapePlane: HTMLDivElement = document.getElementById("ShapePlane") as HTMLDivElement;
 let openFileInput: HTMLInputElement = document.getElementById("OpenFileInput") as HTMLInputElement;
 let headerSection: HTMLDivElement = document.getElementById("HeaderSection") as HTMLDivElement;
@@ -15,16 +14,14 @@ function OnStart() {
     openFileInput.addEventListener("change", OnFileSelected);
     document.addEventListener("wheel", OnWheelScrolled);
 
+    ResetCameraData();
     ShapeRenderer.SetPlane(shapePlane);
     openedProgram.Render(Utils.Vec2.Zero());
 
-    UpdateAllShapes(true);
     OnDraw();
 }
 
-let previousCameraPos: Utils.Vec2 = Utils.Vec2.Zero();
 let previousTimeSinceStarted: number = 0;
-let hasZoomedSinceLastFrame: boolean = false;
 let deltaTime: number = 0;
 
 function OnDraw() {
@@ -45,8 +42,11 @@ function OnDraw() {
 function MoveShapePlane(mouseDiff: Utils.Vec2) {
     let zoomLevel: number = GetZoomLevel();
     mouseDiff = mouseDiff.Divide(zoomLevel);
-    planeCameraPos = planeCameraPos.Plus(mouseDiff.x, mouseDiff.y);
-    SetCameraPos(planeCameraPos);
+    let currentCameraPos: Utils.Vec2 = new Utils.Vec2(
+        Utils.GetPropertyPX(shapePlane, "--camera-x"), Utils.GetPropertyPX(shapePlane, "--camera-y")
+    );
+    let updatedCameraPos: Utils.Vec2 = currentCameraPos.Plus(mouseDiff.x, mouseDiff.y);
+    SetCameraPos(updatedCameraPos);
 }
 
 function SetCameraPos(cameraPos: Utils.Vec2) {
@@ -59,13 +59,13 @@ function OnFileSelected() {
     let selectedFile: File = openFileInput.files[0];
     selectedFile.text().then((fileContent: string) => {
         Parser.Setup(openedProgram, fileContent);
+        ResetCameraData();
         openedProgram.Render(Utils.Vec2.Zero());
-        UpdateAllShapes(true);
     });
 }
 
 const scrollingMultiplier: number = 3.5;
-const maximumZoomLevel: number = 50;
+const minimumZoomLevel: number = 0.02, maximumZoomLevel: number = 5, defaultZoomLevel = 1.5;
 const allowZooming: boolean = true;
 
 function GetZoomLevel(): number { return Number(Utils.GetProperty(shapePlane, "--zoom-level")); }
@@ -78,28 +78,29 @@ function OnWheelScrolled(event: WheelEvent) {
     if (scrollDirection == +1) currentZoomLevel /= usedScrollingMultiplier;
     if (scrollDirection == -1) currentZoomLevel *= usedScrollingMultiplier;
     
-    let minimumZoomingLevel: number = 1.0 / maximumZoomLevel;
-    currentZoomLevel = Utils.Clamp(currentZoomLevel, minimumZoomingLevel, maximumZoomLevel);
+    currentZoomLevel = Utils.Clamp(currentZoomLevel, minimumZoomLevel, maximumZoomLevel);
     Utils.SetProperty(shapePlane, "--zoom-level", currentZoomLevel.toString());
-    hasZoomedSinceLastFrame = true;
 }
 
-function UpdateAllShapes(forcedUpdate: boolean = false) {
-    let currentCameraPos: Utils.Vec2 = new Utils.Vec2(
-        Utils.GetPropertyPX(shapePlane, "--camera-x"), Utils.GetPropertyPX(shapePlane, "--camera-y")
-    );
-
-    let hasCameraMoved: boolean = !currentCameraPos.Equals(previousCameraPos);
-    let willUpdate: boolean = forcedUpdate || hasCameraMoved || hasZoomedSinceLastFrame;
-
-    previousCameraPos = currentCameraPos.Copy();
-    hasZoomedSinceLastFrame = false;
-    if (!willUpdate) return;
-
+function UpdateAllShapes() {
     for (let i: number = 0; i < shapePlane.children.length; i++) {
         let currentShape: HTMLDivElement = shapePlane.children[i] as HTMLDivElement;
         ShapeRenderer.UpdateShapeProperties(currentShape);
     }
+}
+
+const defaultCameraOffset: Utils.Vec2 = new Utils.Vec2(0.5, 0.075);
+
+function ResetCameraData() {
+    Utils.SetProperty(shapePlane, "--zoom-level", defaultZoomLevel.toString());
+    let planeSize: Utils.Vec2 = new Utils.Vec2(shapePlane.clientWidth, shapePlane.clientHeight);
+    let headerHeight: number = headerSection.clientHeight;
+    planeSize.y -= headerHeight;
+    planeSize = planeSize.Divide(defaultZoomLevel);
+
+    let defaultCameraPos: Utils.Vec2 = new Utils.Vec2(-planeSize.x / 2, -planeSize.y / 2);
+    defaultCameraPos = defaultCameraPos.Plus(planeSize.x * defaultCameraOffset.x, planeSize.y * defaultCameraOffset.y);
+    SetCameraPos(defaultCameraPos);
 }
 
 OnStart();
