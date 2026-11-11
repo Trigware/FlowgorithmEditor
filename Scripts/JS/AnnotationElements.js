@@ -56,6 +56,9 @@ export class Breakpoint extends BaseNode.ProgramNode {
             shapeSize.y += octagonShadowYOffset;
         return shapeSize;
     }
+    GetSideTotalWidth(checkedSize) {
+        return GetAnnotationSideTotalWidth(this, checkedSize);
+    }
 }
 const inlineCommentArrowVerticalOffset = -0.4;
 export class InlineComment extends BaseNode.ProgramNode {
@@ -97,9 +100,16 @@ export class InlineComment extends BaseNode.ProgramNode {
         return sizeCache;
     }
     GetSideTotalWidth(checkedSide) {
-        if (checkedSide === BaseNode.SizeCountType.OnlyLeft)
-            return 0;
-        let commentSize = this.GetSize(checkedSide, BaseNode.SubnodeCountType.CountAll);
-        return commentSize.x;
+        return GetAnnotationSideTotalWidth(this, checkedSide);
     }
+}
+function GetAnnotationSideTotalWidth(programNode, checkedSide) {
+    if (checkedSide === BaseNode.SizeCountType.OnlyLeft)
+        return 0;
+    let commentSize = programNode.GetSize(checkedSide, BaseNode.SubnodeCountType.CountAll);
+    let commentWidth = commentSize.x;
+    let isParentHorizonzalArrowLengthCounted = programNode.parentNode !== null && programNode.parentNode.associatedDir === BaseNode.AssociatedDirection.Right;
+    if (isParentHorizonzalArrowLengthCounted)
+        commentWidth += Flowgorithm.defaultArrowLength;
+    return commentWidth;
 }

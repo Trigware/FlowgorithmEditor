@@ -6,8 +6,8 @@ import { ArrowPath } from "./ArrowRendering.js";
 import * as BaseNode from "./ProgramNode.js";
 export class ConditionalStatement extends BaseNode.ProgramNode {
     conditional = new Expression();
-    thenNode = new BaseNode.ProgramNode(this);
-    elseNode = new BaseNode.ProgramNode(this);
+    thenNode = new BaseNode.ProgramNode(this, BaseNode.AssociatedDirection.Right);
+    elseNode = new BaseNode.ProgramNode(this, BaseNode.AssociatedDirection.Left);
     thenBranchArrow = null;
     elseBranchArrow = null;
     thenMergeArrow = null;

@@ -35,6 +35,8 @@ function OnDraw() {
     requestAnimationFrame(OnDraw);
 }
 function MoveShapePlane(mouseDiff) {
+    let zoomLevel = GetZoomLevel();
+    mouseDiff = mouseDiff.Divide(zoomLevel);
     planeCameraPos = planeCameraPos.Plus(mouseDiff.x, mouseDiff.y);
     SetCameraPos(planeCameraPos);
 }

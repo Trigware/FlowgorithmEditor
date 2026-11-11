@@ -74,8 +74,8 @@ img {
     position: absolute;
     height: calc(var(--default-shape-width) / var(--aspect-ratio));
     transform:
-        translateX(calc(var(--camera-x) + var(--shape-x) * var(--zoom-level) + var(--offset-x) + var(--additional-offset-x) * var(--zoom-level)))
-        translateY(calc(var(--camera-y) + var(--shape-y) * var(--zoom-level) + var(--offset-y) + var(--additional-offset-y) * var(--zoom-level)))
+        translateX(calc(var(--camera-x) * var(--zoom-level) + var(--shape-x) * var(--zoom-level) + var(--offset-x) + var(--additional-offset-x) * var(--zoom-level)))
+        translateY(calc(var(--camera-y) * var(--zoom-level) + var(--shape-y) * var(--zoom-level) + var(--offset-y) + var(--additional-offset-y) * var(--zoom-level)))
         rotate(var(--rotation))
         scale(var(--zoom-level));
     

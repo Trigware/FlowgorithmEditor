@@ -124,8 +124,7 @@ function ParseDeclarationTag(currentElement: Element): BaseNode.ProgramNode {
             case "type": declarationInfo.type = Flowgorithm.StrToVarType(attribute.value); break;
             case "array": declarationInfo.isArray = Flowgorithm.StrToBoolean(attribute.value); break;
             case "size":
-                let resultingSize: number = Number(attribute.value);
-                if (!Number.isNaN(resultingSize)) declarationInfo.arraySize = resultingSize;
+                declarationInfo.arraySize = Expression.FromString(attribute.value);
                 break;
         }
     }

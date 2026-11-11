@@ -43,6 +43,8 @@ function OnDraw() {
 }
 
 function MoveShapePlane(mouseDiff: Utils.Vec2) {
+    let zoomLevel: number = GetZoomLevel();
+    mouseDiff = mouseDiff.Divide(zoomLevel);
     planeCameraPos = planeCameraPos.Plus(mouseDiff.x, mouseDiff.y);
     SetCameraPos(planeCameraPos);
 }

@@ -10,6 +10,10 @@ export enum SizeCountType {
     CountAll, OnlyLeft, OnlyRight
 }
 
+export enum AssociatedDirection {
+    None, Left, Right
+}
+
 export enum SubnodeCountType {
     HeadOnly, SubnodeOnly, CountAll, Entirety
 }
@@ -62,8 +66,11 @@ export class ProgramNode {
     public parentNode: ProgramNodeOpt = null;
     public linkedShape: ShapeRenderer.RenderedShape = new ShapeRenderer.RenderedShape();
     public sizeCache: CachedSize = new CachedSize();
+    public readonly associatedDir: AssociatedDirection = AssociatedDirection.None;
 
-    public constructor(parent: ProgramNodeOpt = null) { this.parentNode = parent; }
+    public constructor(parent: ProgramNodeOpt = null, dir: AssociatedDirection = AssociatedDirection.None) {
+        this.parentNode = parent; this.associatedDir = dir;
+    }
 
     public Clear() { this.subNodes = []; if (this.linkedShape !== null) this.linkedShape.Delete(); }
     public GetContent(): ShapeRenderer.ShapeContent { return Flowgorithm.GetEmptyContent(); }

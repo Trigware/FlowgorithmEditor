@@ -8,6 +8,12 @@ export var SizeCountType;
     SizeCountType[SizeCountType["OnlyLeft"] = 1] = "OnlyLeft";
     SizeCountType[SizeCountType["OnlyRight"] = 2] = "OnlyRight";
 })(SizeCountType || (SizeCountType = {}));
+export var AssociatedDirection;
+(function (AssociatedDirection) {
+    AssociatedDirection[AssociatedDirection["None"] = 0] = "None";
+    AssociatedDirection[AssociatedDirection["Left"] = 1] = "Left";
+    AssociatedDirection[AssociatedDirection["Right"] = 2] = "Right";
+})(AssociatedDirection || (AssociatedDirection = {}));
 export var SubnodeCountType;
 (function (SubnodeCountType) {
     SubnodeCountType[SubnodeCountType["HeadOnly"] = 0] = "HeadOnly";
@@ -58,7 +64,11 @@ export class ProgramNode {
     parentNode = null;
     linkedShape = new ShapeRenderer.RenderedShape();
     sizeCache = new CachedSize();
-    constructor(parent = null) { this.parentNode = parent; }
+    associatedDir = AssociatedDirection.None;
+    constructor(parent = null, dir = AssociatedDirection.None) {
+        this.parentNode = parent;
+        this.associatedDir = dir;
+    }
     Clear() { this.subNodes = []; if (this.linkedShape !== null)
         this.linkedShape.Delete(); }
     GetContent() { return Flowgorithm.GetEmptyContent(); }

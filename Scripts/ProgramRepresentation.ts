@@ -14,12 +14,12 @@ export const leftPointingRotation: number = 180, rightPointingRotation: number =
 export class VariableDeclaration {
     public type: VariableType = VariableType.Void;
     public isArray: boolean = false;
-    public arraySize: number = -1;
+    public arraySize: Expression = new Expression();
     public variableName: string = "";
     public error: Identifier.IdentifierError = Identifier.IdentifierError.None;
 
     public constructor(variableName: string = "", declarationType: VariableType = VariableType.Void,
-        isArray: boolean = false, arraySize: number = -1) {
+        isArray: boolean = false, arraySize: Expression = new Expression()) {
         this.variableName = variableName; this.type = declarationType; this.isArray = isArray; this.arraySize = arraySize;
     }
 
@@ -66,9 +66,13 @@ export class Program extends BaseNode.ProgramNode {
             if (!isLastFunction) {
                 let functionRightWidth: number = currentFunction.GetSize(BaseNode.SizeCountType.OnlyRight, BaseNode.SubnodeCountType.Entirety).x;
                 currentPosition.x += functionRightWidth;
+                let functionGap: number = Utils.GetFromRootPX("--default-shape-width");
+                currentPosition.x += functionGap;
             }
             renderedFunctionCount++;
         }
+
+        console.log(this);
     }
 
     public HasMain(): boolean {
@@ -213,7 +217,7 @@ export class DeclarationInstruction extends BaseNode.ProgramNode {
             let isLastDeclaration: boolean = i === declarationsCount - 1;
 
             let declarationName: string = variableDeclaration.variableName;
-            if (variableDeclaration.isArray) declarationName += `[${variableDeclaration.arraySize}]`;
+            if (variableDeclaration.isArray) declarationName += `[${variableDeclaration.arraySize.expressionAsStr}]`;
             declarationContent.Append(declarationName, ShapeRenderer.TextType.Bolded);
 
             if (!isLastDeclaration) declarationContent.Append(", ");

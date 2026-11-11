@@ -15,7 +15,7 @@ const cycleDoneArrowAnnotationExtension: number = 1.5;
 class CycleStatement extends BaseNode.ProgramNode {
     protected branchArrow: ArrowPathOpt = null; protected mergeArrow: ArrowPathOpt = null; private doneArrow: ArrowPathOpt = null;
     protected nextLabel: OptionalDiv = null; protected doneLabel: OptionalDiv = null;
-    public subnodeParent: BaseNode.ProgramNode = new BaseNode.ProgramNode();
+    public subnodeParent: BaseNode.ProgramNode = new BaseNode.ProgramNode(this, BaseNode.AssociatedDirection.Right);
 
     public MoveToSubnodeParent() {
         this.subnodeParent.subNodes = this.subNodes.slice();
@@ -271,11 +271,11 @@ export class ConditionalCycle extends CycleStatement {
     private RenderDoWhileBody() {
         if (this.mergePoint === null) return;
 
-        let subnodeSize: Utils.Vec2 = this.subnodeParent.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.CountAll),
-            headSize: Utils.Vec2 = this.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.HeadOnly);
+        let subnodeWidth: number = this.subnodeParent.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.Entirety).x;
+        let headSize: Utils.Vec2 = this.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.HeadOnly);
         let mergePointSize: number = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * BaseNode.mergePointSizeMultiplier;
         
-        let mergeSegmentLength: number = Math.max(subnodeSize.x, Flowgorithm.defaultArrowLength),
+        let mergeSegmentLength: number = Math.max(subnodeWidth, Flowgorithm.defaultArrowLength),
             firstSegmentLength: number = mergeSegmentLength + headSize.x / 2,
             verticalSegmentLength: number = Flowgorithm.defaultArrowLength + mergePointSize / 2,
             connectorSize = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * BaseNode.mergePointSizeMultiplier;
@@ -295,10 +295,10 @@ export class ConditionalCycle extends CycleStatement {
         this.headPosition = this.renderPosition.Plus(0, connectorSize / 2 + verticalSegmentLength - headSize.y / 2);
 
         this.subnodeParent.RenderSubnodes(this.currentPosition, false);
-        this.RenderDoWhileMergeArrow(subnodeSize, mergeSegmentLength);
+        this.RenderDoWhileMergeArrow(mergeSegmentLength);
     }
 
-    private RenderDoWhileMergeArrow(subnodeSize: Utils.Vec2, mergeSegmentLength: number) {
+    private RenderDoWhileMergeArrow(mergeSegmentLength: number) {
         let containsSubnodes: boolean = this.subnodeParent.subNodes.length > 0;
         if (!containsSubnodes) return;
 
@@ -317,7 +317,10 @@ export class ConditionalCycle extends CycleStatement {
             mergeArrowPos, [mergeArrowVerticalLength, mergeSegmentLength],
             [Flowgorithm.defaultArrowAngle, Flowgorithm.leftPointingRotation]
         );
-        this.headPosition.y += subnodeSize.y;
+
+        let subnodeHeight: number = this.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.SubnodeOnly).y;
+        subnodeHeight -= Flowgorithm.defaultArrowLength;
+        this.headPosition.y += subnodeHeight;
     }
 
     private RenderDoWhileArrowToMergePoint() {

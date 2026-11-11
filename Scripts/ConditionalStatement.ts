@@ -10,8 +10,8 @@ type OptionalDiv = HTMLDivElement | null;
 
 export class ConditionalStatement extends BaseNode.ProgramNode {
     public conditional: Expression = new Expression();
-    public thenNode: BaseNode.ProgramNode = new BaseNode.ProgramNode(this);
-    public elseNode: BaseNode.ProgramNode = new BaseNode.ProgramNode(this);
+    public thenNode: BaseNode.ProgramNode = new BaseNode.ProgramNode(this, BaseNode.AssociatedDirection.Right);
+    public elseNode: BaseNode.ProgramNode = new BaseNode.ProgramNode(this, BaseNode.AssociatedDirection.Left);
 
     private thenBranchArrow: ArrowPathOpt = null; private elseBranchArrow: ArrowPathOpt = null;
     private thenMergeArrow: ArrowPathOpt = null; private elseMergeArrow: ArrowPathOpt = null;

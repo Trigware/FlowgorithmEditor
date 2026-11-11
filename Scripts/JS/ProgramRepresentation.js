@@ -16,10 +16,10 @@ export const leftPointingRotation = 180, rightPointingRotation = 0, upwardPointi
 export class VariableDeclaration {
     type = VariableType.Void;
     isArray = false;
-    arraySize = -1;
+    arraySize = new Expression();
     variableName = "";
     error = Identifier.IdentifierError.None;
-    constructor(variableName = "", declarationType = VariableType.Void, isArray = false, arraySize = -1) {
+    constructor(variableName = "", declarationType = VariableType.Void, isArray = false, arraySize = new Expression()) {
         this.variableName = variableName;
         this.type = declarationType;
         this.isArray = isArray;
@@ -65,9 +65,12 @@ export class Program extends BaseNode.ProgramNode {
             if (!isLastFunction) {
                 let functionRightWidth = currentFunction.GetSize(BaseNode.SizeCountType.OnlyRight, BaseNode.SubnodeCountType.Entirety).x;
                 currentPosition.x += functionRightWidth;
+                let functionGap = Utils.GetFromRootPX("--default-shape-width");
+                currentPosition.x += functionGap;
             }
             renderedFunctionCount++;
         }
+        console.log(this);
     }
     HasMain() {
         for (let currentSubnode of this.subNodes) {
@@ -191,7 +194,7 @@ export class DeclarationInstruction extends BaseNode.ProgramNode {
             let isLastDeclaration = i === declarationsCount - 1;
             let declarationName = variableDeclaration.variableName;
             if (variableDeclaration.isArray)
-                declarationName += `[${variableDeclaration.arraySize}]`;
+                declarationName += `[${variableDeclaration.arraySize.expressionAsStr}]`;
             declarationContent.Append(declarationName, ShapeRenderer.TextType.Bolded);
             if (!isLastDeclaration)
                 declarationContent.Append(", ");
