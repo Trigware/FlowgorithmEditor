@@ -70,7 +70,6 @@ export class Program extends BaseNode.ProgramNode {
             }
             renderedFunctionCount++;
         }
-        console.log(this);
     }
     HasMain() {
         for (let currentSubnode of this.subNodes) {
@@ -175,6 +174,27 @@ export class FunctionSignature extends BaseNode.ProgramNode {
         let endShapeWidth = this.functionEndShape.GetSize(this.GetEndShapeContent(), ShapeRenderer.ShapeType.FunctionEnd).x;
         totalWidth = Math.max(totalWidth, endShapeWidth / 2);
         return totalWidth;
+    }
+    OnClick(clickInformation) {
+        if (clickInformation.clickedShape === null)
+            return;
+        let clickingEndShape = clickInformation.clickedShape.GetShapeType() === ShapeRenderer.ShapeType.FunctionEnd;
+        let clickedShape = clickingEndShape ? this.functionEndShape : this.linkedShape;
+        clickedShape.OnClick();
+    }
+    IsPointInside(clickedWorldPos) {
+        let insideSignature = this.IsPointInsideFunctionShape(clickedWorldPos, ShapeRenderer.ShapeType.FunctionSignature), insideEndShape = false;
+        let isPointInsideAnything = insideSignature || insideEndShape;
+        let clickedShape = insideSignature ? this.linkedShape : this.functionEndShape;
+        return new BaseNode.ClickInfo(isPointInsideAnything, clickedShape);
+    }
+    IsPointInsideFunctionShape(clickedWorldPos, shapeType) {
+        let isEndShape = shapeType === ShapeRenderer.ShapeType.FunctionEnd;
+        let currentShape = isEndShape ? this.functionEndShape : this.linkedShape;
+        let shapeSize = currentShape.GetSize(), shapeRenderPos = currentShape.renderPosition;
+        let vecDistFromRenderPos = clickedWorldPos.Minus(shapeRenderPos.x, shapeRenderPos.y).Abs();
+        let isInsideBoundingRect = vecDistFromRenderPos.x <= shapeSize.x / 2 && vecDistFromRenderPos.y <= shapeSize.y / 2;
+        return isInsideBoundingRect;
     }
 }
 export class DeclarationInstruction extends BaseNode.ProgramNode {

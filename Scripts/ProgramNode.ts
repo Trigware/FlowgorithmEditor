@@ -60,6 +60,17 @@ export class CachedSize {
     }
 }
 
+type OptionalShape = ShapeRenderer.RenderedShape | null;
+
+export class ClickInfo {
+    public hasClicked: boolean = false;
+    public clickedShape: OptionalShape = null;
+
+    public constructor(clicked: boolean, shape: OptionalShape = null) {
+        this.hasClicked = clicked; this.clickedShape = shape;
+    }
+}
+
 export class ProgramNode {
     public subNodes: ProgramNode[] = [];
     public subArrows: ArrowPath[] = [];
@@ -78,6 +89,20 @@ export class ProgramNode {
     public DrawsAfterArrow(): boolean { return false; }
     public BeforeArrowHasEnding(): boolean { return true; }
     public Render(position: Utils.Vec2) {}
+
+    public GetClickInformation(clickedWorldPos: Utils.Vec2): ClickInfo {
+        let clickInformation: ClickInfo = this.IsPointInside(clickedWorldPos);
+        if (clickInformation.hasClicked) return clickInformation;
+
+        for (let currentSubnode of this.subNodes) {
+            let subnodeClickInfo: ClickInfo = currentSubnode.GetClickInformation(clickedWorldPos);
+            if (subnodeClickInfo.hasClicked) return subnodeClickInfo;
+        }
+        return new ClickInfo(false);
+    }
+
+    public IsPointInside(worldPos: Utils.Vec2): ClickInfo { return new ClickInfo(false); }
+    public OnClick(clickInformation: ClickInfo) { this.linkedShape.OnClick(); }
 
     public Delete() {
         this.linkedShape.Delete();

@@ -5,7 +5,8 @@
     --shape-shadow-layer: 3;
     --regular-shape-layer: 4;
     --arrow-connector-layer: 5;
-    --website-header-layer: 6;
+    --absolute-plane-layer: 6;
+    --website-header-layer: 7;
 
     --shape-aspect-ratio: 2.5;
     --shape-font-size: 1.25rem;
@@ -38,7 +39,8 @@ img {
     height: fit-content;
     width: 100vw;
     background-color: #6b6b6b;
-    border-bottom: var(--header-border-size) solid #4b4b4b;
+    border-bottom: 0 solid #4b4b4b;
+    border-bottom-width: var(--header-border-size);
     user-select: none;
     z-index: var(--website-header-layer);
 }
@@ -51,11 +53,35 @@ img {
     
     background-image: conic-gradient(#b0b0b0 25%, #b5b5b5 0 50%, #b0b0b0 0 75%, #b5b5b5 0);
     background-size: var(--zoomed-tile-size) var(--zoomed-tile-size);
-    background-position: calc(50% + var(--camera-x)) calc(50% + var(--camera-y));
+    background-position: calc(50% + var(--camera-x) * var(--zoom-level)) calc(50% + var(--camera-y) * var(--zoom-level));
 
     position: absolute;
     user-select: none;
     width: 100vw; height: 100vh;
+}
+
+.AbsolutePlane {
+    position: absolute;
+    user-select: none;
+
+    width: 100vw; height: 100vh;
+    z-index: var(--absolute-plane-layer);
+}
+
+.SelectionBox {
+    --position-x: 0px; --position-y: 0px;
+    --size-x: 0px; --size-y: 0px;
+    --zoom-level: 1;
+
+    transform:
+        translateX(var(--position-x))
+        translateY(var(--position-y));
+    
+    width: var(--size-x); height: var(--size-y);
+    background-color: black;
+    opacity: 0.15;
+
+    visibility: visible;
 }
 
 .ShapePlane > * {

@@ -25,6 +25,8 @@ export class Vec2 {
         copiedVector.x = this.x; copiedVector.y = this.y;
         return copiedVector;
     }
+
+    public Abs(): Vec2 { return new Vec2(Math.abs(this.x), Math.abs(this.y)); }
 }
 
 export function GetTimeSinceStarted(): number {
@@ -170,13 +172,20 @@ class Directory {
 let projectRootDirectory: Directory = new Directory();
 const doesContainFSJson: boolean = false;
 
-export enum MouseButton { Any, Left = 2**0, Right = 2**1, Middle = 2**2 }
-const actualMouseButtons: MouseButton[] = [MouseButton.Left, MouseButton.Middle, MouseButton.Right];
+export enum MouseButton { Left, Right, Middle, Back, Forward }
+const mousePressButtons: MouseButton[] = [MouseButton.Left, MouseButton.Right, MouseButton.Middle, MouseButton.Back, MouseButton.Forward],
+    mouseReleaseButtons: MouseButton[] = [MouseButton.Left, MouseButton.Middle, MouseButton.Right, MouseButton.Back, MouseButton.Forward];
+
+const disableContextMenu: boolean = false;
 
 export class MouseState {
-    private currentHeldButtons: Map<MouseButton, boolean> = new Map();
+    private pressedButtonMap: Map<MouseButton, number> = new Map();
+    private releasedButtonMap: Map<MouseButton, number> = new Map();
+    private heldButtonSet: Set<MouseButton> = new Set();
 
     private mousePos: Vec2 = Vec2.Zero();
+    private scrollDirection: Vec2 = Vec2.Zero();
+    public framesSinceScrolled: number = 0;
 
     public constructor() {
         document.addEventListener("mousemove", (event: MouseEvent) => {
@@ -184,38 +193,70 @@ export class MouseState {
             this.mousePos.y = event.clientY;
         });
 
-        document.addEventListener("mousedown", (event: MouseEvent) => { this.OnMouseDown(event); });
-        document.addEventListener("mouseup", (event: MouseEvent) => { this.OnMouseUp(event); });
-    }
+        document.addEventListener("mousedown", (event: MouseEvent) => { this.OnButtonPress(event); });
+        document.addEventListener("mouseup", (event: MouseEvent) => { this.OnButtonRelease(event); } );
+        document.addEventListener("wheel", (event: WheelEvent) => { this.OnScroll(event); } );
+        if (disableContextMenu) document.addEventListener("contextmenu", (event) => { event.preventDefault(); } );
 
-    public IsHeld(checkedMouseButton: MouseButton = MouseButton.Any): boolean {
-        if (checkedMouseButton === MouseButton.Any) return this.IsAnyButtonHeld();
-        if (!this.currentHeldButtons.has(checkedMouseButton)) return false;
-        return this.currentHeldButtons.get(checkedMouseButton)!;
-    }
-
-    private IsAnyButtonHeld(): boolean {
-        for (let currentMouseButton of actualMouseButtons) {
-            let isCurrentButtonHeld: boolean = this.IsHeld(currentMouseButton);
-            if (isCurrentButtonHeld) return true;
-        }
-        return false;
-    }
-
-    private OnMouseDown(mouseEvent: MouseEvent) {
-        for (let currentMouseButton of actualMouseButtons) {
-            let currentButtonAffected: boolean = (mouseEvent.buttons & currentMouseButton) !== 0;
-            if (currentButtonAffected) this.currentHeldButtons.set(currentMouseButton, true);
-        }
-    }
-
-    private OnMouseUp(mouseEvent: MouseEvent) {
-        let releasedMouseButton: MouseButton = actualMouseButtons[mouseEvent.button];
-        if (releasedMouseButton === undefined) return;
-        this.currentHeldButtons.set(releasedMouseButton, false);
+        this.OnDraw();
     }
 
     public GetPosition(): Vec2 { return this.mousePos.Copy(); }
+
+    public IsHeld(mouseButton: MouseButton): boolean { return this.heldButtonSet.has(mouseButton); }
+    public IsTapped(mouseButton: MouseButton): boolean { return this.IsPressStateActiveNow(mouseButton, false); }
+    public IsReleased(mouseButton: MouseButton): boolean { return this.IsPressStateActiveNow(mouseButton, true); }
+
+    private IsPressStateActiveNow(mouseButton: MouseButton, releasing: boolean): boolean {
+        let usedButtonMap: Map<MouseButton, number> = releasing ? this.releasedButtonMap : this.pressedButtonMap;
+        let hasPressedBefore: boolean = usedButtonMap.has(mouseButton);
+        if (!hasPressedBefore) return false;
+
+        let framesSinceLastPressed: number = usedButtonMap.get(mouseButton)!;
+        return framesSinceLastPressed === 1;
+    }
+
+    public GetScrollDir(): Vec2 { return this.scrollDirection; }
+    public IsScrolling(): boolean { return this.scrollDirection.y != 0; }
+
+    private OnButtonPress(mouseEvent: MouseEvent) {
+        for (let i = 0; i < mousePressButtons.length; i++) {
+            let buttonValue: number = 2 ** i;
+            let isCurrentButtonPressed: boolean = (mouseEvent.buttons & buttonValue) !== 0;
+            if (!isCurrentButtonPressed) continue;
+
+            let currentButton: MouseButton = mousePressButtons[i];
+            this.pressedButtonMap.set(currentButton, 0);
+            this.heldButtonSet.add(currentButton);
+        }
+    }
+
+    private OnButtonRelease(mouseEvent: MouseEvent) {
+        let releasedButton: MouseButton = mouseReleaseButtons[mouseEvent.button];
+        this.releasedButtonMap.set(releasedButton, 0);
+        this.heldButtonSet.delete(releasedButton);
+    }
+
+    private OnScroll(wheelEvent: WheelEvent) {
+        this.scrollDirection = new Vec2(wheelEvent.deltaX, wheelEvent.deltaY);
+        this.framesSinceScrolled = 0;
+    }
+
+    private OnDraw() {
+        if (this.framesSinceScrolled > 0) this.scrollDirection = Vec2.Zero();
+        this.framesSinceScrolled++;
+        this.IncrementMapTimer(this.pressedButtonMap);
+        this.IncrementMapTimer(this.releasedButtonMap);
+
+        requestAnimationFrame(() => this.OnDraw());
+    }
+
+    private IncrementMapTimer(buttonMap: Map<MouseButton, number>) {
+        for (let currentButton of buttonMap.keys()) {
+            let prevButtonTimer: number = buttonMap.get(currentButton)!;
+            buttonMap.set(currentButton, prevButtonTimer + 1);
+        }
+    }
 }
 
 export let activeMouse: MouseState = new MouseState();

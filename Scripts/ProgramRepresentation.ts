@@ -71,8 +71,6 @@ export class Program extends BaseNode.ProgramNode {
             }
             renderedFunctionCount++;
         }
-
-        console.log(this);
     }
 
     public HasMain(): boolean {
@@ -194,6 +192,34 @@ export class FunctionSignature extends BaseNode.ProgramNode {
         let endShapeWidth: number = this.functionEndShape.GetSize(this.GetEndShapeContent(), ShapeRenderer.ShapeType.FunctionEnd).x;
         totalWidth = Math.max(totalWidth, endShapeWidth / 2);
         return totalWidth;
+    }
+
+    public override OnClick(clickInformation: BaseNode.ClickInfo) {
+        if (clickInformation.clickedShape === null) return;
+
+        let clickingEndShape: boolean = clickInformation.clickedShape.GetShapeType() === ShapeRenderer.ShapeType.FunctionEnd;
+        let clickedShape: ShapeRenderer.RenderedShape = clickingEndShape ? this.functionEndShape : this.linkedShape;
+        clickedShape.OnClick();
+    }
+
+    public override IsPointInside(clickedWorldPos: Utils.Vec2): BaseNode.ClickInfo {
+        let insideSignature: boolean = this.IsPointInsideFunctionShape(clickedWorldPos, ShapeRenderer.ShapeType.FunctionSignature),
+            insideEndShape: boolean = false;
+        
+        let isPointInsideAnything: boolean = insideSignature || insideEndShape;
+        let clickedShape: ShapeRenderer.RenderedShape = insideSignature ? this.linkedShape : this.functionEndShape;
+        return new BaseNode.ClickInfo(isPointInsideAnything, clickedShape);
+    }
+
+    private IsPointInsideFunctionShape(clickedWorldPos: Utils.Vec2, shapeType: ShapeRenderer.ShapeType): boolean {
+        let isEndShape: boolean = shapeType === ShapeRenderer.ShapeType.FunctionEnd;
+        let currentShape: ShapeRenderer.RenderedShape = isEndShape ? this.functionEndShape : this.linkedShape;
+        let shapeSize: Utils.Vec2 = currentShape.GetSize(),
+            shapeRenderPos: Utils.Vec2 = currentShape.renderPosition;
+        
+        let vecDistFromRenderPos: Utils.Vec2 = clickedWorldPos.Minus(shapeRenderPos.x, shapeRenderPos.y).Abs();
+        let isInsideBoundingRect: boolean = vecDistFromRenderPos.x <= shapeSize.x / 2 && vecDistFromRenderPos.y <= shapeSize.y / 2;
+        return isInsideBoundingRect;
     }
 }
 

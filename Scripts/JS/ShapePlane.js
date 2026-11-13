@@ -2,6 +2,7 @@ import * as Utils from "./Utils.js";
 import * as Flowgorithm from "./ProgramRepresentation.js";
 import * as Parser from "./ProgramParser.js";
 import * as ShapeRenderer from "./ShapeRenderer.js";
+import * as ShapeSelect from "./ShapeSelect.js";
 let prevMousePos = Utils.Vec2.Zero();
 let shapePlane = document.getElementById("ShapePlane");
 let openFileInput = document.getElementById("OpenFileInput");
@@ -10,7 +11,7 @@ let openedProgram = Flowgorithm.Program.Create();
 function OnStart() {
     prevMousePos = Utils.GetMousePos();
     openFileInput.addEventListener("change", OnFileSelected);
-    document.addEventListener("wheel", OnWheelScrolled);
+    ShapeSelect.SetProgram(openedProgram);
     ResetCameraData();
     ShapeRenderer.SetPlane(shapePlane);
     openedProgram.Render(Utils.Vec2.Zero());
@@ -29,6 +30,8 @@ function OnDraw() {
         MoveShapePlane(mouseDiff);
     previousTimeSinceStarted = currentTimeSinceStarted;
     UpdateAllShapes();
+    HandleZooming();
+    ShapeSelect.HandleShapeSelect();
     requestAnimationFrame(OnDraw);
 }
 function MoveShapePlane(mouseDiff) {
@@ -49,18 +52,21 @@ function OnFileSelected() {
     selectedFile.text().then((fileContent) => {
         Parser.Setup(openedProgram, fileContent);
         ResetCameraData();
+        ShapeRenderer.selectedShapes.clear();
         openedProgram.Render(Utils.Vec2.Zero());
     });
 }
 const scrollingMultiplier = 3.5;
-const minimumZoomLevel = 0.02, maximumZoomLevel = 5, defaultZoomLevel = 1.5;
+const minimumZoomLevel = 0.02, maximumZoomLevel = 5, defaultZoomLevel = 1;
 const allowZooming = true;
 function GetZoomLevel() { return Number(Utils.GetProperty(shapePlane, "--zoom-level")); }
-function OnWheelScrolled(event) {
-    if (!allowZooming)
+function HandleZooming() {
+    let skipZooming = !Utils.activeMouse.IsScrolling() || !allowZooming;
+    if (skipZooming)
         return;
+    let verticalScrollDir = Utils.activeMouse.GetScrollDir().y;
     let usedScrollingMultiplier = 1 + (scrollingMultiplier - 1) * deltaTime;
-    let scrollDirection = Math.sign(event.deltaY), currentZoomLevel = GetZoomLevel();
+    let scrollDirection = Math.sign(verticalScrollDir), currentZoomLevel = GetZoomLevel();
     if (scrollDirection == +1)
         currentZoomLevel /= usedScrollingMultiplier;
     if (scrollDirection == -1)

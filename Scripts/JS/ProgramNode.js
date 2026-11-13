@@ -58,6 +58,14 @@ export class CachedSize {
         this.subRightPortion = this.subRightPortion.Plus(x, y);
     }
 }
+export class ClickInfo {
+    hasClicked = false;
+    clickedShape = null;
+    constructor(clicked, shape = null) {
+        this.hasClicked = clicked;
+        this.clickedShape = shape;
+    }
+}
 export class ProgramNode {
     subNodes = [];
     subArrows = [];
@@ -76,6 +84,19 @@ export class ProgramNode {
     DrawsAfterArrow() { return false; }
     BeforeArrowHasEnding() { return true; }
     Render(position) { }
+    GetClickInformation(clickedWorldPos) {
+        let clickInformation = this.IsPointInside(clickedWorldPos);
+        if (clickInformation.hasClicked)
+            return clickInformation;
+        for (let currentSubnode of this.subNodes) {
+            let subnodeClickInfo = currentSubnode.GetClickInformation(clickedWorldPos);
+            if (subnodeClickInfo.hasClicked)
+                return subnodeClickInfo;
+        }
+        return new ClickInfo(false);
+    }
+    IsPointInside(worldPos) { return new ClickInfo(false); }
+    OnClick(clickInformation) { this.linkedShape.OnClick(); }
     Delete() {
         this.linkedShape.Delete();
         for (let childNode of this.subNodes)

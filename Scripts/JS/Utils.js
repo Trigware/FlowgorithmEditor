@@ -21,6 +21,7 @@ export class Vec2 {
         copiedVector.y = this.y;
         return copiedVector;
     }
+    Abs() { return new Vec2(Math.abs(this.x), Math.abs(this.y)); }
 }
 export function GetTimeSinceStarted() {
     return (performance.now() - startPerformance) / 1000.0;
@@ -150,52 +151,81 @@ let projectRootDirectory = new Directory();
 const doesContainFSJson = false;
 export var MouseButton;
 (function (MouseButton) {
-    MouseButton[MouseButton["Any"] = 0] = "Any";
-    MouseButton[MouseButton["Left"] = 1] = "Left";
-    MouseButton[MouseButton["Right"] = 2] = "Right";
-    MouseButton[MouseButton["Middle"] = 4] = "Middle";
+    MouseButton[MouseButton["Left"] = 0] = "Left";
+    MouseButton[MouseButton["Right"] = 1] = "Right";
+    MouseButton[MouseButton["Middle"] = 2] = "Middle";
+    MouseButton[MouseButton["Back"] = 3] = "Back";
+    MouseButton[MouseButton["Forward"] = 4] = "Forward";
 })(MouseButton || (MouseButton = {}));
-const actualMouseButtons = [MouseButton.Left, MouseButton.Middle, MouseButton.Right];
+const mousePressButtons = [MouseButton.Left, MouseButton.Right, MouseButton.Middle, MouseButton.Back, MouseButton.Forward], mouseReleaseButtons = [MouseButton.Left, MouseButton.Middle, MouseButton.Right, MouseButton.Back, MouseButton.Forward];
+const disableContextMenu = false;
 export class MouseState {
-    currentHeldButtons = new Map();
+    pressedButtonMap = new Map();
+    releasedButtonMap = new Map();
+    heldButtonSet = new Set();
     mousePos = Vec2.Zero();
+    scrollDirection = Vec2.Zero();
+    framesSinceScrolled = 0;
     constructor() {
         document.addEventListener("mousemove", (event) => {
             this.mousePos.x = event.clientX;
             this.mousePos.y = event.clientY;
         });
-        document.addEventListener("mousedown", (event) => { this.OnMouseDown(event); });
-        document.addEventListener("mouseup", (event) => { this.OnMouseUp(event); });
-    }
-    IsHeld(checkedMouseButton = MouseButton.Any) {
-        if (checkedMouseButton === MouseButton.Any)
-            return this.IsAnyButtonHeld();
-        if (!this.currentHeldButtons.has(checkedMouseButton))
-            return false;
-        return this.currentHeldButtons.get(checkedMouseButton);
-    }
-    IsAnyButtonHeld() {
-        for (let currentMouseButton of actualMouseButtons) {
-            let isCurrentButtonHeld = this.IsHeld(currentMouseButton);
-            if (isCurrentButtonHeld)
-                return true;
-        }
-        return false;
-    }
-    OnMouseDown(mouseEvent) {
-        for (let currentMouseButton of actualMouseButtons) {
-            let currentButtonAffected = (mouseEvent.buttons & currentMouseButton) !== 0;
-            if (currentButtonAffected)
-                this.currentHeldButtons.set(currentMouseButton, true);
-        }
-    }
-    OnMouseUp(mouseEvent) {
-        let releasedMouseButton = actualMouseButtons[mouseEvent.button];
-        if (releasedMouseButton === undefined)
-            return;
-        this.currentHeldButtons.set(releasedMouseButton, false);
+        document.addEventListener("mousedown", (event) => { this.OnButtonPress(event); });
+        document.addEventListener("mouseup", (event) => { this.OnButtonRelease(event); });
+        document.addEventListener("wheel", (event) => { this.OnScroll(event); });
+        if (disableContextMenu)
+            document.addEventListener("contextmenu", (event) => { event.preventDefault(); });
+        this.OnDraw();
     }
     GetPosition() { return this.mousePos.Copy(); }
+    IsHeld(mouseButton) { return this.heldButtonSet.has(mouseButton); }
+    IsTapped(mouseButton) { return this.IsPressStateActiveNow(mouseButton, false); }
+    IsReleased(mouseButton) { return this.IsPressStateActiveNow(mouseButton, true); }
+    IsPressStateActiveNow(mouseButton, releasing) {
+        let usedButtonMap = releasing ? this.releasedButtonMap : this.pressedButtonMap;
+        let hasPressedBefore = usedButtonMap.has(mouseButton);
+        if (!hasPressedBefore)
+            return false;
+        let framesSinceLastPressed = usedButtonMap.get(mouseButton);
+        return framesSinceLastPressed === 1;
+    }
+    GetScrollDir() { return this.scrollDirection; }
+    IsScrolling() { return this.scrollDirection.y != 0; }
+    OnButtonPress(mouseEvent) {
+        for (let i = 0; i < mousePressButtons.length; i++) {
+            let buttonValue = 2 ** i;
+            let isCurrentButtonPressed = (mouseEvent.buttons & buttonValue) !== 0;
+            if (!isCurrentButtonPressed)
+                continue;
+            let currentButton = mousePressButtons[i];
+            this.pressedButtonMap.set(currentButton, 0);
+            this.heldButtonSet.add(currentButton);
+        }
+    }
+    OnButtonRelease(mouseEvent) {
+        let releasedButton = mouseReleaseButtons[mouseEvent.button];
+        this.releasedButtonMap.set(releasedButton, 0);
+        this.heldButtonSet.delete(releasedButton);
+    }
+    OnScroll(wheelEvent) {
+        this.scrollDirection = new Vec2(wheelEvent.deltaX, wheelEvent.deltaY);
+        this.framesSinceScrolled = 0;
+    }
+    OnDraw() {
+        if (this.framesSinceScrolled > 0)
+            this.scrollDirection = Vec2.Zero();
+        this.framesSinceScrolled++;
+        this.IncrementMapTimer(this.pressedButtonMap);
+        this.IncrementMapTimer(this.releasedButtonMap);
+        requestAnimationFrame(() => this.OnDraw());
+    }
+    IncrementMapTimer(buttonMap) {
+        for (let currentButton of buttonMap.keys()) {
+            let prevButtonTimer = buttonMap.get(currentButton);
+            buttonMap.set(currentButton, prevButtonTimer + 1);
+        }
+    }
 }
 export let activeMouse = new MouseState();
 function OnStart() {
