@@ -3,8 +3,8 @@ import * as ShapeRenderer from "./ShapeRenderer.js";
 import * as Flowgorithm from "./ProgramRepresentation.js";
 import * as BaseNode from "./ProgramNode.js";
 import * as Utils from "./Utils.js";
+import * as ShapeInteract from "./ShapeIntersect.js";
 const octagonShadowYOffset = 5, breakpointVericalPadding = 30, labelXOffset = 0.3;
-const conditionalBreakpointSegmentPortion = 0.5;
 export class Breakpoint extends BaseNode.ProgramNode {
     isConditional = false;
     conditionalExpression = new Expression();
@@ -16,6 +16,11 @@ export class Breakpoint extends BaseNode.ProgramNode {
         shapeContent.isIncomplete = this.conditionalExpression.IsEmpty() && this.isConditional;
         return shapeContent;
     }
+    GetIntersectInfo(displayType) {
+        let intersectInfo = new ShapeInteract.IntersectInfo(displayType);
+        intersectInfo.isConditionalBreakpoint = this.isConditional;
+        return intersectInfo;
+    }
     Render(position) {
         let renderPosition = position.Plus(0, breakpointVericalPadding / 2);
         let shapeSize = this.GetOctagonShapeSize(false);
@@ -26,9 +31,10 @@ export class Breakpoint extends BaseNode.ProgramNode {
         labelInfo.containerHeight = shapeSize.y;
         this.expressionLabel = labelInfo.CreateLabel();
         this.AddShape(renderPosition);
-        let conditionalSegmentPortion = (conditionalBreakpointSegmentPortion * 100).toString() + "%";
-        if (this.isConditional)
-            this.linkedShape.SetProperty("--segment-portion", conditionalSegmentPortion);
+        let segmentPortionProperty = this.isConditional ? "--default-conditional-breakpoint-segment-portion" : "--default-breakpoint-segment-portion";
+        let segmentPortion = Number(Utils.GetFromRoot(segmentPortionProperty));
+        let segmentPortionValue = (segmentPortion * 100).toString() + "%";
+        this.linkedShape.SetProperty("--segment-portion", segmentPortionValue);
     }
     GetLabelContents() {
         let labelContents = this.isConditional ? "Condition" : "Breakpoint";
@@ -83,7 +89,7 @@ export class InlineComment extends BaseNode.ProgramNode {
         let commentXOffset = commentShapeSize.x / 2 + connectingDotsWidth;
         commentXOffset += totalXOffset;
         let commentShapePos = position.Plus(commentXOffset, -commentShapeSize.y / 2);
-        this.linkedShape = ShapeRenderer.AddShape(this.GetType(), commentShapePos, shapeContent);
+        this.linkedShape = ShapeRenderer.AddShape(this, this.GetType(), commentShapePos, shapeContent);
     }
     GetConnectingDotsWidth() {
         let dotRadius = Utils.GetFromRootPX("--default-comment-dot-radius"), dotGap = Utils.GetFromRootPX("--default-comment-dot-gap"), dotCount = Number(Utils.GetFromRoot("--default-comment-dot-count")), connectingDotsWidth = (dotRadius * 2 + dotGap) * dotCount;

@@ -1,12 +1,12 @@
-import * as Flowgorithm from "./ProgramRepresentation.js";
 import * as Utils from "./Utils.js";
 import * as ShapeRenderer from "./ShapeRenderer.js";
+import { Program } from "./ProgramRepresentation.js";
 let selectionBox = document.getElementById("SelectionBox");
 let headerSection = document.getElementById("HeaderSection");
 let shapePlane = document.getElementById("ShapePlane");
 let wasLMBPreviouslyHeld = false, isInvalidSelection = false;
 let hoveredWorldPosAtSelectStart = Utils.Vec2.Zero();
-let currentProgram = new Flowgorithm.Program();
+let currentProgram = new Program();
 export function SetProgram(program) { currentProgram = program; }
 export function HandleShapeSelect() {
     let isLMBHeld = Utils.activeMouse.IsHeld(Utils.MouseButton.Left);
@@ -74,10 +74,10 @@ function HandleMouseInteraction() {
     let mousePosition = Utils.activeMouse.GetPosition(), clickedWorldPos = ConvertAbsoluteToWorldPosition(mousePosition);
     let clickInfo = currentProgram.GetClickInformation(clickedWorldPos);
     for (let selectedShape of ShapeRenderer.selectedShapes) {
-        let isClickedShape = clickInfo.clickedShape === selectedShape;
-        if (!isClickedShape)
-            selectedShape.OnClick(false);
+        let isCurrentShapeClicked = clickInfo.clickedShape === selectedShape;
+        if (!isCurrentShapeClicked)
+            selectedShape.OnClick(ShapeRenderer.SelectionType.Unselect);
     }
     if (clickInfo.clickedShape !== null)
-        clickInfo.clickedShape.OnClick();
+        clickInfo.clickedShape.OnClick(ShapeRenderer.SelectionType.Select);
 }

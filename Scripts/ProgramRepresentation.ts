@@ -2,7 +2,6 @@ import * as Utils from "./Utils.js"
 import { Expression } from "./Expression.js"
 import * as Identifier from "./Identifier.js"
 import * as ShapeRenderer from "./ShapeRenderer.js"
-import { ArrowPath } from "./ArrowRendering.js"
 import * as BaseNode from "./ProgramNode.js"
 
 export function GetEmptyContent(): ShapeRenderer.ShapeContent { return new ShapeRenderer.ShapeContent(); }
@@ -150,11 +149,17 @@ export class FunctionSignature extends BaseNode.ProgramNode {
     }
 
     public override GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.FunctionSignature; }
+    public override GetAllShapeMap(): Map<ShapeRenderer.ShapeType, ShapeRenderer.RenderedShape> {
+        return new Map([
+            [ShapeRenderer.ShapeType.FunctionSignature, this.linkedShape],
+            [ShapeRenderer.ShapeType.FunctionEnd, this.functionEndShape]
+        ]);
+    }
 
     public override Render(position: Utils.Vec2) {
         let latestShapePosition: Utils.Vec2 = position;
         let functionSignatureShape: ShapeRenderer.RenderedShape = ShapeRenderer.AddShape(
-            ShapeRenderer.ShapeType.FunctionSignature, position, this.GetContent(), false
+            this, ShapeRenderer.ShapeType.FunctionSignature, position, this.GetContent(), false
         );
         let functionSignatureSize: Utils.Vec2 = functionSignatureShape.GetSize();
         latestShapePosition.y += functionSignatureSize.y / 2;
@@ -172,13 +177,7 @@ export class FunctionSignature extends BaseNode.ProgramNode {
         else this.RenderDefaultArrow(position);
 
         let returnShapeContent: ShapeRenderer.ShapeContent = this.GetEndShapeContent();
-        this.functionEndShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.FunctionEnd, position, returnShapeContent);
-        let functionEndSize: Utils.Vec2 = this.functionEndShape.GetSize();
-        position.y += functionEndSize.y * 1.5;
-
-        if (this.functionEndShape.shadowShape === null) return;
-        let endShadowYOffset: number = Utils.GetNumericPixels(Utils.GetProperty(this.functionEndShape.shadowShape, "--additional-offset-y"));
-        position.y += endShadowYOffset;
+        this.functionEndShape = ShapeRenderer.AddShape(this, ShapeRenderer.ShapeType.FunctionEnd, position, returnShapeContent);
     }
 
     public override Delete() { super.Delete(); this.functionEndShape.Delete(); }
@@ -200,26 +199,6 @@ export class FunctionSignature extends BaseNode.ProgramNode {
         let clickingEndShape: boolean = clickInformation.clickedShape.GetShapeType() === ShapeRenderer.ShapeType.FunctionEnd;
         let clickedShape: ShapeRenderer.RenderedShape = clickingEndShape ? this.functionEndShape : this.linkedShape;
         clickedShape.OnClick();
-    }
-
-    public override IsPointInside(clickedWorldPos: Utils.Vec2): BaseNode.ClickInfo {
-        let insideSignature: boolean = this.IsPointInsideFunctionShape(clickedWorldPos, ShapeRenderer.ShapeType.FunctionSignature),
-            insideEndShape: boolean = false;
-        
-        let isPointInsideAnything: boolean = insideSignature || insideEndShape;
-        let clickedShape: ShapeRenderer.RenderedShape = insideSignature ? this.linkedShape : this.functionEndShape;
-        return new BaseNode.ClickInfo(isPointInsideAnything, clickedShape);
-    }
-
-    private IsPointInsideFunctionShape(clickedWorldPos: Utils.Vec2, shapeType: ShapeRenderer.ShapeType): boolean {
-        let isEndShape: boolean = shapeType === ShapeRenderer.ShapeType.FunctionEnd;
-        let currentShape: ShapeRenderer.RenderedShape = isEndShape ? this.functionEndShape : this.linkedShape;
-        let shapeSize: Utils.Vec2 = currentShape.GetSize(),
-            shapeRenderPos: Utils.Vec2 = currentShape.renderPosition;
-        
-        let vecDistFromRenderPos: Utils.Vec2 = clickedWorldPos.Minus(shapeRenderPos.x, shapeRenderPos.y).Abs();
-        let isInsideBoundingRect: boolean = vecDistFromRenderPos.x <= shapeSize.x / 2 && vecDistFromRenderPos.y <= shapeSize.y / 2;
-        return isInsideBoundingRect;
     }
 }
 
@@ -272,9 +251,7 @@ export class AssignmentInstruction extends BaseNode.ProgramNode {
     }
 
     public override GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Assignment; }
-    public override Render(position: Utils.Vec2) {
-        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Assignment, position, this.GetContent());
-    }
+    public override Render(position: Utils.Vec2) { this.AddShape(position); }
 }
 
 export class IOInstruction extends BaseNode.ProgramNode {

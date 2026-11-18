@@ -16,7 +16,6 @@ export class ConditionalStatement extends BaseNode.ProgramNode {
     elseBlockImportantSize = Utils.Vec2.Zero();
     thenLabel = null;
     elseLabel = null;
-    mergePoint = null;
     currentPosition = Utils.Vec2.Zero();
     MoveSubnodes(moveToThen) {
         let selectedNode = moveToThen ? this.thenNode : this.elseNode;
@@ -35,6 +34,7 @@ export class ConditionalStatement extends BaseNode.ProgramNode {
         return resultContent;
     }
     GetType() { return ShapeRenderer.ShapeType.Conditional; }
+    GetSubnodeList() { return [this.thenNode, this.elseNode]; }
     CalculateSizeCache() {
         let sizeCache = super.CalculateSizeCache();
         let thenNodeSize = this.thenNode.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.CountAll);
@@ -48,11 +48,11 @@ export class ConditionalStatement extends BaseNode.ProgramNode {
     }
     Render(position) {
         this.currentPosition = position.Copy();
-        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Conditional, position.Copy(), this.GetContent());
+        this.AddShape(position);
         this.thenBlockImportantSize = this.thenNode.GetSize(BaseNode.SizeCountType.OnlyRight, BaseNode.SubnodeCountType.CountAll);
         this.elseBlockImportantSize = this.elseNode.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.CountAll);
-        this.mergePoint = Utils.CreateElement("div", "ShapeArrowConnector", ShapeRenderer.currentPlane);
-        Utils.SetProperty(this.mergePoint, "--connector-size-multiplier", BaseNode.mergePointSizeMultiplier.toString());
+        this.linkedShape.mergePoint = Utils.CreateElement("div", "ShapeArrowConnector", ShapeRenderer.currentPlane);
+        Utils.SetProperty(this.linkedShape.mergePoint, "--connector-size-multiplier", BaseNode.mergePointSizeMultiplier.toString());
         let thenBranchEndPos = this.RenderBranch(true);
         let elseBranchEndPos = this.RenderBranch(false);
         this.RenderMergePoint();
@@ -68,25 +68,25 @@ export class ConditionalStatement extends BaseNode.ProgramNode {
             if (currentArrowPath !== null)
                 currentArrowPath.Delete();
         }
-        let divsMarkedForDeletion = [this.thenLabel, this.elseLabel, this.mergePoint];
+        let divsMarkedForDeletion = [this.thenLabel, this.elseLabel, this.linkedShape.mergePoint];
         for (let currentDiv of divsMarkedForDeletion) {
             if (currentDiv != null)
                 currentDiv.remove();
         }
     }
     RenderMergePoint() {
-        if (this.mergePoint === null)
+        if (this.linkedShape.mergePoint === null)
             return;
         let mergePointColorInfo = ShapeRenderer.GetColorInfo(this.GetType());
         if (this.conditional.IsEmpty())
             mergePointColorInfo = ShapeRenderer.incompleteShapeColors;
         let mergePointColor = mergePointColorInfo.mergePointColor;
-        Utils.SetProperty(this.mergePoint, "background-color", mergePointColor);
+        Utils.SetProperty(this.linkedShape.mergePoint, "background-color", mergePointColor);
         let mergePointPosition = this.currentPosition;
         let greaterBlockHeight = Math.max(this.thenBlockImportantSize.y, this.elseBlockImportantSize.y);
         let conditionalHeadSize = this.linkedShape.GetSize();
         mergePointPosition.y += greaterBlockHeight + conditionalHeadSize.y + Flowgorithm.defaultArrowLength;
-        ShapeRenderer.SetShapePosition(this.mergePoint, mergePointPosition);
+        ShapeRenderer.SetShapePosition(this.linkedShape.mergePoint, mergePointPosition);
     }
     RenderBranchArrow(isThen) {
         let headSize = this.linkedShape.GetSize();
@@ -153,7 +153,7 @@ export class ConditionalStatement extends BaseNode.ProgramNode {
         let currentBlock = isThen ? this.thenNode : this.elseNode;
         let subNodeCount = currentBlock.subNodes.length;
         let containsSubnodes = subNodeCount > 0;
-        if (currentBranchingArrow === null || this.mergePoint === null || !containsSubnodes)
+        if (currentBranchingArrow === null || this.linkedShape.mergePoint === null || !containsSubnodes)
             return;
         let greaterBlockHeight = Math.max(this.thenBlockImportantSize.y, this.elseBlockImportantSize.y);
         let currentBlockSize = isThen ? this.thenBlockImportantSize : this.elseBlockImportantSize;
@@ -162,7 +162,15 @@ export class ConditionalStatement extends BaseNode.ProgramNode {
         let mergePointXOffset = currentBranchingArrow.GetSegmentLengths()[0];
         let mergingHorizontalArrowAngle = isThen ? Flowgorithm.leftPointingRotation : Flowgorithm.rightPointingRotation;
         let mergingHorizontalLength = mergePointXOffset - mergePointSize / 2;
-        let mergingArrow = new ArrowPath(arrowPosition, [mergingArrowDownwardLength, mergingHorizontalLength], [Flowgorithm.defaultArrowAngle, mergingHorizontalArrowAngle]);
+        let mergeArrowExtendedLength = 0;
+        let lastBlockSubnode = currentBlock.subNodes[currentBlock.subNodes.length - 1];
+        let doesLastSubnodeDrawAfterArrow = lastBlockSubnode.DrawsAfterArrow();
+        if (doesLastSubnodeDrawAfterArrow) {
+            mergeArrowExtendedLength = lastBlockSubnode.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.SubnodeOnly).y;
+        }
+        let mergeArrowStartPos = arrowPosition.Plus(0, -mergeArrowExtendedLength);
+        mergingArrowDownwardLength += mergeArrowExtendedLength;
+        let mergingArrow = new ArrowPath(mergeArrowStartPos, [mergingArrowDownwardLength, mergingHorizontalLength], [Flowgorithm.defaultArrowAngle, mergingHorizontalArrowAngle]);
         if (isThen)
             this.thenMergeArrow = mergingArrow;
         else

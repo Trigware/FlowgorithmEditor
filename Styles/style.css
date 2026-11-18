@@ -14,13 +14,19 @@
     --shape-horizontal-padding: 20px;
     --diamond-horizonal-padding: 30px;
     --default-connector-size: 15px;
+    --eliptic-shape-roundness: 0.9;
+    --parallelogram-base-steapness: 0.2;
+    --default-hexagon-middle-gap: 0.5;
     --arrow-lesser-size: 6px;
     --header-border-size: 3px;
 
-    --comment-decoration-color: #666666;
+    --default-breakpoint-segment-portion: 0.3;
+    --default-conditional-breakpoint-segment-portion: 0.5;
+
     --default-comment-dot-radius: 2px;
     --default-comment-dot-gap: 5px;
     --default-comment-dot-count: 6;
+    --default-comment-dot-color: #666666;
     --comment-border-size: 2px;
 }
 
@@ -38,11 +44,16 @@ img {
     position: sticky;
     height: fit-content;
     width: 100vw;
-    background-color: #6b6b6b;
+    background-color: #727272;
     border-bottom: 0 solid #4b4b4b;
     border-bottom-width: var(--header-border-size);
     user-select: none;
     z-index: var(--website-header-layer);
+    filter: drop-shadow(0 1px 5px #111);
+}
+
+.HeaderSection img {
+    filter: drop-shadow(2px 2px 3px #111);
 }
 
 .ShapePlane {
@@ -109,12 +120,11 @@ img {
     align-items: center;
     justify-content: center;
     font-size: var(--shape-font-size);
-    z-index: var(--regular-shape-layer)
+    z-index: var(--regular-shape-layer);
 }
 
 .ParallelogramShape {
-    --base-steapness: 20%;
-    --steapness: calc(var(--base-steapness) / var(--width-size-increase));
+    --steapness: calc(var(--parallelogram-base-steapness) / var(--width-size-increase) * 100%);
     clip-path: polygon(0% 100%, var(--steapness) 0%, 100% 0%, calc(100% - var(--steapness)) 100%);
 }
 
@@ -125,8 +135,7 @@ img {
 }
 
 .HexagonShape {
-    --base-middle-gap: 50%;
-    --middle-gap: calc(100% - var(--base-middle-gap) / var(--width-size-increase));
+    --middle-gap: calc(100% - var(--default-hexagon-middle-gap) * 100% / var(--width-size-increase));
 
     clip-path: polygon(
         0% 50%, calc(50% - var(--middle-gap) / 2) 0%,
@@ -136,7 +145,7 @@ img {
 }
 
 .OctagonShape {
-    --segment-portion: 30%;
+    --segment-portion: calc(var(--default-breakpoint-segment-portion) * 100%);
 
     min-width: 0;
     padding: 0;
@@ -151,17 +160,21 @@ img {
 }
 
 .CommentShape {
+    --comment-decoration-color: #666666;
+
     border: var(--comment-border-size) dashed var(--comment-decoration-color);
     color: #444444;
 }
 
-.ElipticShape { border-radius: 32px; }
+.ElipticShape {
+    border-radius: calc(var(--default-shape-width) / var(--aspect-ratio) * var(--eliptic-shape-roundness) / 2);
+}
 
 .ShapeShadow { color: transparent; z-index: var(--shape-shadow-layer); }
-.ShapeShadow.ParallelogramShape { --additional-offset-x: 2.5px; --additional-offset-y: 5px; }
+.ShapeShadow.ParallelogramShape { --additional-offset-x: 3px; --additional-offset-y: 5px; }
 .ShapeShadow.DiamondShape { --additional-offset-x: 0px; --additional-offset-y: 6px; }
 .ShapeShadow.HexagonShape { --additional-offset-x: 0px; --additional-offset-y: 5px; }
-.ShapeShadow.ElipticShape { --additional-offset-x: 5px; --additional-offset-y: 5px; }
+.ShapeShadow.ElipticShape { --additional-offset-x: 0px; --additional-offset-y: 5px; }
 .ShapeShadow.RectangleShape { --additional-offset-x: 5px; --additional-offset-y: 5px; }
 .ShapeShadow.OctagonShape { --additional-offset-x: 0px; --additional-offset-y: 5px; }
 
@@ -207,7 +220,6 @@ img {
 }
 
 .CommentDots {
-    --dot-color: var(--comment-decoration-color);
     --dot-radius: var(--default-comment-dot-radius);
     --dot-gap: var(--default-comment-dot-gap);
     --dot-count: var(--default-comment-dot-count);
@@ -215,7 +227,7 @@ img {
     --group-width: calc((var(--dot-radius) * 2 + var(--dot-gap)) * var(--dot-count) - var(--dot-gap));
     --additional-offset-x: calc(var(--group-width) / 2);
 
-    background-image: radial-gradient(circle, var(--dot-color) var(--dot-radius), transparent var(--dot-radius));
+    background-image: radial-gradient(circle, var(--default-comment-dot-color) var(--dot-radius), transparent var(--dot-radius));
     background-size: calc(var(--dot-gap) + var(--dot-radius) * 2);
     background-position-x: calc(var(--dot-gap) / -2);
     background-repeat: repeat-x;

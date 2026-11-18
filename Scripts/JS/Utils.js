@@ -8,11 +8,14 @@ export class Vec2 {
     Minus(x, y) { return new Vec2(this.x - x, this.y - y); }
     Times(x, y = x) { return new Vec2(this.x * x, this.y * y); }
     Divide(x, y = x) { return new Vec2(this.x / x, this.y / y); }
+    Negate() { return new Vec2(-this.x, -this.y); }
     IsInsideOf(x, y, w, h) {
         return this.x >= x && this.y >= y && this.x <= w && this.y <= h;
     }
     static FromAngleDeg(angleDegrees) { return Vec2.FromAngleRad(DegToRad(angleDegrees)); }
     static FromAngleRad(angleRadians) { return new Vec2(Math.cos(angleRadians), Math.sin(angleRadians)); }
+    Sign() { return new Vec2(Math.sign(this.x), Math.sign(this.y)); }
+    AsRadians() { return Math.atan2(this.y, this.x); }
     Equals(other) { return this.x === other.x && this.y === other.y; }
     ToString() { return `(x: ${this.x}, y: ${this.y})`; }
     Copy() {
@@ -22,6 +25,14 @@ export class Vec2 {
         return copiedVector;
     }
     Abs() { return new Vec2(Math.abs(this.x), Math.abs(this.y)); }
+    Dist(other) { return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2); }
+    Magnitude() { return Math.sqrt(this.x ** 2 + this.y ** 2); }
+    Normalized() {
+        let magnitude = this.Magnitude();
+        if (magnitude === 0)
+            return Vec2.Zero();
+        return this.Divide(magnitude);
+    }
 }
 export function GetTimeSinceStarted() {
     return (performance.now() - startPerformance) / 1000.0;

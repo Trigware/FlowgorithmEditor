@@ -22,7 +22,7 @@ export var ShapeType;
     ShapeType[ShapeType["Breakpoint"] = 11] = "Breakpoint";
     ShapeType[ShapeType["Comment"] = 12] = "Comment";
 })(ShapeType || (ShapeType = {}));
-var ShapeDisplayType;
+export var ShapeDisplayType;
 (function (ShapeDisplayType) {
     ShapeDisplayType[ShapeDisplayType["Unknown"] = -1] = "Unknown";
     ShapeDisplayType[ShapeDisplayType["Parallelogram"] = 0] = "Parallelogram";
@@ -32,6 +32,7 @@ var ShapeDisplayType;
     ShapeDisplayType[ShapeDisplayType["Rectangle"] = 4] = "Rectangle";
     ShapeDisplayType[ShapeDisplayType["Octagon"] = 5] = "Octagon";
     ShapeDisplayType[ShapeDisplayType["Comment"] = 6] = "Comment";
+    ShapeDisplayType[ShapeDisplayType["Circle"] = 7] = "Circle";
 })(ShapeDisplayType || (ShapeDisplayType = {}));
 var ShapeColorType;
 (function (ShapeColorType) {
@@ -51,17 +52,19 @@ export class ShapeColorInfo {
     shadowColor = "";
     mergePointColor = "";
     fontColor = "";
-    constructor(colorOfShape, colorOfShadow = "#000000", colorOfMergePoint = "#000000", colorOfFont = "#000000") {
+    outlineColor = "";
+    constructor(colorOfShape, colorOfShadow = "#000000", colorOfMergePoint = "#000000", colorOfFont = "#000000", colorOfOutline = "#000000") {
         this.shapeColor = colorOfShape;
         this.shadowColor = colorOfShadow;
         this.mergePointColor = colorOfMergePoint;
         this.fontColor = colorOfFont;
+        this.outlineColor = colorOfOutline;
     }
     static Default() {
         return new ShapeColorInfo("#000000", "#000000");
     }
 }
-class ShapeDisplayInfo {
+export class ShapeDisplayInfo {
     displayType = ShapeDisplayType.Unknown;
     colorType = ShapeColorType.Unknown;
     constructor(type, displayColorType) {
@@ -78,10 +81,10 @@ const shapeColorsArr = new Map([
     [ShapeColorType.Red, new ShapeColorInfo("#d13434", "#7d1e1e", "#992323")],
     [ShapeColorType.Orange, new ShapeColorInfo("#d67345", "#944c29", "#ba592d")],
     [ShapeColorType.LightRed, new ShapeColorInfo("#ed5c5c", "#c24444")],
-    [ShapeColorType.LightGray, new ShapeColorInfo("#cccccc")]
+    [ShapeColorType.LightGray, new ShapeColorInfo("#cccccc", "", "", "", "#666666")]
 ]);
-export const incompleteShapeColors = new ShapeColorInfo("#858585", "#404040", "#707070"), selectedShapeColors = new ShapeColorInfo("#2643ab", "#10215e", "#000000", "#eeeeee");
-const shapeDisplayArr = new Map([
+export const incompleteShapeColors = new ShapeColorInfo("#858585", "#404040", "#707070"), selectedShapeColors = new ShapeColorInfo("#2643ab", "#10215e", "#283b7a", "#eeeeee", "#2643ab");
+export const shapeDisplayArr = new Map([
     [ShapeType.FunctionSignature, new ShapeDisplayInfo(ShapeDisplayType.Elipse, ShapeColorType.Purple)],
     [ShapeType.FunctionEnd, new ShapeDisplayInfo(ShapeDisplayType.Elipse, ShapeColorType.Purple)],
     [ShapeType.Call, new ShapeDisplayInfo(ShapeDisplayType.Rectangle, ShapeColorType.LightPurple)],
@@ -102,6 +105,7 @@ const displayTypeToClassMap = new Map([
     [ShapeDisplayType.Rectangle, "RectangleShape"], [ShapeDisplayType.Octagon, "OctagonShape"],
     [ShapeDisplayType.Comment, "CommentShape"]
 ]);
+export let displayTypeOffsetsMap = new Map();
 export function SetShapePosition(currentShape, shapePosition) {
     Utils.SetProperty(currentShape, "--shape-x", shapePosition.x.toString() + "px");
     Utils.SetProperty(currentShape, "--shape-y", shapePosition.y.toString() + "px");
@@ -237,6 +241,17 @@ export function GetColorInfo(shapeType) {
         return ShapeColorInfo.Default();
     return shapeColorInfo;
 }
+export function SetShadowOffsets() {
+    for (let currentDisplayType of displayTypeToClassMap.keys()) {
+        let currentShapeClass = displayTypeToClassMap.get(currentDisplayType);
+        let divWithCurrentClass = document.createElement("div");
+        divWithCurrentClass.classList.add("ShapeShadow", currentShapeClass);
+        document.body.appendChild(divWithCurrentClass);
+        let currentOffset = new Utils.Vec2(Utils.GetPropertyPX(divWithCurrentClass, "--additional-offset-x"), Utils.GetPropertyPX(divWithCurrentClass, "--additional-offset-y"));
+        displayTypeOffsetsMap.set(currentDisplayType, currentOffset);
+        divWithCurrentClass.remove();
+    }
+}
 function ConstructShape(shapeType, position, shapeContent, offsetShape, isShadow) {
     let shapeDisplayInfo = shapeDisplayArr.get(shapeType);
     let shapeColorInfo = shapeColorsArr.get(shapeDisplayInfo.colorType);
@@ -246,9 +261,8 @@ function ConstructShape(shapeType, position, shapeContent, offsetShape, isShadow
     let constructedShape = Utils.CreateElement("div", shapeClass, currentPlane);
     let usedShapeColor = isShadow ? shapeColorInfo.shadowColor : shapeColorInfo.shapeColor;
     constructedShape.style.backgroundColor = usedShapeColor;
-    if (shapeColorInfo.fontColor !== "") {
-        constructedShape.style.color = shapeColorInfo.fontColor;
-    }
+    let usedFontColor = isShadow ? shapeColorInfo.shadowColor : shapeColorInfo.fontColor;
+    constructedShape.style.color = usedFontColor;
     if (isShadow)
         constructedShape.classList.add("ShapeShadow");
     shapeContent.SetContent(constructedShape);
@@ -272,11 +286,15 @@ export function UpdateShapeProperties(currentShape) {
     let widthSizeIncrease = shapeWidth / defaultWidth;
     Utils.SetProperty(currentShape, "--width-size-increase", widthSizeIncrease.toString());
 }
-export function AddShape(shapeType, position, shapeContent, offsetShape = true, renderShadow = true) {
-    let renderedShape = new RenderedShape(shapeContent, shapeType, position.Copy());
+export function AddShape(linkedNode, shapeType, position, shapeContent, offsetShape = true, renderShadow = true) {
+    let renderedShape = new RenderedShape(linkedNode, shapeContent, shapeType);
     renderedShape.mainShape = ConstructShape(shapeType, position, shapeContent, offsetShape, false);
     if (renderShadow)
         renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
+    let shapeHeight = Utils.GetPropertyPX(renderedShape.mainShape, "height");
+    renderedShape.renderPosition = position.Copy();
+    if (offsetShape)
+        renderedShape.renderPosition.y += shapeHeight / 2;
     return renderedShape;
 }
 export function ClearPlane() { currentPlane.replaceChildren(); }
@@ -321,20 +339,38 @@ export function ConstructLabel(originalPosition, labelContents, horizontalAlignm
     SetShapePosition(constructedLabel, renderPosition);
     return constructedLabel;
 }
+const maxDurationBetweenClicksForEditDialog = 0.25, milisecondsInSecond = 1000;
 export let selectedShapes = new Set();
+export var SelectionType;
+(function (SelectionType) {
+    SelectionType[SelectionType["Reversed"] = 0] = "Reversed";
+    SelectionType[SelectionType["Select"] = 1] = "Select";
+    SelectionType[SelectionType["Unselect"] = 2] = "Unselect";
+})(SelectionType || (SelectionType = {}));
+var ShapeSection;
+(function (ShapeSection) {
+    ShapeSection[ShapeSection["Unknown"] = -1] = "Unknown";
+    ShapeSection[ShapeSection["Main"] = 0] = "Main";
+    ShapeSection[ShapeSection["Shadow"] = 1] = "Shadow";
+    ShapeSection[ShapeSection["MergePoint"] = 2] = "MergePoint";
+})(ShapeSection || (ShapeSection = {}));
+let mainShapeSectionArr = [ShapeSection.Main, ShapeSection.Shadow, ShapeSection.MergePoint];
 export class RenderedShape {
     mainShape = null;
     shadowShape = null;
+    mergePoint = null;
     renderPosition = Utils.Vec2.Zero();
     shapeContent = new ShapeContent();
     shapeType = ShapeType.Unknown;
     cachedSize = Utils.Vec2.Zero();
     isSizeCached = false;
     isSelected = false;
-    constructor(content = new ShapeContent(), type = ShapeType.Unknown, position = Utils.Vec2.Zero()) {
+    lastClickTime = null;
+    linkedNode = null;
+    constructor(associatedNode = null, content = new ShapeContent(), type = ShapeType.Unknown) {
+        this.linkedNode = associatedNode;
         this.shapeContent = content;
         this.shapeType = type;
-        this.renderPosition = position;
     }
     GetShapeType() { return this.shapeType; }
     SetProperty(propertyName, propertyValue) {
@@ -375,28 +411,50 @@ export class RenderedShape {
         this.cachedSize = shapeSize;
         return shapeSize;
     }
-    OnClick(forcedUnselect = false) {
+    OnClick(selectionType = SelectionType.Reversed) {
         this.isSelected = !this.isSelected;
-        if (forcedUnselect)
-            this.isSelected = false;
+        let isReversingSelection = selectionType === SelectionType.Reversed;
+        if (!isReversingSelection)
+            this.isSelected = selectionType === SelectionType.Select;
+        let currentClickTime = performance.now();
+        let secondsBetweenLastClick = this.lastClickTime === null ? Infinity : (currentClickTime - this.lastClickTime) / milisecondsInSecond;
+        let attemptOpeningEditDialog = secondsBetweenLastClick <= maxDurationBetweenClicksForEditDialog;
+        if (this.linkedNode !== null && attemptOpeningEditDialog)
+            this.linkedNode.OnEditDialogOpen();
         let currentColorInfo = selectedShapeColors;
         if (!this.isSelected) {
             let clickedShapeDisplayInfo = shapeDisplayArr.get(this.shapeType);
             currentColorInfo = shapeColorsArr.get(clickedShapeDisplayInfo.colorType);
+            if (this.shapeContent.isIncomplete)
+                currentColorInfo = incompleteShapeColors;
             selectedShapes.delete(this);
         }
         else
             selectedShapes.add(this);
-        this.SetShapeColors(currentColorInfo, false);
-        this.SetShapeColors(currentColorInfo, true);
+        for (let currentSectionType of mainShapeSectionArr) {
+            this.SetShapeColors(currentColorInfo, currentSectionType);
+        }
+        this.lastClickTime = currentClickTime;
+        if (!this.isSelected)
+            this.lastClickTime = null;
     }
-    SetShapeColors(colorInfo, settingForShadow) {
-        let currentShape = settingForShadow ? this.shadowShape : this.mainShape;
+    SetShapeColors(colorInfo, currentSectionType) {
+        const shapeSectionToDivMap = new Map([
+            [ShapeSection.Main, this.mainShape], [ShapeSection.Shadow, this.shadowShape], [ShapeSection.MergePoint, this.mergePoint]
+        ]), shapeSectionToColorMap = new Map([
+            [ShapeSection.Main, colorInfo.shapeColor], [ShapeSection.Shadow, colorInfo.shadowColor],
+            [ShapeSection.MergePoint, colorInfo.mergePointColor]
+        ]);
+        let currentShape = shapeSectionToDivMap.get(currentSectionType);
         if (currentShape === null)
             return;
-        let usedShapeColor = settingForShadow ? colorInfo.shadowColor : colorInfo.shapeColor;
-        currentShape.style.backgroundColor = usedShapeColor;
-        currentShape.style.color = colorInfo.fontColor;
+        let currentColor = shapeSectionToColorMap.get(currentSectionType);
+        currentShape.style.backgroundColor = currentColor;
+        let usedFontColor = currentSectionType === ShapeSection.Main ? colorInfo.fontColor : currentColor;
+        currentShape.style.color = usedFontColor;
+        if (this.shapeType !== ShapeType.Comment)
+            return;
+        Utils.SetProperty(currentShape, "--comment-decoration-color", colorInfo.outlineColor);
     }
     Delete() {
         if (this.mainShape !== null)

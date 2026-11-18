@@ -12,6 +12,7 @@ function OnStart() {
     prevMousePos = Utils.GetMousePos();
     openFileInput.addEventListener("change", OnFileSelected);
     ShapeSelect.SetProgram(openedProgram);
+    ShapeRenderer.SetShadowOffsets();
     ResetCameraData();
     ShapeRenderer.SetPlane(shapePlane);
     openedProgram.Render(Utils.Vec2.Zero());

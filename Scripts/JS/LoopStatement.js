@@ -130,6 +130,7 @@ class CycleStatement extends BaseNode.ProgramNode {
         return totalWidth;
     }
     IsForLoop() { return false; }
+    GetSubnodeList() { return [this.subnodeParent]; }
 }
 export class ForLoop extends CycleStatement {
     iteratorName = "";
@@ -165,7 +166,6 @@ export class ForLoop extends CycleStatement {
 export class ConditionalCycle extends CycleStatement {
     expression = new Expression();
     isDoWhile = false;
-    mergePoint = null;
     currentPosition = Utils.Vec2.Zero();
     headPosition = Utils.Vec2.Zero();
     renderPosition = Utils.Vec2.Zero();
@@ -196,22 +196,24 @@ export class ConditionalCycle extends CycleStatement {
         this.RenderDoWhileBody();
         this.RenderDoWhileArrowToMergePoint();
         this.RenderDoWhileLabels();
+        let savedMergePoint = this.linkedShape.mergePoint;
         this.AddShape(this.headPosition);
+        this.linkedShape.mergePoint = savedMergePoint;
     }
     RenderDoWhileMergePoint() {
-        this.mergePoint = Utils.CreateElement("div", "ShapeArrowConnector", ShapeRenderer.currentPlane);
-        Utils.SetProperty(this.mergePoint, "--connector-size-multiplier", BaseNode.mergePointSizeMultiplier.toString());
+        this.linkedShape.mergePoint = Utils.CreateElement("div", "ShapeArrowConnector", ShapeRenderer.currentPlane);
+        Utils.SetProperty(this.linkedShape.mergePoint, "--connector-size-multiplier", BaseNode.mergePointSizeMultiplier.toString());
         let mergePointSize = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * BaseNode.mergePointSizeMultiplier;
         this.currentPosition.y += mergePointSize / 2;
-        ShapeRenderer.SetShapePosition(this.mergePoint, this.currentPosition);
+        ShapeRenderer.SetShapePosition(this.linkedShape.mergePoint, this.currentPosition);
         let mergePointColorInfo = ShapeRenderer.GetColorInfo(this.GetType());
         if (this.expression.IsEmpty())
             mergePointColorInfo = ShapeRenderer.incompleteShapeColors;
         let mergePointColor = mergePointColorInfo.mergePointColor;
-        Utils.SetProperty(this.mergePoint, "background-color", mergePointColor);
+        Utils.SetProperty(this.linkedShape.mergePoint, "background-color", mergePointColor);
     }
     RenderDoWhileBody() {
-        if (this.mergePoint === null)
+        if (this.linkedShape.mergePoint === null)
             return;
         let subnodeWidth = this.subnodeParent.GetSize(BaseNode.SizeCountType.OnlyLeft, BaseNode.SubnodeCountType.Entirety).x;
         let headSize = this.GetSize(BaseNode.SizeCountType.CountAll, BaseNode.SubnodeCountType.HeadOnly);
@@ -245,7 +247,7 @@ export class ConditionalCycle extends CycleStatement {
         this.headPosition.y += subnodeHeight;
     }
     RenderDoWhileArrowToMergePoint() {
-        if (this.mergePoint === null)
+        if (this.linkedShape.mergePoint === null)
             return;
         let mergePointSize = Utils.GetPropertyPX(document.documentElement, "--default-connector-size") * BaseNode.mergePointSizeMultiplier;
         let arrowLength = this.headPosition.y - this.renderPosition.y - mergePointSize;

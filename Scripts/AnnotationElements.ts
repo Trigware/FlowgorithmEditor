@@ -3,11 +3,11 @@ import * as ShapeRenderer from "./ShapeRenderer.js"
 import * as Flowgorithm from "./ProgramRepresentation.js"
 import * as BaseNode from "./ProgramNode.js"
 import * as Utils from "./Utils.js"
+import * as ShapeInteract from "./ShapeIntersect.js"
 
 type OptionalDiv = HTMLDivElement | null;
 
 const octagonShadowYOffset: number = 5, breakpointVericalPadding: number = 30, labelXOffset: number = 0.3;
-const conditionalBreakpointSegmentPortion: number = 0.5;
 
 export class Breakpoint extends BaseNode.ProgramNode {
     public isConditional: boolean = false;
@@ -23,6 +23,12 @@ export class Breakpoint extends BaseNode.ProgramNode {
         return shapeContent;
     }
 
+    public override GetIntersectInfo(displayType: ShapeRenderer.ShapeDisplayType): ShapeInteract.IntersectInfo {
+        let intersectInfo: ShapeInteract.IntersectInfo = new ShapeInteract.IntersectInfo(displayType);
+        intersectInfo.isConditionalBreakpoint = this.isConditional;
+        return intersectInfo;
+    }
+
     public override Render(position: Utils.Vec2) {
         let renderPosition: Utils.Vec2 = position.Plus(0, breakpointVericalPadding / 2);
         let shapeSize: Utils.Vec2 = this.GetOctagonShapeSize(false);
@@ -35,10 +41,13 @@ export class Breakpoint extends BaseNode.ProgramNode {
         );
         labelInfo.containerHeight = shapeSize.y;
         this.expressionLabel = labelInfo.CreateLabel();
-
         this.AddShape(renderPosition);
-        let conditionalSegmentPortion: string = (conditionalBreakpointSegmentPortion * 100).toString() + "%";
-        if (this.isConditional) this.linkedShape.SetProperty("--segment-portion", conditionalSegmentPortion);
+
+        let segmentPortionProperty: string = this.isConditional ? "--default-conditional-breakpoint-segment-portion" : "--default-breakpoint-segment-portion";
+        let segmentPortion: number = Number(Utils.GetFromRoot(segmentPortionProperty));
+        let segmentPortionValue: string = (segmentPortion * 100).toString() + "%";
+
+        this.linkedShape.SetProperty("--segment-portion", segmentPortionValue);
     }
 
     private GetLabelContents(): string {
@@ -113,7 +122,7 @@ export class InlineComment extends BaseNode.ProgramNode {
             commentXOffset, -commentShapeSize.y / 2
         );
         
-        this.linkedShape = ShapeRenderer.AddShape(this.GetType(), commentShapePos, shapeContent);
+        this.linkedShape = ShapeRenderer.AddShape(this, this.GetType(), commentShapePos, shapeContent);
     }
 
     private GetConnectingDotsWidth(): number {

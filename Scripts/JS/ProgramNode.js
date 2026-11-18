@@ -2,6 +2,7 @@ import { ArrowPath } from "./ArrowRendering.js";
 import * as ShapeRenderer from "./ShapeRenderer.js";
 import * as Utils from "./Utils.js";
 import * as Flowgorithm from "./ProgramRepresentation.js";
+import * as ShapeIntersect from "./ShapeIntersect.js";
 export var SizeCountType;
 (function (SizeCountType) {
     SizeCountType[SizeCountType["CountAll"] = 0] = "CountAll";
@@ -61,10 +62,6 @@ export class CachedSize {
 export class ClickInfo {
     hasClicked = false;
     clickedShape = null;
-    constructor(clicked, shape = null) {
-        this.hasClicked = clicked;
-        this.clickedShape = shape;
-    }
 }
 export class ProgramNode {
     subNodes = [];
@@ -81,22 +78,57 @@ export class ProgramNode {
         this.linkedShape.Delete(); }
     GetContent() { return Flowgorithm.GetEmptyContent(); }
     GetType() { return ShapeRenderer.ShapeType.Unknown; }
+    GetAllShapeMap() {
+        return new Map([[this.GetType(), this.linkedShape]]);
+    }
     DrawsAfterArrow() { return false; }
     BeforeArrowHasEnding() { return true; }
     Render(position) { }
     GetClickInformation(clickedWorldPos) {
-        let clickInformation = this.IsPointInside(clickedWorldPos);
+        let clickInformation = new ClickInfo();
+        let allShapeTypesMap = this.GetAllShapeMap();
+        for (let currentShapeType of allShapeTypesMap.keys()) {
+            let isShapeTypeLinkedDisplayType = ShapeRenderer.shapeDisplayArr.has(currentShapeType);
+            if (!isShapeTypeLinkedDisplayType)
+                continue;
+            let currentRenderedShape = allShapeTypesMap.get(currentShapeType);
+            let relativeClickPos = clickedWorldPos.Minus(currentRenderedShape.renderPosition.x, currentRenderedShape.renderPosition.y), currentShapeSize = currentRenderedShape.GetSize();
+            let shapeDisplayInfo = ShapeRenderer.shapeDisplayArr.get(currentShapeType);
+            let shapeDisplayType = shapeDisplayInfo.displayType;
+            let isBreakpoint = shapeDisplayType === ShapeRenderer.ShapeDisplayType.Octagon;
+            let intersectInfo = this.GetIntersectInfo(shapeDisplayType);
+            if (isBreakpoint && currentRenderedShape.mainShape !== null) {
+                currentShapeSize = new Utils.Vec2(currentRenderedShape.mainShape.clientWidth, currentRenderedShape.mainShape.clientHeight);
+            }
+            let isInsideShape = ShapeIntersect.IsPointInsideShape(relativeClickPos, currentShapeSize, intersectInfo);
+            if (!isInsideShape && currentRenderedShape.mergePoint !== null) {
+                let mergePointPos = new Utils.Vec2(Utils.GetPropertyPX(currentRenderedShape.mergePoint, "--shape-x"), Utils.GetPropertyPX(currentRenderedShape.mergePoint, "--shape-y"));
+                let mergePointSize = new Utils.Vec2(currentRenderedShape.mergePoint.clientWidth, currentRenderedShape.mergePoint.clientHeight);
+                let clickRelativeToMergePoint = clickedWorldPos.Minus(mergePointPos.x, mergePointPos.y);
+                let mergeIntersectInfo = new ShapeIntersect.IntersectInfo(ShapeRenderer.ShapeDisplayType.Circle);
+                isInsideShape = ShapeIntersect.IsPointInsideShape(clickRelativeToMergePoint, mergePointSize, mergeIntersectInfo);
+            }
+            if (!isInsideShape)
+                continue;
+            clickInformation.hasClicked = true;
+            clickInformation.clickedShape = currentRenderedShape;
+            break;
+        }
         if (clickInformation.hasClicked)
             return clickInformation;
-        for (let currentSubnode of this.subNodes) {
+        let subnodeList = this.GetSubnodeList();
+        for (let currentSubnode of subnodeList) {
             let subnodeClickInfo = currentSubnode.GetClickInformation(clickedWorldPos);
             if (subnodeClickInfo.hasClicked)
                 return subnodeClickInfo;
         }
-        return new ClickInfo(false);
+        return new ClickInfo();
     }
-    IsPointInside(worldPos) { return new ClickInfo(false); }
     OnClick(clickInformation) { this.linkedShape.OnClick(); }
+    GetIntersectInfo(displayType) {
+        return new ShapeIntersect.IntersectInfo(displayType);
+    }
+    GetSubnodeList() { return this.subNodes; }
     Delete() {
         this.linkedShape.Delete();
         for (let childNode of this.subNodes)
@@ -105,7 +137,7 @@ export class ProgramNode {
             currentArrow.Delete();
     }
     AddShape(position) {
-        this.linkedShape = ShapeRenderer.AddShape(this.GetType(), position, this.GetContent());
+        this.linkedShape = ShapeRenderer.AddShape(this, this.GetType(), position, this.GetContent());
     }
     GetSize(countType = SizeCountType.CountAll, countSubnodesMode = SubnodeCountType.HeadOnly) {
         if (!this.sizeCache.isCached) {
@@ -192,5 +224,8 @@ export class ProgramNode {
             totalWidth = Math.max(totalWidth, subnodeWidth);
         }
         return totalWidth;
+    }
+    OnEditDialogOpen() {
+        console.log(this.constructor.name);
     }
 }

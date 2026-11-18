@@ -139,9 +139,15 @@ export class FunctionSignature extends BaseNode.ProgramNode {
         return sizeCache;
     }
     GetType() { return ShapeRenderer.ShapeType.FunctionSignature; }
+    GetAllShapeMap() {
+        return new Map([
+            [ShapeRenderer.ShapeType.FunctionSignature, this.linkedShape],
+            [ShapeRenderer.ShapeType.FunctionEnd, this.functionEndShape]
+        ]);
+    }
     Render(position) {
         let latestShapePosition = position;
-        let functionSignatureShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.FunctionSignature, position, this.GetContent(), false);
+        let functionSignatureShape = ShapeRenderer.AddShape(this, ShapeRenderer.ShapeType.FunctionSignature, position, this.GetContent(), false);
         let functionSignatureSize = functionSignatureShape.GetSize();
         latestShapePosition.y += functionSignatureSize.y / 2;
         this.linkedShape = functionSignatureShape;
@@ -157,13 +163,7 @@ export class FunctionSignature extends BaseNode.ProgramNode {
         else
             this.RenderDefaultArrow(position);
         let returnShapeContent = this.GetEndShapeContent();
-        this.functionEndShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.FunctionEnd, position, returnShapeContent);
-        let functionEndSize = this.functionEndShape.GetSize();
-        position.y += functionEndSize.y * 1.5;
-        if (this.functionEndShape.shadowShape === null)
-            return;
-        let endShadowYOffset = Utils.GetNumericPixels(Utils.GetProperty(this.functionEndShape.shadowShape, "--additional-offset-y"));
-        position.y += endShadowYOffset;
+        this.functionEndShape = ShapeRenderer.AddShape(this, ShapeRenderer.ShapeType.FunctionEnd, position, returnShapeContent);
     }
     Delete() { super.Delete(); this.functionEndShape.Delete(); }
     GetSideTotalWidth(checkedSide) {
@@ -181,20 +181,6 @@ export class FunctionSignature extends BaseNode.ProgramNode {
         let clickingEndShape = clickInformation.clickedShape.GetShapeType() === ShapeRenderer.ShapeType.FunctionEnd;
         let clickedShape = clickingEndShape ? this.functionEndShape : this.linkedShape;
         clickedShape.OnClick();
-    }
-    IsPointInside(clickedWorldPos) {
-        let insideSignature = this.IsPointInsideFunctionShape(clickedWorldPos, ShapeRenderer.ShapeType.FunctionSignature), insideEndShape = false;
-        let isPointInsideAnything = insideSignature || insideEndShape;
-        let clickedShape = insideSignature ? this.linkedShape : this.functionEndShape;
-        return new BaseNode.ClickInfo(isPointInsideAnything, clickedShape);
-    }
-    IsPointInsideFunctionShape(clickedWorldPos, shapeType) {
-        let isEndShape = shapeType === ShapeRenderer.ShapeType.FunctionEnd;
-        let currentShape = isEndShape ? this.functionEndShape : this.linkedShape;
-        let shapeSize = currentShape.GetSize(), shapeRenderPos = currentShape.renderPosition;
-        let vecDistFromRenderPos = clickedWorldPos.Minus(shapeRenderPos.x, shapeRenderPos.y).Abs();
-        let isInsideBoundingRect = vecDistFromRenderPos.x <= shapeSize.x / 2 && vecDistFromRenderPos.y <= shapeSize.y / 2;
-        return isInsideBoundingRect;
     }
 }
 export class DeclarationInstruction extends BaseNode.ProgramNode {
@@ -239,9 +225,7 @@ export class AssignmentInstruction extends BaseNode.ProgramNode {
         return incompleteShapeContent;
     }
     GetType() { return ShapeRenderer.ShapeType.Assignment; }
-    Render(position) {
-        this.linkedShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.Assignment, position, this.GetContent());
-    }
+    Render(position) { this.AddShape(position); }
 }
 export class IOInstruction extends BaseNode.ProgramNode {
     expression = new Expression();

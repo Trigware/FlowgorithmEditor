@@ -2,8 +2,11 @@ import { ArrowPath } from "./ArrowRendering.js"
 import * as ShapeRenderer from "./ShapeRenderer.js"
 import * as Utils from "./Utils.js"
 import * as Flowgorithm from "./ProgramRepresentation.js"
+import * as ShapeIntersect from "./ShapeIntersect.js"
 
 type ProgramNodeOpt = ProgramNode | null;
+type ShapeMap = Map<ShapeRenderer.ShapeType, ShapeRenderer.RenderedShape>
+
 export type SidesWidths = [number, number];
 
 export enum SizeCountType {
@@ -65,10 +68,6 @@ type OptionalShape = ShapeRenderer.RenderedShape | null;
 export class ClickInfo {
     public hasClicked: boolean = false;
     public clickedShape: OptionalShape = null;
-
-    public constructor(clicked: boolean, shape: OptionalShape = null) {
-        this.hasClicked = clicked; this.clickedShape = shape;
-    }
 }
 
 export class ProgramNode {
@@ -86,23 +85,68 @@ export class ProgramNode {
     public Clear() { this.subNodes = []; if (this.linkedShape !== null) this.linkedShape.Delete(); }
     public GetContent(): ShapeRenderer.ShapeContent { return Flowgorithm.GetEmptyContent(); }
     public GetType(): ShapeRenderer.ShapeType { return ShapeRenderer.ShapeType.Unknown; }
+    public GetAllShapeMap(): ShapeMap {
+        return new Map([[this.GetType(), this.linkedShape]]);
+    }
     public DrawsAfterArrow(): boolean { return false; }
     public BeforeArrowHasEnding(): boolean { return true; }
     public Render(position: Utils.Vec2) {}
 
     public GetClickInformation(clickedWorldPos: Utils.Vec2): ClickInfo {
-        let clickInformation: ClickInfo = this.IsPointInside(clickedWorldPos);
-        if (clickInformation.hasClicked) return clickInformation;
+        let clickInformation: ClickInfo = new ClickInfo();
+        let allShapeTypesMap: ShapeMap = this.GetAllShapeMap();
 
-        for (let currentSubnode of this.subNodes) {
+        for (let currentShapeType of allShapeTypesMap.keys()) {
+            let isShapeTypeLinkedDisplayType: boolean = ShapeRenderer.shapeDisplayArr.has(currentShapeType);
+            if (!isShapeTypeLinkedDisplayType) continue;
+
+            let currentRenderedShape: ShapeRenderer.RenderedShape = allShapeTypesMap.get(currentShapeType)!;
+            let relativeClickPos: Utils.Vec2 = clickedWorldPos.Minus(currentRenderedShape.renderPosition.x, currentRenderedShape.renderPosition.y),
+                currentShapeSize: Utils.Vec2 = currentRenderedShape.GetSize();
+
+            let shapeDisplayInfo: ShapeRenderer.ShapeDisplayInfo = ShapeRenderer.shapeDisplayArr.get(currentShapeType)!;
+            let shapeDisplayType: ShapeRenderer.ShapeDisplayType = shapeDisplayInfo.displayType;
+
+            let isBreakpoint: boolean = shapeDisplayType === ShapeRenderer.ShapeDisplayType.Octagon;
+            let intersectInfo: ShapeIntersect.IntersectInfo = this.GetIntersectInfo(shapeDisplayType);
+
+            if (isBreakpoint && currentRenderedShape.mainShape !== null) {
+                currentShapeSize = new Utils.Vec2(currentRenderedShape.mainShape.clientWidth, currentRenderedShape.mainShape.clientHeight);
+            }
+
+            let isInsideShape: boolean = ShapeIntersect.IsPointInsideShape(relativeClickPos, currentShapeSize, intersectInfo);
+            if (!isInsideShape && currentRenderedShape.mergePoint !== null) {
+                let mergePointPos: Utils.Vec2 = new Utils.Vec2(
+                    Utils.GetPropertyPX(currentRenderedShape.mergePoint, "--shape-x"), Utils.GetPropertyPX(currentRenderedShape.mergePoint, "--shape-y")
+                );
+                let mergePointSize: Utils.Vec2 = new Utils.Vec2(currentRenderedShape.mergePoint.clientWidth, currentRenderedShape.mergePoint.clientHeight);
+                let clickRelativeToMergePoint: Utils.Vec2 = clickedWorldPos.Minus(mergePointPos.x, mergePointPos.y);
+                let mergeIntersectInfo: ShapeIntersect.IntersectInfo = new ShapeIntersect.IntersectInfo(ShapeRenderer.ShapeDisplayType.Circle);
+                isInsideShape = ShapeIntersect.IsPointInsideShape(clickRelativeToMergePoint, mergePointSize, mergeIntersectInfo);
+            }
+
+            if (!isInsideShape) continue;
+
+            clickInformation.hasClicked = true;
+            clickInformation.clickedShape = currentRenderedShape;
+            break;
+        }
+
+        if (clickInformation.hasClicked) return clickInformation;
+        
+        let subnodeList: ProgramNode[] = this.GetSubnodeList();
+        for (let currentSubnode of subnodeList) {
             let subnodeClickInfo: ClickInfo = currentSubnode.GetClickInformation(clickedWorldPos);
             if (subnodeClickInfo.hasClicked) return subnodeClickInfo;
         }
-        return new ClickInfo(false);
+        return new ClickInfo();
     }
 
-    public IsPointInside(worldPos: Utils.Vec2): ClickInfo { return new ClickInfo(false); }
     public OnClick(clickInformation: ClickInfo) { this.linkedShape.OnClick(); }
+    public GetIntersectInfo(displayType: ShapeRenderer.ShapeDisplayType): ShapeIntersect.IntersectInfo {
+        return new ShapeIntersect.IntersectInfo(displayType);
+    }
+    public GetSubnodeList(): ProgramNode[] { return this.subNodes; }
 
     public Delete() {
         this.linkedShape.Delete();
@@ -111,7 +155,7 @@ export class ProgramNode {
     }
 
     protected AddShape(position: Utils.Vec2) {
-        this.linkedShape = ShapeRenderer.AddShape(this.GetType(), position, this.GetContent());
+        this.linkedShape = ShapeRenderer.AddShape(this, this.GetType(), position, this.GetContent());
     }
 
     public GetSize(countType: SizeCountType = SizeCountType.CountAll, countSubnodesMode: SubnodeCountType = SubnodeCountType.HeadOnly): Utils.Vec2 {
@@ -213,5 +257,9 @@ export class ProgramNode {
         }
 
         return totalWidth;
+    }
+
+    public OnEditDialogOpen() {
+        console.log(this.constructor.name);
     }
 }

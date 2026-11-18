@@ -11,12 +11,15 @@ export class Vec2 {
     public Minus(x: number, y: number): Vec2 { return new Vec2(this.x - x, this.y - y); }
     public Times(x: number, y: number = x): Vec2 { return new Vec2(this.x * x, this.y * y); }
     public Divide(x: number, y: number = x): Vec2 { return new Vec2(this.x / x, this.y / y); }
+    public Negate(): Vec2 { return new Vec2(-this.x, -this.y); }
 
     public IsInsideOf(x: number, y: number, w: number, h: number): boolean {
         return this.x >= x && this.y >= y && this.x <= w && this.y <= h;
     }
     public static FromAngleDeg(angleDegrees: number): Vec2 { return Vec2.FromAngleRad(DegToRad(angleDegrees)); }
     public static FromAngleRad(angleRadians: number): Vec2 { return new Vec2(Math.cos(angleRadians), Math.sin(angleRadians)); }
+    public Sign(): Vec2 { return new Vec2(Math.sign(this.x), Math.sign(this.y)); }
+    public AsRadians(): number { return Math.atan2(this.y, this.x) }
 
     public Equals(other: Vec2): boolean { return this.x === other.x && this.y === other.y; }
     public ToString(): string { return `(x: ${this.x}, y: ${this.y})`; }
@@ -27,6 +30,14 @@ export class Vec2 {
     }
 
     public Abs(): Vec2 { return new Vec2(Math.abs(this.x), Math.abs(this.y)); }
+    public Dist(other: Vec2): number { return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2); }
+    public Magnitude(): number { return Math.sqrt(this.x ** 2 + this.y ** 2); }
+
+    public Normalized(): Vec2 {
+        let magnitude: number = this.Magnitude();
+        if (magnitude === 0) return Vec2.Zero();
+        return this.Divide(magnitude);
+    }
 }
 
 export function GetTimeSinceStarted(): number {
