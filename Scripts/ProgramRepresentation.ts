@@ -159,7 +159,7 @@ export class FunctionSignature extends BaseNode.ProgramNode {
     public override Render(position: Utils.Vec2) {
         let latestShapePosition: Utils.Vec2 = position;
         let functionSignatureShape: ShapeRenderer.RenderedShape = ShapeRenderer.AddShape(
-            this, ShapeRenderer.ShapeType.FunctionSignature, position, this.GetContent(), false
+            ShapeRenderer.ShapeType.FunctionSignature, position, this.GetContent(), false
         );
         let functionSignatureSize: Utils.Vec2 = functionSignatureShape.GetSize();
         latestShapePosition.y += functionSignatureSize.y / 2;
@@ -177,7 +177,7 @@ export class FunctionSignature extends BaseNode.ProgramNode {
         else this.RenderDefaultArrow(position);
 
         let returnShapeContent: ShapeRenderer.ShapeContent = this.GetEndShapeContent();
-        this.functionEndShape = ShapeRenderer.AddShape(this, ShapeRenderer.ShapeType.FunctionEnd, position, returnShapeContent);
+        this.functionEndShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.FunctionEnd, position, returnShapeContent);
     }
 
     public override Delete() { super.Delete(); this.functionEndShape.Delete(); }

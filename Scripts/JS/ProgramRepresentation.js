@@ -147,7 +147,7 @@ export class FunctionSignature extends BaseNode.ProgramNode {
     }
     Render(position) {
         let latestShapePosition = position;
-        let functionSignatureShape = ShapeRenderer.AddShape(this, ShapeRenderer.ShapeType.FunctionSignature, position, this.GetContent(), false);
+        let functionSignatureShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.FunctionSignature, position, this.GetContent(), false);
         let functionSignatureSize = functionSignatureShape.GetSize();
         latestShapePosition.y += functionSignatureSize.y / 2;
         this.linkedShape = functionSignatureShape;
@@ -163,7 +163,7 @@ export class FunctionSignature extends BaseNode.ProgramNode {
         else
             this.RenderDefaultArrow(position);
         let returnShapeContent = this.GetEndShapeContent();
-        this.functionEndShape = ShapeRenderer.AddShape(this, ShapeRenderer.ShapeType.FunctionEnd, position, returnShapeContent);
+        this.functionEndShape = ShapeRenderer.AddShape(ShapeRenderer.ShapeType.FunctionEnd, position, returnShapeContent);
     }
     Delete() { super.Delete(); this.functionEndShape.Delete(); }
     GetSideTotalWidth(checkedSide) {

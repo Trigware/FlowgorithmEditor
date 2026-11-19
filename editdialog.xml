@@ -1,0 +1,160 @@
+<windows>
+    <edit name="Output">
+        <title>Edit Output</title>
+        <summary>
+            Turns an expression into text and then prints it to the console.
+        </summary>
+        <section text="Message">
+            <expression/>
+        </section>
+    </edit>
+    <edit name="Input">
+        <title>Edit Input</title>
+        <summary>
+            Prompts the user to write a message that will be stored in memory.
+        </summary>
+        <section text="Input storage">
+            <multiple>
+                <line>
+                    <expression/>
+                    Input <variable>index</variable>
+                </line>
+            </multiple>
+            <new/>
+        </section>
+    </edit>
+    <edit name="Assign">
+        <title>Edit Assignment</title>
+        <summary>
+            Allows the program to directly store a value in memory.
+        </summary>
+        <section text="Expression">
+            <multiple>
+                <line>
+                    <expression>storage</expression>
+                    <dropdown/>
+                </line>
+            </multiple>
+            <expression>value</expression>
+            <new/>
+            <note>
+                This allows you to store the same value in multiple places.
+            </note>
+        </section>
+        <section text="Options">
+            <line>
+                Type: 
+                <dropdown>
+                    <item>Direct</item>
+                    <item>Compound</item>
+                    <item>Unary</item>
+                </dropdown>
+            </line>
+            <note>
+                Direct:
+                    Doesn't change the value.
+                Compound:
+                    Applies an operator to a value.
+                    Example: a += 5 is same as a = a + 5.
+                Unary:
+                    Adds or subtracts 1 to a value.
+                    Example: a++ is same as a = a + 1.
+            </note>
+        </section>
+    </edit>
+    <edit name="Declare">
+        <title>Edit Declaration</title>
+        <summary>
+            Creates a variable and associates it with a data type that can never change.
+        </summary>
+        <section text="Name(s)">
+            <multiple>
+                <expression/>
+                Variable <variable>index</variable>
+            </multiple>
+            <new/>
+        </section>
+        <section text="Type">
+            <datatype/>
+        </section>
+        <section text="Default Value(s)"/>
+    </edit>
+    <edit name="Call">
+        <title>Edit Call</title>
+        <summary>
+            Runs any function (labeled section of code). Functions must be followed by parethesis and their arguments must be seperated by commas.
+        </summary>
+        <section text="Function">
+            <expression/>
+        </section>
+    </edit>
+    <edit name="If">
+        <title>Edit Condition</title>
+        <summary>
+            Evaluates an expression and runs only one branch. Then if true, else if false.
+        </summary>
+        <section text="Condition">
+            <expression/>
+        </section>
+    </edit>
+    <edit name="While">
+        <title>Edit While</title>
+        <summary>
+            The code block will repeat until the condition is false. If it is false from the beginning no instructions from the block will be run.
+        </summary>
+        <section text="Condition">
+            <expression/>
+        </section>
+    </edit>
+    <edit name="Do while">
+        <title>Edit Do While</title>
+        <summary>
+            The code block inside do while will run at least once, then it will stop if the condition is false.
+        </summary>
+        <section text="Condition">
+            <expression/>
+        </section>
+    </edit>
+    <edit name="For">
+        <title>Edit For Loop</title>
+        <summary>
+            The code block inside for will repeat until the counter will reach the end of the range.
+            Range start, end, step size and direction along with the counter are all configurable.
+        </summary>
+        <section text="Mandatory">
+            <line>Variable: <expression>i</expression></line>
+            <line>End: <expression/></line>
+        </section>
+        <section text="Optional">
+            <line>Start: <expression/></line>
+            <line>Step size: <expression/></line>
+        </section>
+    </edit>
+    <edit name="Breakpoint">
+        <title>Edit Breakpoint</title>
+        <summary>
+            Breakpoint temporarily pauses code execution in order to make debugging easier for the developer.
+        </summary>
+        <section text="Settings">
+            <exclusive>
+                <item>Always break</item>
+                <item>Break if expression evaluates to true</item>
+            </exclusive>
+            <expression/>
+        </section>
+    </edit>
+    <edit name="Comment">
+        <title>Edit Comment</title>
+        <summary>
+            Comments are used to explain what a section of code does. They're only used for readability and they have no effect.
+        </summary>
+        <expression/>
+    </edit>
+    <edit name="Function Signature">
+        <title>Edit Function</title>
+        <summary>
+            Functions group related code into a single block.
+            You can pass data into them using parameters and they can return a value that you may use after calling it.
+        </summary>
+    </edit>
+</windows>

@@ -137,7 +137,7 @@ export class ProgramNode {
             currentArrow.Delete();
     }
     AddShape(position) {
-        this.linkedShape = ShapeRenderer.AddShape(this, this.GetType(), position, this.GetContent());
+        this.linkedShape = ShapeRenderer.AddShape(this.GetType(), position, this.GetContent());
     }
     GetSize(countType = SizeCountType.CountAll, countSubnodesMode = SubnodeCountType.HeadOnly) {
         if (!this.sizeCache.isCached) {
@@ -224,8 +224,5 @@ export class ProgramNode {
             totalWidth = Math.max(totalWidth, subnodeWidth);
         }
         return totalWidth;
-    }
-    OnEditDialogOpen() {
-        console.log(this.constructor.name);
     }
 }

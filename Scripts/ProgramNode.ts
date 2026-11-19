@@ -155,7 +155,7 @@ export class ProgramNode {
     }
 
     protected AddShape(position: Utils.Vec2) {
-        this.linkedShape = ShapeRenderer.AddShape(this, this.GetType(), position, this.GetContent());
+        this.linkedShape = ShapeRenderer.AddShape(this.GetType(), position, this.GetContent());
     }
 
     public GetSize(countType: SizeCountType = SizeCountType.CountAll, countSubnodesMode: SubnodeCountType = SubnodeCountType.HeadOnly): Utils.Vec2 {
@@ -257,9 +257,5 @@ export class ProgramNode {
         }
 
         return totalWidth;
-    }
-
-    public OnEditDialogOpen() {
-        console.log(this.constructor.name);
     }
 }

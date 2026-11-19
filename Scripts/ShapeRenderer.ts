@@ -1,5 +1,5 @@
 import * as Utils from "./Utils.js"
-import type { ProgramNode } from "./ProgramNode.js"
+import { OpenEditDialog } from "./WindowManager.js"
 
 export let currentPlane: HTMLDivElement;
 
@@ -279,10 +279,10 @@ export function UpdateShapeProperties(currentShape: HTMLDivElement) {
     Utils.SetProperty(currentShape, "--width-size-increase", widthSizeIncrease.toString());
 }
 
-export function AddShape(linkedNode: ProgramNode, shapeType: ShapeType, position: Utils.Vec2, shapeContent: ShapeContent,
+export function AddShape(shapeType: ShapeType, position: Utils.Vec2, shapeContent: ShapeContent,
     offsetShape: boolean = true, renderShadow: boolean = true
 ): RenderedShape {
-    let renderedShape: RenderedShape = new RenderedShape(linkedNode, shapeContent, shapeType);
+    let renderedShape: RenderedShape = new RenderedShape(shapeContent, shapeType);
     renderedShape.mainShape = ConstructShape(shapeType, position, shapeContent, offsetShape, false);
     if (renderShadow) renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
 
@@ -364,12 +364,9 @@ export class RenderedShape {
     private isSizeCached: boolean = false;
     private isSelected: boolean = false;
     private lastClickTime: number | null = null;
-    private linkedNode: ProgramNode | null = null;
 
-    public constructor(associatedNode: ProgramNode | null = null, content: ShapeContent = new ShapeContent(),
-        type: ShapeType = ShapeType.Unknown
-    ) {
-        this.linkedNode = associatedNode; this.shapeContent = content; this.shapeType = type;
+    public constructor(content: ShapeContent = new ShapeContent(), type: ShapeType = ShapeType.Unknown) {
+        this.shapeContent = content; this.shapeType = type;
     }
 
     public GetShapeType(): ShapeType { return this.shapeType; }
@@ -423,7 +420,7 @@ export class RenderedShape {
         let currentClickTime: number = performance.now();
         let secondsBetweenLastClick: number = this.lastClickTime === null ? Infinity : (currentClickTime - this.lastClickTime) / milisecondsInSecond;
         let attemptOpeningEditDialog: boolean = secondsBetweenLastClick <= maxDurationBetweenClicksForEditDialog;
-        if (this.linkedNode !== null && attemptOpeningEditDialog) this.linkedNode.OnEditDialogOpen();
+        if (attemptOpeningEditDialog) OpenEditDialog(this.shapeType);
 
         let currentColorInfo: ShapeColorInfo = selectedShapeColors;
         if (!this.isSelected) {

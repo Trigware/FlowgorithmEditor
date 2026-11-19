@@ -3,6 +3,7 @@ import * as Flowgorithm from "./ProgramRepresentation.js"
 import * as Parser from "./ProgramParser.js"
 import * as ShapeRenderer from "./ShapeRenderer.js"
 import * as ShapeSelect from "./ShapeSelect.js"
+import { LoadEditDialogData } from "./VirtualWindowData.js"
 
 let prevMousePos: Utils.Vec2 = Utils.Vec2.Zero();
 let shapePlane: HTMLDivElement = document.getElementById("ShapePlane") as HTMLDivElement;
@@ -10,11 +11,14 @@ let openFileInput: HTMLInputElement = document.getElementById("OpenFileInput") a
 let headerSection: HTMLDivElement = document.getElementById("HeaderSection") as HTMLDivElement;
 let openedProgram: Flowgorithm.Program = Flowgorithm.Program.Create();
 
+const editDialogFileName: string = "editdialog.xml";
+
 function OnStart() {
     prevMousePos = Utils.GetMousePos();
     openFileInput.addEventListener("change", OnFileSelected);
     ShapeSelect.SetProgram(openedProgram);
     ShapeRenderer.SetShadowOffsets();
+    Utils.UseFileContents(editDialogFileName, LoadEditDialogData);
 
     ResetCameraData();
     ShapeRenderer.SetPlane(shapePlane);

@@ -1,4 +1,5 @@
 import * as Utils from "./Utils.js";
+import { OpenEditDialog } from "./WindowManager.js";
 export let currentPlane;
 let measuringCanvas = document.createElement("canvas");
 let measuringContext = measuringCanvas.getContext("2d");
@@ -286,8 +287,8 @@ export function UpdateShapeProperties(currentShape) {
     let widthSizeIncrease = shapeWidth / defaultWidth;
     Utils.SetProperty(currentShape, "--width-size-increase", widthSizeIncrease.toString());
 }
-export function AddShape(linkedNode, shapeType, position, shapeContent, offsetShape = true, renderShadow = true) {
-    let renderedShape = new RenderedShape(linkedNode, shapeContent, shapeType);
+export function AddShape(shapeType, position, shapeContent, offsetShape = true, renderShadow = true) {
+    let renderedShape = new RenderedShape(shapeContent, shapeType);
     renderedShape.mainShape = ConstructShape(shapeType, position, shapeContent, offsetShape, false);
     if (renderShadow)
         renderedShape.shadowShape = ConstructShape(shapeType, position, shapeContent, offsetShape, true);
@@ -366,9 +367,7 @@ export class RenderedShape {
     isSizeCached = false;
     isSelected = false;
     lastClickTime = null;
-    linkedNode = null;
-    constructor(associatedNode = null, content = new ShapeContent(), type = ShapeType.Unknown) {
-        this.linkedNode = associatedNode;
+    constructor(content = new ShapeContent(), type = ShapeType.Unknown) {
         this.shapeContent = content;
         this.shapeType = type;
     }
@@ -419,8 +418,8 @@ export class RenderedShape {
         let currentClickTime = performance.now();
         let secondsBetweenLastClick = this.lastClickTime === null ? Infinity : (currentClickTime - this.lastClickTime) / milisecondsInSecond;
         let attemptOpeningEditDialog = secondsBetweenLastClick <= maxDurationBetweenClicksForEditDialog;
-        if (this.linkedNode !== null && attemptOpeningEditDialog)
-            this.linkedNode.OnEditDialogOpen();
+        if (attemptOpeningEditDialog)
+            OpenEditDialog(this.shapeType);
         let currentColorInfo = selectedShapeColors;
         if (!this.isSelected) {
             let clickedShapeDisplayInfo = shapeDisplayArr.get(this.shapeType);

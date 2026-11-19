@@ -89,7 +89,7 @@ export class InlineComment extends BaseNode.ProgramNode {
         let commentXOffset = commentShapeSize.x / 2 + connectingDotsWidth;
         commentXOffset += totalXOffset;
         let commentShapePos = position.Plus(commentXOffset, -commentShapeSize.y / 2);
-        this.linkedShape = ShapeRenderer.AddShape(this, this.GetType(), commentShapePos, shapeContent);
+        this.linkedShape = ShapeRenderer.AddShape(this.GetType(), commentShapePos, shapeContent);
     }
     GetConnectingDotsWidth() {
         let dotRadius = Utils.GetFromRootPX("--default-comment-dot-radius"), dotGap = Utils.GetFromRootPX("--default-comment-dot-gap"), dotCount = Number(Utils.GetFromRoot("--default-comment-dot-count")), connectingDotsWidth = (dotRadius * 2 + dotGap) * dotCount;

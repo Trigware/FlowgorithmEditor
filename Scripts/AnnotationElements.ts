@@ -122,7 +122,7 @@ export class InlineComment extends BaseNode.ProgramNode {
             commentXOffset, -commentShapeSize.y / 2
         );
         
-        this.linkedShape = ShapeRenderer.AddShape(this, this.GetType(), commentShapePos, shapeContent);
+        this.linkedShape = ShapeRenderer.AddShape(this.GetType(), commentShapePos, shapeContent);
     }
 
     private GetConnectingDotsWidth(): number {
