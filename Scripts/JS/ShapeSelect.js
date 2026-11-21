@@ -1,6 +1,7 @@
 import * as Utils from "./Utils.js";
 import * as ShapeRenderer from "./ShapeRenderer.js";
 import { Program } from "./ProgramRepresentation.js";
+import * as WindowManager from "./WindowManager.js";
 let selectionBox = document.getElementById("SelectionBox");
 let headerSection = document.getElementById("HeaderSection");
 let shapePlane = document.getElementById("ShapePlane");
@@ -10,7 +11,7 @@ let currentProgram = new Program();
 export function SetProgram(program) { currentProgram = program; }
 export function HandleShapeSelect() {
     let isLMBHeld = Utils.activeMouse.IsHeld(Utils.MouseButton.Left);
-    let isSelectionBoxVisible = isLMBHeld && !isInvalidSelection;
+    let isSelectionBoxVisible = isLMBHeld && !isInvalidSelection && !WindowManager.currentEditDialog.isOpen;
     Utils.SetProperty(selectionBox, "visibility", isSelectionBoxVisible ? "visible" : "hidden");
     let startedHoldingLMB = isLMBHeld && !wasLMBPreviouslyHeld;
     wasLMBPreviouslyHeld = isLMBHeld;
@@ -71,6 +72,8 @@ function ConvertWorldToAbsolutePosition(worldPosition) {
     return absolutePosition;
 }
 function HandleMouseInteraction() {
+    if (WindowManager.currentEditDialog.isOpen)
+        return;
     let mousePosition = Utils.activeMouse.GetPosition(), clickedWorldPos = ConvertAbsoluteToWorldPosition(mousePosition);
     let clickInfo = currentProgram.GetClickInformation(clickedWorldPos);
     for (let selectedShape of ShapeRenderer.selectedShapes) {

@@ -1,3 +1,5 @@
+import { Breakpoint } from "./AnnotationElements";
+
 const startPerformance = performance.now();
 
 export class Vec2 {
@@ -106,13 +108,15 @@ export function IsMouseInBox(box: HTMLElement, offset: Vec2 = Vec2.Zero()) {
 
 export type ElementType = keyof HTMLElementTagNameMap;
 
-export function CreateElement<K extends ElementType>(
-    elementType: K, className: string, parent: HTMLElement | null = null
-): HTMLElement {
+export function CreateElement<K extends ElementType>(elementType: K, className: string = "", parent: HTMLElement | null = null): HTMLElement {
     let createdElement: HTMLElement = document.createElement(elementType);
     if (className !== "") createdElement.classList.add(className);
     if (parent !== null) parent.appendChild(createdElement);
     return createdElement;
+}
+
+export function CreateDiv(className: string = "", parent: HTMLElement | null = null): HTMLDivElement {
+    return CreateElement("div", className, parent) as HTMLDivElement;
 }
 
 const fsJSONFileName: string = "fs.json";
@@ -188,6 +192,7 @@ const mousePressButtons: MouseButton[] = [MouseButton.Left, MouseButton.Right, M
     mouseReleaseButtons: MouseButton[] = [MouseButton.Left, MouseButton.Middle, MouseButton.Right, MouseButton.Back, MouseButton.Forward];
 
 const disableContextMenu: boolean = false;
+const maximumHeldMousePosCount: number = 10;
 
 export class MouseState {
     private pressedButtonMap: Map<MouseButton, number> = new Map();
@@ -195,6 +200,7 @@ export class MouseState {
     private heldButtonSet: Set<MouseButton> = new Set();
 
     private mousePos: Vec2 = Vec2.Zero();
+    private mousePosRecord: Vec2[] = [];
     private scrollDirection: Vec2 = Vec2.Zero();
     public framesSinceScrolled: number = 0;
 
@@ -214,9 +220,9 @@ export class MouseState {
 
     public GetPosition(): Vec2 { return this.mousePos.Copy(); }
 
-    public IsHeld(mouseButton: MouseButton): boolean { return this.heldButtonSet.has(mouseButton); }
-    public IsTapped(mouseButton: MouseButton): boolean { return this.IsPressStateActiveNow(mouseButton, false); }
-    public IsReleased(mouseButton: MouseButton): boolean { return this.IsPressStateActiveNow(mouseButton, true); }
+    public IsHeld(mouseButton: MouseButton = MouseButton.Left): boolean { return this.heldButtonSet.has(mouseButton); }
+    public IsTapped(mouseButton: MouseButton = MouseButton.Left): boolean { return this.IsPressStateActiveNow(mouseButton, false); }
+    public IsReleased(mouseButton: MouseButton = MouseButton.Left): boolean { return this.IsPressStateActiveNow(mouseButton, true); }
 
     private IsPressStateActiveNow(mouseButton: MouseButton, releasing: boolean): boolean {
         let usedButtonMap: Map<MouseButton, number> = releasing ? this.releasedButtonMap : this.pressedButtonMap;
@@ -255,11 +261,31 @@ export class MouseState {
 
     private OnDraw() {
         if (this.framesSinceScrolled > 0) this.scrollDirection = Vec2.Zero();
+
         this.framesSinceScrolled++;
         this.IncrementMapTimer(this.pressedButtonMap);
         this.IncrementMapTimer(this.releasedButtonMap);
 
+        let hasExceededMouseEntryLimit: boolean = this.mousePosRecord.length >= maximumHeldMousePosCount;
+        if (hasExceededMouseEntryLimit) {
+            let prevMousePos: Vec2 = this.mousePosRecord[this.mousePosRecord.length - 1];
+            this.mousePosRecord.length = 0;
+            this.mousePosRecord.push(prevMousePos);
+        }
+
+        this.mousePosRecord.push(this.mousePos.Copy());
         requestAnimationFrame(() => this.OnDraw());
+    }
+
+    public GetMousePosDiff(): Vec2 {
+        if (this.mousePosRecord.length === 0) return Vec2.Zero();
+        if (this.mousePosRecord.length === 1) return this.mousePosRecord[0];
+
+        let prevMousePos: Vec2 = this.mousePosRecord[this.mousePosRecord.length - 2],
+            currentMousePos: Vec2 = this.mousePosRecord[this.mousePosRecord.length - 1];
+        let mousePosDiff: Vec2 = currentMousePos.Minus(prevMousePos.x, prevMousePos.y);
+
+        return mousePosDiff;
     }
 
     private IncrementMapTimer(buttonMap: Map<MouseButton, number>) {
@@ -317,18 +343,35 @@ export function GetEnumValueFromName<T extends EnumObject>(enumObject: T, identi
     return enumObject[identifierName as keyof T];
 }
 
+export function GetEnumValueFromLoweredName<T extends EnumObject>(enumObject: T, identifierName: string): T[keyof T] | null {
+    let possibleEnumValues: (string | number)[] = Object.values(enumObject);
+    for (let currentEnumMember of possibleEnumValues) {
+        if (typeof currentEnumMember === "number") continue;
 
-export function RemoveTrailingSpaces(originalIdentifier: string): string {
-    let modifiedIdentifier: string = originalIdentifier;
+        let memberNameLowered: string = currentEnumMember.toLowerCase();
+        let namesMatch: boolean = identifierName === memberNameLowered;
+        if (!namesMatch) continue;
 
-    for (let i = 0; i < originalIdentifier.length; i++) {
-        let ch: string = originalIdentifier[i];
-        if (ch === ' ') continue;
-        modifiedIdentifier = modifiedIdentifier.substring(i);
+        return GetEnumValueFromName(enumObject, currentEnumMember);
+    }
+
+    return null;
+}
+
+const whitespaceCharacters: string = "\t \n";
+
+export function RemoveTrailingWhitespace(originalStr: string): string {
+    let modifiedStr: string = originalStr;
+
+    for (let i = 0; i < originalStr.length; i++) {
+        let ch: string = originalStr[i];
+        let isCurrentWhitespace: boolean = whitespaceCharacters.includes(ch);
+        if (isCurrentWhitespace) continue;
+        modifiedStr = modifiedStr.substring(i);
         break;
     }
 
-    return modifiedIdentifier;
+    return modifiedStr;
 }
 
 export function IsLetter(ch: string): boolean {
@@ -357,11 +400,20 @@ export function GetPropertyPX(element: HTMLElement, propertyStr: string): number
     return GetNumericPixels(propertyValueStr);
 }
 
+export function GetVectorPropertyPX(element: HTMLElement, propertyStr: string): Vec2 {
+    return new Vec2(GetPropertyPX(element, propertyStr + "-x"), GetPropertyPX(element, propertyStr + "-y"));
+}
+
 export function GetFromRoot(propertyStr: string): string { return GetProperty(document.documentElement, propertyStr); }
 export function GetFromRootPX(propertyStr: string): number { return GetNumericPixels(GetFromRoot(propertyStr)); }
 
 export function SetProperty(element: HTMLElement, propertyStr: string, propertyValue: string) {
     element.style.setProperty(propertyStr, propertyValue);
+}
+
+export function SetVectorPropertyPX(element: HTMLElement, propertyStr: string, propertyValue: Vec2) {
+    SetProperty(element, propertyStr + "-x", propertyValue.x.toString() + "px");
+    SetProperty(element, propertyStr + "-y", propertyValue.y.toString() + "px");
 }
 
 const degreesInPIRad: number = 180;
@@ -404,5 +456,29 @@ export function GetFirstChildTag(parentElement: Element, tagName: string): Eleme
     }
     return null;
 }
+
+type AnimationCallback = (() => void) | null;
+
+export function PlayAnimation(element: HTMLElement, animationName: string, isReversed: boolean = false, onFinished: AnimationCallback = null) {
+    let elementAnimationList: Animation[] = element.getAnimations();
+    let selectedAnimation: CSSAnimation | null = null;
+
+    for (let currentAnimation of elementAnimationList) {
+        if (!(currentAnimation instanceof CSSAnimation)) continue;
+
+        let hasFoundAnimation: boolean = currentAnimation.animationName === animationName;
+        if (hasFoundAnimation) { selectedAnimation = currentAnimation; break; }
+    }
+
+    if (selectedAnimation === null) { throw new Error("Attempted to play an animation that doesn't exist"); }
+
+    if (isReversed) selectedAnimation.reverse();
+    else selectedAnimation.play();
+
+    if (onFinished === null) return;
+    selectedAnimation.finished.then(onFinished);
+}
+
+export function HoversOverElement(element: HTMLElement): boolean { return element.matches(":hover"); }
 
 OnStart();

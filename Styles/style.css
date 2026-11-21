@@ -28,6 +28,9 @@
     --default-comment-dot-count: 6;
     --default-comment-dot-color: #666666;
     --comment-border-size: 2px;
+
+    --header-section-height: 60px;
+    --header-section-image-margin: 3px;
 }
 
 body {
@@ -42,7 +45,7 @@ img {
 
 .HeaderSection {
     position: sticky;
-    height: fit-content;
+    height: calc(var(--header-section-height) + var(--header-section-image-margin));
     width: 100vw;
     background-color: #727272;
     border-bottom: 0 solid #4b4b4b;
@@ -54,6 +57,11 @@ img {
 
 .HeaderSection img {
     filter: drop-shadow(2px 2px 3px #111);
+    margin-bottom: var(--header-section-image-margin);
+}
+
+.HeaderSection img:hover {
+    cursor: pointer;
 }
 
 .ShapePlane {
@@ -69,38 +77,6 @@ img {
     position: absolute;
     user-select: none;
     width: 100vw; height: 100vh;
-}
-
-.AbsolutePlane {
-    position: absolute;
-    user-select: none;
-
-    width: 100vw; height: 100vh;
-    z-index: var(--absolute-plane-layer);
-}
-
-.AbsolutePlane > * {
-    --position-x: 0px; --position-y: 0px;
-    --size-x: 0px; --size-y: 0px;
-
-    position: absolute;
-    transform:
-        translateX(var(--position-x))
-        translateY(var(--position-y));
-    
-    width: var(--size-x); height: var(--size-y);
-}
-
-.SelectionBox {
-    background-color: black;
-    opacity: 0.15;
-
-    visibility: visible;
-}
-
-.VirtualWindow {
-    --size-x: 100px; --size-y: 100px;
-    background-color: black;
 }
 
 .ShapePlane > * {

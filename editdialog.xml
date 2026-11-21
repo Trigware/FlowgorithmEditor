@@ -4,7 +4,7 @@
         <summary>
             Turns an expression into text and then prints it to the console.
         </summary>
-        <section text="Message">
+        <section heading="Message">
             <expression/>
         </section>
     </edit>
@@ -13,22 +13,22 @@
         <summary>
             Prompts the user to write a message that will be stored in memory.
         </summary>
-        <section text="Input storage">
+        <section heading="Input storage">
             <multiple>
                 <line>
                     <expression/>
                     Input <variable>index</variable>
                 </line>
             </multiple>
-            <new/>
+            <newbutton/>
         </section>
     </edit>
-    <edit name="Assign">
+    <edit name="Assignment">
         <title>Edit Assignment</title>
         <summary>
             Allows the program to directly store a value in memory.
         </summary>
-        <section text="Expression">
+        <section heading="Expression">
             <multiple>
                 <line>
                     <expression>storage</expression>
@@ -36,12 +36,12 @@
                 </line>
             </multiple>
             <expression>value</expression>
-            <new/>
+            <newbutton/>
             <note>
                 This allows you to store the same value in multiple places.
             </note>
         </section>
-        <section text="Options">
+        <section heading="Options">
             <line>
                 Type: 
                 <dropdown>
@@ -62,38 +62,38 @@
             </note>
         </section>
     </edit>
-    <edit name="Declare">
+    <edit name="VariableDeclaration">
         <title>Edit Declaration</title>
         <summary>
             Creates a variable and associates it with a data type that can never change.
         </summary>
-        <section text="Name(s)">
+        <section heading="Name(s)">
             <multiple>
                 <expression/>
                 Variable <variable>index</variable>
             </multiple>
-            <new/>
+            <newbutton/>
         </section>
-        <section text="Type">
+        <section heading="Type">
             <datatype/>
         </section>
-        <section text="Default Value(s)"/>
+        <section heading="Default Value(s)"/>
     </edit>
     <edit name="Call">
         <title>Edit Call</title>
         <summary>
             Runs any function (labeled section of code). Functions must be followed by parethesis and their arguments must be seperated by commas.
         </summary>
-        <section text="Function">
+        <section heading="Function">
             <expression/>
         </section>
     </edit>
-    <edit name="If">
+    <edit name="Conditional">
         <title>Edit Condition</title>
         <summary>
             Evaluates an expression and runs only one branch. Then if true, else if false.
         </summary>
-        <section text="Condition">
+        <section heading="Condition">
             <expression/>
         </section>
     </edit>
@@ -102,16 +102,16 @@
         <summary>
             The code block will repeat until the condition is false. If it is false from the beginning no instructions from the block will be run.
         </summary>
-        <section text="Condition">
+        <section heading="Condition">
             <expression/>
         </section>
     </edit>
-    <edit name="Do while">
+    <edit name="Do">
         <title>Edit Do While</title>
         <summary>
             The code block inside do while will run at least once, then it will stop if the condition is false.
         </summary>
-        <section text="Condition">
+        <section heading="Condition">
             <expression/>
         </section>
     </edit>
@@ -121,11 +121,11 @@
             The code block inside for will repeat until the counter will reach the end of the range.
             Range start, end, step size and direction along with the counter are all configurable.
         </summary>
-        <section text="Mandatory">
+        <section heading="Mandatory">
             <line>Variable: <expression>i</expression></line>
             <line>End: <expression/></line>
         </section>
-        <section text="Optional">
+        <section heading="Optional">
             <line>Start: <expression/></line>
             <line>Step size: <expression/></line>
         </section>
@@ -135,7 +135,7 @@
         <summary>
             Breakpoint temporarily pauses code execution in order to make debugging easier for the developer.
         </summary>
-        <section text="Settings">
+        <section heading="Settings">
             <exclusive>
                 <item>Always break</item>
                 <item>Break if expression evaluates to true</item>
@@ -148,9 +148,11 @@
         <summary>
             Comments are used to explain what a section of code does. They're only used for readability and they have no effect.
         </summary>
-        <expression/>
+        <section heading="Contents">
+            <expression/>
+        </section>
     </edit>
-    <edit name="Function Signature">
+    <edit name="FunctionSignature">
         <title>Edit Function</title>
         <summary>
             Functions group related code into a single block.

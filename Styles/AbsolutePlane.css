@@ -1,0 +1,162 @@
+:root {
+    --window-outline-color: #808080;
+    --window-header-height: 25px;
+    --window-title-font-size: 0.85;
+    --window-title-default-y-offset: -1.85px;
+    --window-header-padding: 3px;
+
+    --window-border-radius: 8px;
+    --window-title-offset: -3px;
+    --window-button-size: 15px;
+    --button-transition-duration: 0.2s;
+    --button-max-width-multiplier: 1.7;
+
+    --exit-button-background-color: #cf5f5f;
+    --exit-button-shape-color: #773434;
+}
+
+.AbsolutePlane {
+    position: absolute;
+    user-select: none;
+
+    width: 100vw; height: 100vh;
+    z-index: var(--absolute-plane-layer);
+}
+
+.AbsolutePlane > * {
+    --position-x: 0px; --position-y: 0px;
+    --offset-x: 0px; --offset-y: 0px;
+    --size-x: 0px; --size-y: 0px;
+
+    position: absolute;
+    transform:
+        translateX(calc(var(--position-x) + var(--offset-x)))
+        translateY(calc(var(--position-y) + var(--offset-y)));
+    
+    width: calc(var(--size-x));
+    height: calc(var(--size-y));
+}
+
+.SelectionBox {
+    --offset-ignore: true;
+    background-color: black;
+    opacity: 0.15;
+
+    visibility: visible;
+}
+
+.VirtualWindow {
+    --size-x: 550px; --size-y: 350px;
+
+    background-color: #f2f2f2;
+    border-radius: var(--window-border-radius);
+    outline: 2px solid var(--window-outline-color);
+
+    animation: WindowShowAnimation 0.175s ease-in-out forwards;
+    filter: drop-shadow(4px 4px 5px #333333);
+}
+
+@keyframes WindowShowAnimation {
+    from { opacity: 0; scale: 0.9; }
+    to { opacity: 1; scale: 1; }
+}
+
+.WindowHeader {
+    width: 100%;
+    height: var(--window-header-height);
+
+    background-color: #c8c8c8;
+    border-bottom: 2px solid var(--window-outline-color);
+    font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
+    border-top-left-radius: var(--window-border-radius); border-top-right-radius: var(--window-border-radius);
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.WindowHeader > * {
+    display: flex;
+    align-items: center;
+    padding: 0 calc(var(--window-header-padding) * 2);
+}
+
+.WindowTitle span {
+    font-size: calc(var(--window-title-font-size) * 1em);
+    transform: translateY(calc(var(--window-title-default-y-offset) * var(--window-title-font-size)));
+    padding: 0 var(--window-header-padding);
+}
+
+.WindowHeader img {
+    width: var(--window-header-height); height: var(--window-header-height);
+}
+
+.WindowTitle {
+    transform: translateX(var(--window-title-offset));
+}
+
+@property --icon-scale-x { syntax: "<number>"; inherits: false; initial-value: 1; }
+
+.WindowButtons > * {
+    border: 2px solid;
+    border-color: var(--window-outline-color);
+    border-radius: 4px;
+    margin: 0 2px;
+
+    width: var(--window-button-size); height: var(--window-button-size);
+    position: relative;
+
+    transition:
+        background-color var(--button-transition-duration) ease,
+        border-color var(--button-transition-duration) ease,
+        width var(--button-transition-duration) ease;
+}
+
+.WindowButtons > *::before {
+    content: ""; position: absolute; width: 100%; height: 100%;
+    background-color: #808080;
+
+    transition:
+        background-color var(--button-transition-duration) ease,
+        --icon-scale-x var(--button-transition-duration) ease;
+}
+
+.WindowButtons > *:hover {
+    background-color: var(--exit-button-background-color);
+    border-color: var(--exit-button-shape-color);
+
+    width: calc(var(--window-button-size) * var(--button-max-width-multiplier));
+    cursor: pointer;
+}
+
+.WindowButtons > *:hover::before {
+    background-color: var(--exit-button-shape-color);
+    --icon-scale-x: calc(1.0 / var(--button-max-width-multiplier));
+}
+
+.WindowButtonExit::before {
+    --cross-default-thickness: 12.5%;
+    
+    --offset-x: calc((1 - var(--icon-scale-x)) / 2 * 100%);
+    --cross-thickness-x: calc(var(--cross-default-thickness) * var(--icon-scale-x));
+
+    clip-path: polygon(
+        var(--offset-x) calc(100% - var(--cross-default-thickness)),
+        calc(var(--cross-thickness-x) + var(--offset-x)) 100%,
+        calc(50% * var(--icon-scale-x) + var(--offset-x)) calc(50% + var(--cross-default-thickness)),
+
+        calc(100% * var(--icon-scale-x) - var(--cross-thickness-x) + var(--offset-x)) 100%,
+        calc(100% * var(--icon-scale-x) + var(--offset-x)) calc(100% - var(--cross-default-thickness)),
+        calc(50% * var(--icon-scale-x) + var(--cross-thickness-x) + var(--offset-x)) 50%,
+
+        calc(100% * var(--icon-scale-x) + var(--offset-x)) var(--cross-default-thickness),
+        calc(100% * var(--icon-scale-x) - var(--cross-thickness-x) + var(--offset-x)) 0,
+        calc(50% * var(--icon-scale-x) + var(--offset-x)) calc(50% - var(--cross-default-thickness)),
+
+        calc(var(--cross-thickness-x) + var(--offset-x)) 0,
+        var(--offset-x) var(--cross-default-thickness),
+        calc(50% * var(--icon-scale-x) - var(--cross-thickness-x) + var(--offset-x)) 50%
+    );
+
+    scale: 0.7;
+}

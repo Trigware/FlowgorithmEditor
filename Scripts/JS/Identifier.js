@@ -28,7 +28,7 @@ export function ParseDeclarationList(declaredVariablesStr) {
     return resultNames;
 }
 function AddIdentifierToList(identifierList, identifierName) {
-    identifierName = Utils.RemoveTrailingSpaces(identifierName);
+    identifierName = Utils.RemoveTrailingWhitespace(identifierName);
     let identifierValidity = GetIdentifierValidity(identifierName);
     if (identifierValidity !== IdentifierError.None)
         return identifierValidity;

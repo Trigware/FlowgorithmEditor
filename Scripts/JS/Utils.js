@@ -91,13 +91,16 @@ export function IsMouseInBox(box, offset = Vec2.Zero()) {
     let isMouseInBox = mouseBoxOriginDiff.IsInsideOf(0, 0, boxRect.width, boxRect.height);
     return isMouseInBox;
 }
-export function CreateElement(elementType, className, parent = null) {
+export function CreateElement(elementType, className = "", parent = null) {
     let createdElement = document.createElement(elementType);
     if (className !== "")
         createdElement.classList.add(className);
     if (parent !== null)
         parent.appendChild(createdElement);
     return createdElement;
+}
+export function CreateDiv(className = "", parent = null) {
+    return CreateElement("div", className, parent);
 }
 const fsJSONFileName = "fs.json";
 class ItemPath {
@@ -170,11 +173,13 @@ export var MouseButton;
 })(MouseButton || (MouseButton = {}));
 const mousePressButtons = [MouseButton.Left, MouseButton.Right, MouseButton.Middle, MouseButton.Back, MouseButton.Forward], mouseReleaseButtons = [MouseButton.Left, MouseButton.Middle, MouseButton.Right, MouseButton.Back, MouseButton.Forward];
 const disableContextMenu = false;
+const maximumHeldMousePosCount = 10;
 export class MouseState {
     pressedButtonMap = new Map();
     releasedButtonMap = new Map();
     heldButtonSet = new Set();
     mousePos = Vec2.Zero();
+    mousePosRecord = [];
     scrollDirection = Vec2.Zero();
     framesSinceScrolled = 0;
     constructor() {
@@ -190,9 +195,9 @@ export class MouseState {
         this.OnDraw();
     }
     GetPosition() { return this.mousePos.Copy(); }
-    IsHeld(mouseButton) { return this.heldButtonSet.has(mouseButton); }
-    IsTapped(mouseButton) { return this.IsPressStateActiveNow(mouseButton, false); }
-    IsReleased(mouseButton) { return this.IsPressStateActiveNow(mouseButton, true); }
+    IsHeld(mouseButton = MouseButton.Left) { return this.heldButtonSet.has(mouseButton); }
+    IsTapped(mouseButton = MouseButton.Left) { return this.IsPressStateActiveNow(mouseButton, false); }
+    IsReleased(mouseButton = MouseButton.Left) { return this.IsPressStateActiveNow(mouseButton, true); }
     IsPressStateActiveNow(mouseButton, releasing) {
         let usedButtonMap = releasing ? this.releasedButtonMap : this.pressedButtonMap;
         let hasPressedBefore = usedButtonMap.has(mouseButton);
@@ -229,7 +234,23 @@ export class MouseState {
         this.framesSinceScrolled++;
         this.IncrementMapTimer(this.pressedButtonMap);
         this.IncrementMapTimer(this.releasedButtonMap);
+        let hasExceededMouseEntryLimit = this.mousePosRecord.length >= maximumHeldMousePosCount;
+        if (hasExceededMouseEntryLimit) {
+            let prevMousePos = this.mousePosRecord[this.mousePosRecord.length - 1];
+            this.mousePosRecord.length = 0;
+            this.mousePosRecord.push(prevMousePos);
+        }
+        this.mousePosRecord.push(this.mousePos.Copy());
         requestAnimationFrame(() => this.OnDraw());
+    }
+    GetMousePosDiff() {
+        if (this.mousePosRecord.length === 0)
+            return Vec2.Zero();
+        if (this.mousePosRecord.length === 1)
+            return this.mousePosRecord[0];
+        let prevMousePos = this.mousePosRecord[this.mousePosRecord.length - 2], currentMousePos = this.mousePosRecord[this.mousePosRecord.length - 1];
+        let mousePosDiff = currentMousePos.Minus(prevMousePos.x, prevMousePos.y);
+        return mousePosDiff;
     }
     IncrementMapTimer(buttonMap) {
         for (let currentButton of buttonMap.keys()) {
@@ -277,16 +298,31 @@ export function GetEnumValueFromName(enumObject, identifierName) {
         return null;
     return enumObject[identifierName];
 }
-export function RemoveTrailingSpaces(originalIdentifier) {
-    let modifiedIdentifier = originalIdentifier;
-    for (let i = 0; i < originalIdentifier.length; i++) {
-        let ch = originalIdentifier[i];
-        if (ch === ' ')
+export function GetEnumValueFromLoweredName(enumObject, identifierName) {
+    let possibleEnumValues = Object.values(enumObject);
+    for (let currentEnumMember of possibleEnumValues) {
+        if (typeof currentEnumMember === "number")
             continue;
-        modifiedIdentifier = modifiedIdentifier.substring(i);
+        let memberNameLowered = currentEnumMember.toLowerCase();
+        let namesMatch = identifierName === memberNameLowered;
+        if (!namesMatch)
+            continue;
+        return GetEnumValueFromName(enumObject, currentEnumMember);
+    }
+    return null;
+}
+const whitespaceCharacters = "\t \n";
+export function RemoveTrailingWhitespace(originalStr) {
+    let modifiedStr = originalStr;
+    for (let i = 0; i < originalStr.length; i++) {
+        let ch = originalStr[i];
+        let isCurrentWhitespace = whitespaceCharacters.includes(ch);
+        if (isCurrentWhitespace)
+            continue;
+        modifiedStr = modifiedStr.substring(i);
         break;
     }
-    return modifiedIdentifier;
+    return modifiedStr;
 }
 export function IsLetter(ch) {
     let letterRegex = /^\p{L}$/u;
@@ -308,10 +344,17 @@ export function GetPropertyPX(element, propertyStr) {
     let propertyValueStr = GetProperty(element, propertyStr);
     return GetNumericPixels(propertyValueStr);
 }
+export function GetVectorPropertyPX(element, propertyStr) {
+    return new Vec2(GetPropertyPX(element, propertyStr + "-x"), GetPropertyPX(element, propertyStr + "-y"));
+}
 export function GetFromRoot(propertyStr) { return GetProperty(document.documentElement, propertyStr); }
 export function GetFromRootPX(propertyStr) { return GetNumericPixels(GetFromRoot(propertyStr)); }
 export function SetProperty(element, propertyStr, propertyValue) {
     element.style.setProperty(propertyStr, propertyValue);
+}
+export function SetVectorPropertyPX(element, propertyStr, propertyValue) {
+    SetProperty(element, propertyStr + "-x", propertyValue.x.toString() + "px");
+    SetProperty(element, propertyStr + "-y", propertyValue.y.toString() + "px");
 }
 const degreesInPIRad = 180;
 export function DegToRad(angleDegrees) { return angleDegrees * Math.PI / degreesInPIRad; }
@@ -353,4 +396,28 @@ export function GetFirstChildTag(parentElement, tagName) {
     }
     return null;
 }
+export function PlayAnimation(element, animationName, isReversed = false, onFinished = null) {
+    let elementAnimationList = element.getAnimations();
+    let selectedAnimation = null;
+    for (let currentAnimation of elementAnimationList) {
+        if (!(currentAnimation instanceof CSSAnimation))
+            continue;
+        let hasFoundAnimation = currentAnimation.animationName === animationName;
+        if (hasFoundAnimation) {
+            selectedAnimation = currentAnimation;
+            break;
+        }
+    }
+    if (selectedAnimation === null) {
+        throw new Error("Attempted to play an animation that doesn't exist");
+    }
+    if (isReversed)
+        selectedAnimation.reverse();
+    else
+        selectedAnimation.play();
+    if (onFinished === null)
+        return;
+    selectedAnimation.finished.then(onFinished);
+}
+export function HoversOverElement(element) { return element.matches(":hover"); }
 OnStart();

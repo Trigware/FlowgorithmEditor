@@ -2,6 +2,7 @@ import * as Utils from "./Utils.js"
 import * as ShapeRenderer from "./ShapeRenderer.js"
 import * as BaseNode from "./ProgramNode.js";
 import { Program } from "./ProgramRepresentation.js" 
+import * as WindowManager from "./WindowManager.js"
 
 let selectionBox: HTMLDivElement = document.getElementById("SelectionBox") as HTMLDivElement;
 let headerSection: HTMLDivElement = document.getElementById("HeaderSection") as HTMLDivElement;
@@ -15,7 +16,8 @@ export function SetProgram(program: Program) { currentProgram = program; }
 
 export function HandleShapeSelect() {
     let isLMBHeld: boolean = Utils.activeMouse.IsHeld(Utils.MouseButton.Left);
-    let isSelectionBoxVisible: boolean = isLMBHeld && !isInvalidSelection;
+    let isSelectionBoxVisible: boolean = isLMBHeld && !isInvalidSelection && !WindowManager.currentEditDialog.isOpen;
+
     Utils.SetProperty(selectionBox, "visibility", isSelectionBoxVisible ? "visible" : "hidden");
     let startedHoldingLMB: boolean = isLMBHeld && !wasLMBPreviouslyHeld;
     wasLMBPreviouslyHeld = isLMBHeld;
@@ -103,6 +105,8 @@ function ConvertWorldToAbsolutePosition(worldPosition: Utils.Vec2): Utils.Vec2 {
 }
 
 function HandleMouseInteraction() {
+    if (WindowManager.currentEditDialog.isOpen) return;
+
     let mousePosition: Utils.Vec2 = Utils.activeMouse.GetPosition(),
         clickedWorldPos: Utils.Vec2 = ConvertAbsoluteToWorldPosition(mousePosition);
     
@@ -111,5 +115,6 @@ function HandleMouseInteraction() {
         let isCurrentShapeClicked: boolean = clickInfo.clickedShape === selectedShape;
         if (!isCurrentShapeClicked) selectedShape.OnClick(ShapeRenderer.SelectionType.Unselect);
     }
+    
     if (clickInfo.clickedShape !== null) clickInfo.clickedShape.OnClick(ShapeRenderer.SelectionType.Select);
 }

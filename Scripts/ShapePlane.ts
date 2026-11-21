@@ -4,8 +4,8 @@ import * as Parser from "./ProgramParser.js"
 import * as ShapeRenderer from "./ShapeRenderer.js"
 import * as ShapeSelect from "./ShapeSelect.js"
 import { LoadEditDialogData } from "./VirtualWindowData.js"
+import * as WindowManager from "./WindowManager.js"
 
-let prevMousePos: Utils.Vec2 = Utils.Vec2.Zero();
 let shapePlane: HTMLDivElement = document.getElementById("ShapePlane") as HTMLDivElement;
 let openFileInput: HTMLInputElement = document.getElementById("OpenFileInput") as HTMLInputElement;
 let headerSection: HTMLDivElement = document.getElementById("HeaderSection") as HTMLDivElement;
@@ -14,7 +14,6 @@ let openedProgram: Flowgorithm.Program = Flowgorithm.Program.Create();
 const editDialogFileName: string = "editdialog.xml";
 
 function OnStart() {
-    prevMousePos = Utils.GetMousePos();
     openFileInput.addEventListener("change", OnFileSelected);
     ShapeSelect.SetProgram(openedProgram);
     ShapeRenderer.SetShadowOffsets();
@@ -32,22 +31,24 @@ let deltaTime: number = 0;
 
 function OnDraw() {
     let currentTimeSinceStarted: number = Utils.GetTimeSinceStarted();
-    let mousePos: Utils.Vec2 = Utils.GetMousePos();
     let isHoldingMiddleButton: boolean = Utils.activeMouse.IsHeld(Utils.MouseButton.Middle);
-    let mouseDiff: Utils.Vec2 = mousePos.Minus(prevMousePos.x, prevMousePos.y);
     deltaTime = currentTimeSinceStarted - previousTimeSinceStarted;
 
-    prevMousePos = mousePos.Copy();
+    let mouseDiff: Utils.Vec2 = Utils.activeMouse.GetMousePosDiff();
     if (isHoldingMiddleButton) MoveShapePlane(mouseDiff);
     previousTimeSinceStarted = currentTimeSinceStarted;
-
+    openFileInput.disabled = WindowManager.currentEditDialog.isOpen;
+    
     UpdateAllShapes();
+    WindowManager.UpdateAbsolutePlaneElements();
     HandleZooming();
     ShapeSelect.HandleShapeSelect();
     requestAnimationFrame(OnDraw);
 }
 
 function MoveShapePlane(mouseDiff: Utils.Vec2) {
+    if (WindowManager.currentEditDialog.isOpen) return;
+    
     let zoomLevel: number = GetZoomLevel();
     mouseDiff = mouseDiff.Divide(zoomLevel);
     let currentCameraPos: Utils.Vec2 = new Utils.Vec2(
@@ -80,7 +81,7 @@ const allowZooming: boolean = true;
 function GetZoomLevel(): number { return Number(Utils.GetProperty(shapePlane, "--zoom-level")); }
 
 function HandleZooming() {
-    let skipZooming: boolean = !Utils.activeMouse.IsScrolling() || !allowZooming;
+    let skipZooming: boolean = !Utils.activeMouse.IsScrolling() || !allowZooming || WindowManager.currentEditDialog.isOpen;
     if (skipZooming) return;
     let verticalScrollDir: number = Utils.activeMouse.GetScrollDir().y;
 

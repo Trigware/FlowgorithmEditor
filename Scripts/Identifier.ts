@@ -23,7 +23,7 @@ export function ParseDeclarationList(declaredVariablesStr: string): string[] | I
 }
 
 function AddIdentifierToList(identifierList: string[], identifierName: string): IdentifierError {
-    identifierName = Utils.RemoveTrailingSpaces(identifierName);
+    identifierName = Utils.RemoveTrailingWhitespace(identifierName);
     let identifierValidity: IdentifierError = GetIdentifierValidity(identifierName);
     if (identifierValidity !== IdentifierError.None) return identifierValidity;
     identifierList.push(identifierName);
