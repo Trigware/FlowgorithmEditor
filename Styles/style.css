@@ -44,6 +44,8 @@ img {
 }
 
 .HeaderSection {
+    --header-hover-cursor-mode: pointer;
+
     position: sticky;
     height: calc(var(--header-section-height) + var(--header-section-image-margin));
     width: 100vw;
@@ -61,7 +63,7 @@ img {
 }
 
 .HeaderSection img:hover {
-    cursor: pointer;
+    cursor: var(--header-hover-cursor-mode);
 }
 
 .ShapePlane {

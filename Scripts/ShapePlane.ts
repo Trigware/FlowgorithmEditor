@@ -37,7 +37,11 @@ function OnDraw() {
     let mouseDiff: Utils.Vec2 = Utils.activeMouse.GetMousePosDiff();
     if (isHoldingMiddleButton) MoveShapePlane(mouseDiff);
     previousTimeSinceStarted = currentTimeSinceStarted;
-    openFileInput.disabled = WindowManager.currentEditDialog.isOpen;
+
+    let isWindowOpen: boolean = WindowManager.currentEditDialog.isOpen;
+    openFileInput.disabled = isWindowOpen;
+    let headerSectionCursorMode: string = isWindowOpen ? "default" : "pointer";
+    Utils.SetProperty(headerSection, "--header-hover-cursor-mode", headerSectionCursorMode);
     
     UpdateAllShapes();
     WindowManager.UpdateAbsolutePlaneElements();
@@ -66,11 +70,13 @@ function SetCameraPos(cameraPos: Utils.Vec2) {
 function OnFileSelected() {
     if (openFileInput.files === null || openFileInput.files.length === 0) return;
     let selectedFile: File = openFileInput.files[0];
+    
     selectedFile.text().then((fileContent: string) => {
         Parser.Setup(openedProgram, fileContent);
+        openedProgram.Render(Utils.Vec2.Zero());
+
         ResetCameraData();
         ShapeRenderer.selectedShapes.clear();
-        openedProgram.Render(Utils.Vec2.Zero());
     });
 }
 

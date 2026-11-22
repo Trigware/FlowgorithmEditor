@@ -30,7 +30,10 @@ function OnDraw() {
     if (isHoldingMiddleButton)
         MoveShapePlane(mouseDiff);
     previousTimeSinceStarted = currentTimeSinceStarted;
-    openFileInput.disabled = WindowManager.currentEditDialog.isOpen;
+    let isWindowOpen = WindowManager.currentEditDialog.isOpen;
+    openFileInput.disabled = isWindowOpen;
+    let headerSectionCursorMode = isWindowOpen ? "default" : "pointer";
+    Utils.SetProperty(headerSection, "--header-hover-cursor-mode", headerSectionCursorMode);
     UpdateAllShapes();
     WindowManager.UpdateAbsolutePlaneElements();
     HandleZooming();
@@ -56,9 +59,9 @@ function OnFileSelected() {
     let selectedFile = openFileInput.files[0];
     selectedFile.text().then((fileContent) => {
         Parser.Setup(openedProgram, fileContent);
+        openedProgram.Render(Utils.Vec2.Zero());
         ResetCameraData();
         ShapeRenderer.selectedShapes.clear();
-        openedProgram.Render(Utils.Vec2.Zero());
     });
 }
 const scrollingMultiplier = 3.5;

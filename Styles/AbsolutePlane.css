@@ -1,18 +1,17 @@
 :root {
     --window-outline-color: #808080;
     --window-header-height: 25px;
+    --window-header-border-size: 2px;
     --window-title-font-size: 0.85;
     --window-title-default-y-offset: -1.85px;
     --window-header-padding: 3px;
+    --window-buttons-container-padding: 6px;
 
     --window-border-radius: 8px;
     --window-title-offset: -3px;
     --window-button-size: 15px;
     --button-transition-duration: 0.2s;
     --button-max-width-multiplier: 1.7;
-
-    --exit-button-background-color: #cf5f5f;
-    --exit-button-shape-color: #773434;
 }
 
 .AbsolutePlane {
@@ -66,7 +65,7 @@
     height: var(--window-header-height);
 
     background-color: #c8c8c8;
-    border-bottom: 2px solid var(--window-outline-color);
+    border-bottom: var(--window-header-border-size) solid var(--window-outline-color);
     font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
     border-top-left-radius: var(--window-border-radius); border-top-right-radius: var(--window-border-radius);
 
@@ -78,13 +77,14 @@
 .WindowHeader > * {
     display: flex;
     align-items: center;
-    padding: 0 calc(var(--window-header-padding) * 2);
+    padding: 0 var(--window-buttons-container-padding);
 }
 
 .WindowTitle span {
     font-size: calc(var(--window-title-font-size) * 1em);
     transform: translateY(calc(var(--window-title-default-y-offset) * var(--window-title-font-size)));
     padding: 0 var(--window-header-padding);
+    white-space: nowrap;
 }
 
 .WindowHeader img {
@@ -98,10 +98,15 @@
 @property --icon-scale-x { syntax: "<number>"; inherits: false; initial-value: 1; }
 
 .WindowButtons > * {
-    border: 2px solid;
+    --exit-button-background-color: #cf5f5f;
+    --exit-button-shape-color: #773434;
+    --button-border-size: 2px;
+    --button-margin-width: 2px;
+
+    border: var(--button-border-size) solid;
     border-color: var(--window-outline-color);
     border-radius: 4px;
-    margin: 0 2px;
+    margin: 0 var(--button-margin-width);
 
     width: var(--window-button-size); height: var(--window-button-size);
     position: relative;

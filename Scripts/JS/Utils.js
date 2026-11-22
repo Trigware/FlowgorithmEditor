@@ -27,6 +27,19 @@ export class Vec2 {
     Abs() { return new Vec2(Math.abs(this.x), Math.abs(this.y)); }
     Dist(other) { return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2); }
     Magnitude() { return Math.sqrt(this.x ** 2 + this.y ** 2); }
+    ThrowIfInvalidAxis(axisIndex) { if (axisIndex >= 2 || axisIndex < 0)
+        throw new Error("Invalid vector axis index!"); }
+    GetAxis(axisIndex) {
+        this.ThrowIfInvalidAxis(axisIndex);
+        return axisIndex === 0 ? this.x : this.y;
+    }
+    SetAxis(axisIndex, newValue) {
+        this.ThrowIfInvalidAxis(axisIndex);
+        if (axisIndex === 0)
+            this.x = newValue;
+        if (axisIndex === 1)
+            this.y = newValue;
+    }
     Normalized() {
         let magnitude = this.Magnitude();
         if (magnitude === 0)

@@ -35,6 +35,18 @@ export class Vec2 {
     public Dist(other: Vec2): number { return Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2); }
     public Magnitude(): number { return Math.sqrt(this.x ** 2 + this.y ** 2); }
 
+    private ThrowIfInvalidAxis(axisIndex: number) { if (axisIndex >= 2 || axisIndex < 0) throw new Error("Invalid vector axis index!"); }
+
+    public GetAxis(axisIndex: number): number {
+        this.ThrowIfInvalidAxis(axisIndex); return axisIndex === 0 ? this.x : this.y;
+    }
+
+    public SetAxis(axisIndex: number, newValue: number) {
+        this.ThrowIfInvalidAxis(axisIndex);
+        if (axisIndex === 0) this.x = newValue;
+        if (axisIndex === 1) this.y = newValue;
+    }
+
     public Normalized(): Vec2 {
         let magnitude: number = this.Magnitude();
         if (magnitude === 0) return Vec2.Zero();
@@ -479,6 +491,6 @@ export function PlayAnimation(element: HTMLElement, animationName: string, isRev
     selectedAnimation.finished.then(onFinished);
 }
 
-export function HoversOverElement(element: HTMLElement): boolean { return element.matches(":hover"); }
+export function HoversOverElement(element: Element): boolean { return element.matches(":hover"); }
 
 OnStart();
